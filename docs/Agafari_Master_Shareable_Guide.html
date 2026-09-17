@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agafari — Master System Guide & Client Proposal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0B1C15',
+        primaryColor: '#1A3D2F',
+        primaryTextColor: '#F5E6BE',
+        primaryBorderColor: '#D4AF37',
+        lineColor: '#D4AF37',
+        secondaryColor: '#122B21',
+        tertiaryColor: '#07120D'
+      }
+    });
+  </script>
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-light: #F5E6BE;
+      --gold-dark: #997A15;
+      --bg-dark: #07120D;
+      --card-bg: #0F271D;
+      --card-border: #1B4533;
+      --text: #F5F7F6;
+      --text-muted: #A3B8AD;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      line-height: 1.65;
+    }
+    .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+    
+    /* Header */
+    header {
+      background: rgba(7, 18, 13, 0.95);
+      border-bottom: 1px solid var(--gold);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+    .nav { display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 12px; text-decoration: none; }
+    .badge-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #07120D;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    .brand-title { font-size: 20px; font-weight: 700; color: #FFF; font-family: 'Playfair Display', serif; }
+    .btn-pdf {
+      background: var(--gold);
+      color: #07120D;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-pdf:hover { background: var(--gold-light); transform: scale(1.02); }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 70px 0 50px;
+      background: radial-gradient(circle at 50% 20%, rgba(212, 175, 55, 0.15) 0%, rgba(7, 18, 13, 0) 70%);
+      border-bottom: 1px solid var(--card-border);
+    }
+    .tag {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--gold-light);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 44px;
+      font-family: 'Playfair Display', serif;
+      color: #FFF;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #FFF 30%, var(--gold-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      max-width: 740px;
+      margin: 0 auto 30px;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    /* Section Styling */
+    section {
+      padding: 60px 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .sec-num {
+      color: var(--gold);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .sec-title {
+      font-size: 28px;
+      font-family: 'Playfair Display', serif;
+      color: #FFF;
+      margin-bottom: 12px;
+    }
+    .sec-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 800px;
+      margin-bottom: 30px;
+    }
+
+    /* Grids & Cards */
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 24px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 24px;
+      transition: all 0.3s;
+    }
+    .card:hover {
+      border-color: var(--gold);
+      transform: translateY(-3px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+    }
+    .card-body { font-size: 13px; color: var(--text-muted); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .badge-gold { background: rgba(212,175,55,0.2); color: var(--gold-light); border: 1px solid rgba(212,175,55,0.4); }
+    .badge-emerald { background: rgba(35,77,58,0.4); color: #A3E635; border: 1px solid rgba(163,230,53,0.3); }
+
+    /* Tables */
+    .table-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow-x: auto;
+      margin: 20px 0;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th {
+      background: #0B1C15;
+      color: var(--gold-light);
+      padding: 14px 18px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--card-border);
+    }
+    td {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(27, 69, 51, 0.4);
+      color: var(--text-muted);
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); color: #FFF; }
+
+    /* Diagrams */
+    .diagram-container {
+      background: #060E0A;
+      border: 1px solid var(--gold);
+      border-radius: 14px;
+      padding: 24px;
+      margin: 24px 0;
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* ASCII Wireframe Box */
+    .wireframe-box {
+      background: #040A07;
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      padding: 18px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #A3E635;
+      margin: 12px 0;
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    /* Print Styles */
+    @media print {
+      header, .btn-pdf { display: none !important; }
+      body { background: #FFF !important; color: #000 !important; }
+      .card, .diagram-container, .table-box, .wireframe-box {
+        background: #F9F9F9 !important;
+        border-color: #CCC !important;
+        color: #000 !important;
+        break-inside: avoid;
+      }
+      .sec-title, .card-title, h1 { color: #000 !important; }
+      .hero h1 span { -webkit-text-fill-color: #000 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="container nav">
+      <a href="#" class="brand">
+        <span class="badge-gold">አጋፋሪ</span>
+        <span class="brand-title">Agafari Master System Guide</span>
+      </a>
+      <button class="btn-pdf" onclick="window.print()">
+        📄 Print / Save as PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <span class="tag">Complete Platform Specification</span>
+      <h1>Agafari (አጋፋሪ) <span>Master System Guide</span></h1>
+      <p>The comprehensive digital wedding ecosystem uniting real-time 1-Click RSVP, instant QR gate verification, TikTok-style memory reels, and global HD ceremony streaming.</p>
+    </div>
+  </section>
+
+  <!-- Section 1: The 4 Pillars -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 01</div>
+      <h2 class="sec-title">The 4 Core Pillars of Agafari</h2>
+      <p class="sec-desc">Four integrated pillars that transform the traditional Ethiopian wedding into an unforgettable digital celebration.</p>
+
+      <div class="grid-4">
+        <div class="card">
+          <div class="card-title">🎟️ 1-Click RSVP & QR Pass</div>
+          <div class="card-body">Unique digital cards with instant zero-typing RSVP (Yes / Maybe / No). Door scanning takes under 2 seconds. Eliminates catering waste.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">⏳ Coming Soon Hub</div>
+          <div class="card-body">Personalized couple website with live countdown clock, venue Google Maps link, dress code guidelines, and an interactive Wish Wall.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">🎬 TikTok Memory Feed</div>
+          <div class="card-body">Vertical video reel feed for guests to upload authentic backstage moments, wishes, and dance practice videos in real time.</div>
+        </div>
+        <div class="card">
+          <div class="card-title">📡 Global HD Live Stream</div>
+          <div class="card-body">Broadcast-quality ceremony streaming with real-time floating emoji reactions for family in the USA, Europe, and Canada.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: 3-Phase Journey -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 02</div>
+      <h2 class="sec-title">The 3-Phase Wedding Lifecycle</h2>
+      <p class="sec-desc">A seamless end-to-end journey before, during, and after the wedding day.</p>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+flowchart LR
+    subgraph P1["PHASE 1: BEFORE WEDDING"]
+        A1["Onboard Wedding"] --> A2["Generate QR Passes"]
+        A2 --> A3["Share via Telegram/WhatsApp"]
+        A3 --> A4["Guests 1-Click RSVP"]
+    end
+
+    subgraph P2["PHASE 2: WEDDING DAY"]
+        B1["Gate Security Scans QR"] --> B2["Remote Guests Watch Stream"]
+        B2 --> B3["Guests Upload TikTok Reels"]
+    end
+
+    subgraph P3["PHASE 3: AFTER WEDDING"]
+        C1["Export Verified Wish Book"] --> C2["Permanent Video Vault"]
+    end
+
+    P1 --> P2 --> P3
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: 1-Click RSVP Mechanism -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 03</div>
+      <h2 class="sec-title">1-Click Instant RSVP Mechanism</h2>
+      <p class="sec-desc">Zero typing required: popup emerges after 5 seconds, and tapping any choice submits immediately.</p>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+flowchart TD
+    A["Guest Opens Wedding Link"] --> B["Page loads countdown & details"]
+    B --> C{"5-Second Delay"}
+    C --> D["RSVP Popup Emerges (3 Choices)"]
+
+    D --> E["Choice 1: YES 🥂 (Attending)"]
+    D --> F["Choice 2: MAYBE 🤔 (Undecided)"]
+    D --> G["Choice 3: NO 💔 (Declined)"]
+
+    E --> H["Instant Auto-Submit to Server"]
+    F --> H
+    G --> H
+
+    H --> I["Display Checkmark Confirmation Banner"]
+    I --> J["Modal auto-closes after 1.8s"]
+    J --> K["Couple Dashboard updates live headcount"]
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: All 12 Pages Walkthrough -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 04</div>
+      <h2 class="sec-title">Complete 12-Page Map & Visual Wireframes</h2>
+      <p class="sec-desc">Every screen designed for maximum elegance and ease of use.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">1. Coming Soon Celebration Hub</div>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /event/[slug]</p>
+          <div class="wireframe-box">[ 👑 SARA & DAWIT'S ROYAL WEDDING ]
+⏳ COUNTDOWN: 14d : 06h : 22m : 18s
+📍 Venue: Sheraton Addis Ballroom [Maps ↗]
+🎟️ PASS: Abebe Kebede (Quota: 2 Heads)
+[ ■■■■■ SECURE QR CODE ■■■■■ ]
+💌 WISH WALL: "Congratulations! ✨"</div>
+          <div class="card-body">The central guest page with live countdown, personalized QR pass, Wish Wall, song suggestions, and 1-Click RSVP popup.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">2. TikTok-Style Memory Feed</div>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /event/[slug]/feed</p>
+          <div class="wireframe-box">[ LIVE 🔴 ] Wishes | Behind Scenes | Live
+=======================================
+           [ FULL SCREEN REEL ]
+          (❤️) 192 Likes | (💬) 24 Comments
+=======================================
+💍 Eskista dance rehearsal! [ + Upload ]</div>
+          <div class="card-body">Vertical snap-scroll video reels with Wishes, BTS, and Live tabs, double-tap heart bursts, comments drawer, and video upload modal.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">3. QR Gate Security Scanner</div>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /scanner</p>
+          <div class="wireframe-box">🔍 AGAFARI GATE VERIFICATION SCANNER
+Code: INV-SD2026-001 [ VERIFY ]
+---------------------------------------
+✅ VALID PASS: Abebe Kebede & Guest
+Quota: 2 Heads (0/2 Checked In)
+[ CHECK IN 1 GUEST ] [ CHECK IN 2 GUESTS ]</div>
+          <div class="card-body">Door verification tool showing Valid, Already Scanned, or Invalid pass states with anti-counterfeit duplicate prevention.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">4. Couple Command Center</div>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /couple/dashboard</p>
+          <div class="wireframe-box">👰 SARA & DAWIT DASHBOARD
+Total: 250 | Confirmed: 210 | Declined: 15
+---------------------------------------
+[ + Generate New Guest QR Pass ]
+• Dr. Michael (London) - 1 Guest [COPIED]
+• Sara Bekele - 2 Guests [PENDING]</div>
+          <div class="card-body">Live attendance tracker, custom QR pass generator, wish/video moderation, and security/streamer staff assignment.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: Traditional vs Agafari -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 05</div>
+      <h2 class="sec-title">Traditional Wedding vs. Agafari Platform</h2>
+      <p class="sec-desc">A direct side-by-side comparison illustrating why couples and planners choose Agafari.</p>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Traditional Ethiopian Wedding</th>
+              <th>With Agafari Platform</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Invitations</strong></td>
+              <td>Expensive paper printing; manual hand delivery; lost cards</td>
+              <td>Instant personalized QR cards via Telegram, WhatsApp, or SMS</td>
+            </tr>
+            <tr>
+              <td><strong>RSVP Headcount</strong></td>
+              <td>30-40% uncertainty; heavy catering & seat wastage</td>
+              <td>Exact real-time attendance numbers with 1-Click RSVP</td>
+            </tr>
+            <tr>
+              <td><strong>Gate Security</strong></td>
+              <td>Slow paper lists; gate crashing; duplicate card reuse</td>
+              <td>2-second QR scan; anti-counterfeit duplicate entry alert</td>
+            </tr>
+            <tr>
+              <td><strong>Diaspora Family</strong></td>
+              <td>Unstable personal phone video calls</td>
+              <td>Broadcast HD live stream with floating heart reactions</td>
+            </tr>
+            <tr>
+              <td><strong>Guest Videos</strong></td>
+              <td>Scattered on 100+ guest phones; couple loses 80%</td>
+              <td>Centralized TikTok-style memory reel vault</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: Packages -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 06</div>
+      <h2 class="sec-title">Packages & Deliverables</h2>
+      <p class="sec-desc">Tailored service tiers to fit intimate celebrations and royal grand weddings.</p>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">Silver Package</div>
+          <div class="card-body">
+            <ul style="list-style: none; margin-top: 10px;">
+              <li>✓ Coming Soon Celebration Web Hub</li>
+              <li>✓ Live Countdown Clock</li>
+              <li>✓ 1-Click Instant RSVP System</li>
+              <li>✓ Up to 200 Unique QR Passes</li>
+              <li>✓ Interactive Digital Wish Wall</li>
+              <li>✓ Couple Management Dashboard</li>
+              <li>✓ 3 Months Cloud Hosting</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card" style="border-color: var(--gold);">
+          <div class="card-title" style="color: var(--gold);">Gold Package (Most Popular)</div>
+          <div class="card-body">
+            <ul style="list-style: none; margin-top: 10px;">
+              <li>✓ Everything in Silver Package</li>
+              <li>✓ TikTok-Style Memory Reel Feed</li>
+              <li>✓ Guest Video Blessing Uploads</li>
+              <li>✓ Up to 500 Unique QR Passes</li>
+              <li>✓ Gate Security Scanner Account</li>
+              <li>✓ Mezmur & Song Recommendation Hub</li>
+              <li>✓ 6 Months Cloud Hosting</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Diamond Package (Royal VIP)</div>
+          <div class="card-body">
+            <ul style="list-style: none; margin-top: 10px;">
+              <li>✓ Everything in Gold Package</li>
+              <li>✓ Dedicated HD Live Ceremony Stream</li>
+              <li>✓ Custom Wedding Domain URL</li>
+              <li>✓ Unlimited Unique QR Passes</li>
+              <li>✓ 3 Gate Scanner Staff Accounts</li>
+              <li>✓ Lifetime Video Reel Archive Vault</li>
+              <li>✓ 1 Year VIP Hosting & Priority Support</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: Demo Links & Credentials -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 07</div>
+      <h2 class="sec-title">Live Testing Links & Demo Credentials</h2>
+      <p class="sec-desc">Pre-configured accounts ready for live demonstration.</p>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Login Portal</th>
+              <th>Demo Email</th>
+              <th>Demo Password</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Bride & Groom</strong></td>
+              <td><code>/couple/login</code></td>
+              <td><code>couple@sara-dawit.com</code></td>
+              <td><code>couple123</code></td>
+            </tr>
+            <tr>
+              <td><strong>Event Organizer</strong></td>
+              <td><code>/organizer/login</code></td>
+              <td><code>organizer@sara-dawit.com</code></td>
+              <td><code>org123</code></td>
+            </tr>
+            <tr>
+              <td><strong>System Admin</strong></td>
+              <td><code>/admin/login</code></td>
+              <td><code>admin@hamelmal.com</code></td>
+              <td><code>admin123</code></td>
+            </tr>
+            <tr>
+              <td><strong>Gate Security</strong></td>
+              <td><code>/scanner</code></td>
+              <td><code>scanner@sara-dawit.com</code></td>
+              <td><code>scan123</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="text-align: center; padding: 40px 0; border-top: 1px solid var(--card-border); color: var(--text-muted); font-size: 13px;">
+    <div class="container">
+      <p style="margin-bottom: 6px;"><strong>Agafari (አጋፋሪ)</strong> — Smart Digital Wedding Celebration Platform</p>
+      <p>Architected & Built by <strong>Hamelmal Creatives</strong> · Version 1.0.0 (2026)</p>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agafari — Smart Digital Wedding Celebration Platform (Client Presentation)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --gold: #D4AF37;
+      --gold-light: #F3E5AB;
+      --gold-dark: #997A15;
+      --emerald-dark: #07120D;
+      --emerald-card: #10261D;
+      --emerald-border: #1E4535;
+      --text: #F5F7F6;
+      --muted: #A3B8AD;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--emerald-dark);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
+    
+    /* Header */
+    header {
+      background: rgba(7, 18, 13, 0.95);
+      border-bottom: 1px solid var(--emerald-border);
+      padding: 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+    }
+    .nav { display: flex; justify-content: space-between; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .badge-gold {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #07120D;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+    }
+    .brand-title { font-size: 20px; font-weight: 700; color: #FFF; font-family: 'Playfair Display', serif; }
+    .btn-pdf {
+      background: var(--gold);
+      color: #07120D;
+      border: none;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .btn-pdf:hover { background: var(--gold-light); transform: scale(1.02); }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 70px 0 50px;
+      background: radial-gradient(circle at 50% 10%, rgba(212, 175, 55, 0.15) 0%, rgba(7, 18, 13, 0) 70%);
+      border-bottom: 1px solid var(--emerald-border);
+    }
+    .tag {
+      display: inline-block;
+      padding: 6px 16px;
+      border-radius: 20px;
+      background: rgba(212, 175, 55, 0.12);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--gold-light);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-size: 46px;
+      font-family: 'Playfair Display', serif;
+      color: #FFF;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, #FFF 30%, var(--gold-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      max-width: 680px;
+      margin: 0 auto 30px;
+      font-size: 16px;
+      color: var(--muted);
+    }
+
+    /* Pillars Grid */
+    .section-title {
+      font-size: 28px;
+      font-family: 'Playfair Display', serif;
+      color: #FFF;
+      margin-bottom: 8px;
+      text-align: center;
+    }
+    .section-desc {
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 60px;
+    }
+    .pillar-card {
+      background: var(--emerald-card);
+      border: 1px solid var(--emerald-border);
+      border-radius: 14px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    .pillar-card:hover {
+      border-color: var(--gold);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+    }
+    .pillar-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+    .pillar-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--gold-light);
+      margin-bottom: 8px;
+    }
+    .pillar-text {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Screen Walkthrough Showcase */
+    .screen-row {
+      display: flex;
+      align-items: center;
+      gap: 36px;
+      margin-bottom: 50px;
+      background: var(--emerald-card);
+      border: 1px solid var(--emerald-border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .screen-row.reverse { flex-direction: row-reverse; }
+    .screen-info { flex: 1; }
+    .screen-info h3 {
+      font-size: 22px;
+      font-family: 'Playfair Display', serif;
+      color: #FFF;
+      margin-bottom: 8px;
+    }
+    .screen-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      color: var(--gold-light);
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    .screen-features {
+      list-style: none;
+      margin-top: 14px;
+    }
+    .screen-features li {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .screen-features li span { color: var(--gold); font-weight: bold; }
+    .screen-visual {
+      flex: 1;
+      background: #060E0A;
+      border: 1px solid var(--gold);
+      border-radius: 12px;
+      padding: 20px;
+      font-family: monospace;
+      font-size: 12px;
+      color: #A3E635;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    }
+
+    /* Comparison Table */
+    .table-box {
+      background: var(--emerald-card);
+      border: 1px solid var(--emerald-border);
+      border-radius: 14px;
+      overflow: hidden;
+      margin: 40px 0 60px;
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th {
+      background: #0B1C15;
+      color: var(--gold-light);
+      padding: 16px 20px;
+      font-weight: 700;
+      border-bottom: 1px solid var(--emerald-border);
+    }
+    td {
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(30, 69, 53, 0.4);
+      color: var(--muted);
+    }
+    tr:hover td { background: rgba(255,255,255,0.02); color: #FFF; }
+
+    /* Packages */
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      margin-bottom: 60px;
+    }
+    .pkg-card {
+      background: var(--emerald-card);
+      border: 1px solid var(--emerald-border);
+      border-radius: 16px;
+      padding: 30px;
+      text-align: center;
+      position: relative;
+    }
+    .pkg-card.featured {
+      border-color: var(--gold);
+      background: linear-gradient(180deg, #163629 0%, #0F241A 100%);
+      box-shadow: 0 10px 30px rgba(212, 175, 55, 0.15);
+    }
+    .pkg-tag {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold);
+      color: #07120D;
+      font-size: 11px;
+      font-weight: 800;
+      padding: 3px 12px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    .pkg-name { font-size: 20px; font-weight: 700; color: #FFF; margin-bottom: 6px; }
+    .pkg-subtitle { font-size: 12px; color: var(--muted); margin-bottom: 20px; }
+    .pkg-list { list-style: none; text-align: left; margin: 20px 0; font-size: 13px; color: var(--muted); }
+    .pkg-list li { margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+    .pkg-list li::before { content: "✓"; color: var(--gold); font-weight: bold; }
+
+    /* Footer */
+    footer {
+      background: #050B08;
+      border-top: 1px solid var(--emerald-border);
+      padding: 30px 0;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    @media (max-width: 768px) {
+      .screen-row, .screen-row.reverse { flex-direction: column; }
+      .hero h1 { font-size: 32px; }
+    }
+
+    @media print {
+      header, .btn-pdf { display: none !important; }
+      body { background: #FFF !important; color: #000 !important; }
+      .pillar-card, .screen-row, .pkg-card, .table-box {
+        background: #F9F9F9 !important;
+        border-color: #DDD !important;
+        color: #000 !important;
+        break-inside: avoid;
+      }
+      .hero h1, .section-title, .screen-info h3, .pkg-name { color: #000 !important; }
+      .hero h1 span { -webkit-text-fill-color: #000 !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container nav">
+      <a href="#" class="brand">
+        <span class="badge-gold">አጋፋሪ</span>
+        <span class="brand-title">Agafari Platform</span>
+      </a>
+      <button class="btn-pdf" onclick="window.print()">
+        🖨️ Export Proposal (PDF)
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <span class="tag">Digital Wedding Ecosystem</span>
+      <h1>Elevate Your Wedding With <span>Agafari</span></h1>
+      <p>The premier smart wedding platform combining real-time digital RSVP, instant QR gate verification, TikTok-style memory reels, and HD global ceremony streaming.</p>
+    </div>
+  </section>
+
+  <!-- 4 Pillars Section -->
+  <section style="padding: 60px 0 20px;">
+    <div class="container">
+      <h2 class="section-title">The 4 Core Pillars of Agafari</h2>
+      <p class="section-desc">Designed to eliminate wedding planning chaos, delight guests, and preserve memories forever.</p>
+
+      <div class="grid-4">
+        <div class="pillar-card">
+          <div class="pillar-icon">🎟️</div>
+          <div class="pillar-title">1-Click RSVP & QR Pass</div>
+          <div class="pillar-text">Unique digital invitation card with an instant 1-click popup (Yes / Maybe / No). Real-time headcounts prevent catering waste.</div>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon">⏳</div>
+          <div class="pillar-title">Coming Soon Hub</div>
+          <div class="pillar-text">Personalized couple website featuring a live countdown, venue Google Maps, dress code guidance, and an interactive Wish Wall.</div>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon">🎬</div>
+          <div class="pillar-title">TikTok Memory Feed</div>
+          <div class="pillar-text">Vertical video reels feed allowing guests and bridal party to upload authentic moments, wishes, and dance practice clips in real time.</div>
+        </div>
+
+        <div class="pillar-card">
+          <div class="pillar-icon">📡</div>
+          <div class="pillar-title">Global Live Stream</div>
+          <div class="pillar-text">HD live broadcast with real-time emoji reactions, connecting diaspora relatives in the USA, Europe, and Canada seamlessly.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screen by Screen Showcase -->
+  <section style="padding: 20px 0 60px;">
+    <div class="container">
+      <h2 class="section-title">System Walkthrough & Client Experience</h2>
+      <p class="section-desc">A step-by-step look at what your guests, couple, and venue security will experience.</p>
+
+      <!-- Screen 1 -->
+      <div class="screen-row">
+        <div class="screen-info">
+          <span class="screen-badge">GUEST DESTINATION</span>
+          <h3>1. Coming Soon Celebration Hub</h3>
+          <p style="color: var(--muted); font-size: 14px;">The central web link sent to all invited family and friends.</p>
+          <ul class="screen-features">
+            <li><span>✓</span> <strong>Real-Time Countdown:</strong> Days, hours, minutes, seconds to wedding.</li>
+            <li><span>✓</span> <strong>Instant 1-Click RSVP:</strong> Modal appears after 5s — one tap submits attendance.</li>
+            <li><span>✓</span> <strong>Personalized QR Card:</strong> Shows guest name and allowed headcount quota.</li>
+            <li><span>✓</span> <strong>Interactive Wish Wall:</strong> Guests submit text and video blessings.</li>
+          </ul>
+        </div>
+        <div class="screen-visual">
+          [ 👑 SARA & DAWIT'S ROYAL WEDDING ]<br/>
+          ⏳ Countdown: 14d : 06h : 22m : 18s<br/>
+          📍 Venue: Sheraton Addis Grand Ballroom<br/>
+          ---------------------------------------<br/>
+          🎟️ PASS: Abebe Kebede (Quota: 2 Heads)<br/>
+          [ ■■■■■ SECURE QR CODE ■■■■■ ]<br/>
+          ---------------------------------------<br/>
+          💌 "Congratulations Sara & Dawit! ✨"
+        </div>
+      </div>
+
+      <!-- Screen 2 -->
+      <div class="screen-row reverse">
+        <div class="screen-info">
+          <span class="screen-badge">MEMORY REELS</span>
+          <h3>2. TikTok-Style Wedding Moments Feed</h3>
+          <p style="color: var(--muted); font-size: 14px;">Vertical video reel feed that captures the wedding from 200+ guest angles.</p>
+          <ul class="screen-features">
+            <li><span>✓</span> <strong>3 Smart Tabs:</strong> Wishes, Behind-the-Scenes, and Live Clips.</li>
+            <li><span>✓</span> <strong>Double-Tap Reactions:</strong> Heart bursts and comment drawer.</li>
+            <li><span>✓</span> <strong>1-Tap Guest Upload:</strong> Anyone can record and post moments.</li>
+          </ul>
+        </div>
+        <div class="screen-visual">
+          [ LIVE 🔴 ] Wishes | Behind Scenes | Live<br/>
+          =======================================<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ FULL SCREEN ]<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;VERTICAL VIDEO REEL<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(❤️) 192 Likes<br/>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(💬) 24 Comments<br/>
+          =======================================<br/>
+          💍 Eskista dance rehearsal! [ + Upload ]
+        </div>
+      </div>
+
+      <!-- Screen 3 -->
+      <div class="screen-row">
+        <div class="screen-info">
+          <span class="screen-badge">VENUE SECURITY</span>
+          <h3>3. QR Gate Security Scanner</h3>
+          <p style="color: var(--muted); font-size: 14px;">Mobile door verification used by security guards and ushers.</p>
+          <ul class="screen-features">
+            <li><span>✓</span> <strong>Instant Verification:</strong> Validates guest name and headcount quota in 2 seconds.</li>
+            <li><span>✓</span> <strong>Anti-Counterfeit Protection:</strong> Warns guards if a QR code is scanned twice.</li>
+            <li><span>✓</span> <strong>Fast Headcount Check-In:</strong> Tap "Check In 1" or "Check In 2" button.</li>
+          </ul>
+        </div>
+        <div class="screen-visual">
+          🔍 AGAFARI GATE VERIFICATION SCANNER<br/>
+          Code: INV-SD2026-001 [ VERIFY ]<br/>
+          ---------------------------------------<br/>
+          ✅ VALID PASS: Abebe Kebede & Guest<br/>
+          Quota: 2 Heads (0/2 Checked In)<br/>
+          Seating: Table 1 - VIP Family<br/>
+          ---------------------------------------<br/>
+          [ CHECK IN 1 GUEST ] [ CHECK IN 2 GUESTS ]
+        </div>
+      </div>
+
+      <!-- Screen 4 -->
+      <div class="screen-row reverse">
+        <div class="screen-info">
+          <span class="screen-badge">COUPLE COMMAND CENTER</span>
+          <h3>4. Couple Management Dashboard</h3>
+          <p style="color: var(--muted); font-size: 14px;">The bride & groom's private dashboard to manage their entire wedding.</p>
+          <ul class="screen-features">
+            <li><span>✓</span> <strong>Real-Time RSVP Tracker:</strong> Live count of attending vs declined guests.</li>
+            <li><span>✓</span> <strong>Custom QR Pass Generator:</strong> Create unique passes in seconds.</li>
+            <li><span>✓</span> <strong>Content Moderation:</strong> Approve wishes and videos before public view.</li>
+            <li><span>✓</span> <strong>Staff Accounts:</strong> Assign logins for gate security and videographers.</li>
+          </ul>
+        </div>
+        <div class="screen-visual">
+          👰 SARA & DAWIT DASHBOARD<br/>
+          Total Invites: 250 | Confirmed: 210 | Declined: 15<br/>
+          ---------------------------------------<br/>
+          [ + Generate New Guest Invitation Pass ]<br/>
+          • Dr. Michael (London) - 1 Guest [LINK COPIED]<br/>
+          • Sara Bekele - 2 Guests [PENDING RSVP]<br/>
+          ---------------------------------------<br/>
+          👥 Assigned Staff: Gate Scanner Alpha (Active)
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- Comparison Section -->
+  <section style="padding: 20px 0 60px;">
+    <div class="container">
+      <h2 class="section-title">Why Traditional Weddings Switch to Agafari</h2>
+      <p class="section-desc">A direct comparison between old paper methods and the smart digital platform.</p>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Traditional Wedding</th>
+              <th>With Agafari Platform</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Guest Invitations</strong></td>
+              <td>Expensive paper printing; manual physical distribution</td>
+              <td>Instant personalized QR cards via Telegram, WhatsApp, or SMS</td>
+            </tr>
+            <tr>
+              <td><strong>RSVP Headcount</strong></td>
+              <td>Uncertain headcounts; 30-40% food & seat wastage</td>
+              <td>Exact real-time attendance numbers with 1-Click RSVP</td>
+            </tr>
+            <tr>
+              <td><strong>Gate Security</strong></td>
+              <td>Paper lists; slow entry lines; gate crashing</td>
+              <td>2-second QR scan; headcount quota enforcement</td>
+            </tr>
+            <tr>
+              <td><strong>Diaspora Family</strong></td>
+              <td>Unstable personal phone video calls</td>
+              <td>Broadcast-quality HD stream with live floating reactions</td>
+            </tr>
+            <tr>
+              <td><strong>Guest Photos & Videos</strong></td>
+              <td>Scattered on 100+ guest phones; couple loses 80%</td>
+              <td>Centralized TikTok-style memory reel vault</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Packages Section -->
+  <section style="padding: 20px 0 80px;">
+    <div class="container">
+      <h2 class="section-title">Packages & Deliverables</h2>
+      <p class="section-desc">Tailored service tiers to fit intimate celebrations and royal grand weddings.</p>
+
+      <div class="packages-grid">
+        <div class="pkg-card">
+          <div class="pkg-name">Silver Package</div>
+          <div class="pkg-subtitle">Essential Digital Wedding</div>
+          <ul class="pkg-list">
+            <li>Coming Soon Celebration Web Hub</li>
+            <li>Live Countdown Timer</li>
+            <li>1-Click Instant RSVP System</li>
+            <li>Up to 200 Unique QR Passes</li>
+            <li>Interactive Digital Wish Wall</li>
+            <li>Couple Management Dashboard</li>
+            <li>3 Months Cloud Hosting</li>
+          </ul>
+        </div>
+
+        <div class="pkg-card featured">
+          <span class="pkg-tag">Most Popular</span>
+          <div class="pkg-name">Gold Package</div>
+          <div class="pkg-subtitle">Complete Digital Experience</div>
+          <ul class="pkg-list">
+            <li>Everything in Silver Package</li>
+            <li>TikTok-Style Memory Reel Feed</li>
+            <li>Guest Video Blessing Uploads</li>
+            <li>Up to 500 Unique QR Passes</li>
+            <li>Gate Security Scanner Account</li>
+            <li>Mezmur & Song Recommendation Hub</li>
+            <li>6 Months Cloud Hosting</li>
+          </ul>
+        </div>
+
+        <div class="pkg-card">
+          <div class="pkg-name">Diamond Package</div>
+          <div class="pkg-subtitle">Royal VIP Luxury Experience</div>
+          <ul class="pkg-list">
+            <li>Everything in Gold Package</li>
+            <li>Dedicated HD Live Ceremony Stream</li>
+            <li>Custom Wedding Domain (e.g. sara-dawit.com)</li>
+            <li>Unlimited Unique QR Passes</li>
+            <li>3 Gate Scanner Security Accounts</li>
+            <li>Lifetime Memory Reel Archive Vault</li>
+            <li>1 Year VIP Hosting & Priority Support</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p style="margin-bottom: 6px;"><strong>Agafari (አጋፋሪ)</strong> — Smart Digital Wedding Celebration Platform</p>
+      <p>Built with pride by <strong>Hamelmal Creatives</strong> · Proposal & System Manual 2026</p>
+    </div>
+  </footer>
+
+</body>
+</html>

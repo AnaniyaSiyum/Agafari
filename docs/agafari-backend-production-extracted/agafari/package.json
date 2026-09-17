@@ -1,0 +1,25 @@
+{
+  "name": "agafari-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AGAFARI wedding platform — Next.js API backend (Phase 3a–3e, consolidated).",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:migrate": "node scripts/migrate.js"
+  },
+  "dependencies": {
+    "next": "14.2.5",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "pg": "8.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.9",
+    "@types/pg": "8.11.6",
+    "@types/react": "18.3.3",
+    "typescript": "5.5.3"
+  }
+}

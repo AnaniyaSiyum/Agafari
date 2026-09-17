@@ -1,0 +1,13 @@
+{
+    "name": "hamelmal-creatives/agafari-backend",
+    "description": "Agafari wedding platform API — PHP, clean architecture",
+    "type": "project",
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    }
+}

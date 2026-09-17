@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agafari Platform — Visual System Architecture & Manual</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: 'dark',
+      themeVariables: {
+        darkMode: true,
+        background: '#0c120f',
+        primaryColor: '#1E3D30',
+        primaryTextColor: '#F5E6BE',
+        primaryBorderColor: '#D4AF37',
+        lineColor: '#D4AF37',
+        secondaryColor: '#162820',
+        tertiaryColor: '#0b1612'
+      }
+    });
+  </script>
+  <style>
+    :root {
+      --gold-primary: #D4AF37;
+      --gold-light: #F3E5AB;
+      --gold-dark: #997A15;
+      --emerald-dark: #0A1612;
+      --emerald-base: #132A20;
+      --emerald-card: #183327;
+      --emerald-light: #234D3A;
+      --bg-dark: #070D0B;
+      --text-main: #F4F6F5;
+      --text-muted: #9BB0A5;
+      --border-gold: rgba(212, 175, 55, 0.25);
+      --border-emerald: rgba(35, 77, 58, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      line-height: 1.6;
+      scroll-behavior: smooth;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-dark);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--emerald-light);
+      border-radius: 4px;
+      border: 1px solid var(--border-gold);
+    }
+
+    /* Typography */
+    h1, h2, h3, .font-serif {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header Nav */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(16px);
+      background: rgba(7, 13, 11, 0.85);
+      border-bottom: 1px solid var(--border-gold);
+      padding: 16px 0;
+    }
+    .nav-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
+      color: #070D0B;
+      font-weight: 800;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+    .brand-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #FFF;
+      letter-spacing: -0.02em;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+      align-items: center;
+    }
+    .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover {
+      color: var(--gold-light);
+    }
+    .btn-print {
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid var(--gold-primary);
+      color: var(--gold-light);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-print:hover {
+      background: var(--gold-primary);
+      color: #070D0B;
+    }
+
+    /* Hero Banner */
+    .hero {
+      padding: 60px 0 40px;
+      text-align: center;
+      background: radial-gradient(circle at 50% 20%, rgba(35, 77, 58, 0.4) 0%, rgba(7, 13, 11, 0) 70%);
+      border-bottom: 1px solid var(--border-emerald);
+    }
+    .hero-tag {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: rgba(212, 175, 55, 0.1);
+      border: 1px solid var(--border-gold);
+      color: var(--gold-light);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 48px;
+      font-weight: 800;
+      color: #FFF;
+      margin-bottom: 16px;
+      background: linear-gradient(135deg, #FFFFFF 40%, var(--gold-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      max-width: 720px;
+      margin: 0 auto 30px;
+      font-size: 17px;
+      color: var(--text-muted);
+    }
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(19, 42, 32, 0.5);
+      border: 1px solid var(--border-emerald);
+      padding: 16px 28px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+    .stat-number {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--gold-primary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    /* Section Styling */
+    section {
+      padding: 60px 0;
+      border-bottom: 1px solid var(--border-emerald);
+    }
+    .section-header {
+      margin-bottom: 36px;
+    }
+    .section-num {
+      color: var(--gold-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .section-title {
+      font-size: 32px;
+      font-weight: 700;
+      color: #FFF;
+      margin-bottom: 10px;
+    }
+    .section-desc {
+      color: var(--text-muted);
+      font-size: 15px;
+      max-width: 800px;
+    }
+
+    /* Cards & Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 24px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--emerald-card);
+      border: 1px solid var(--border-emerald);
+      border-radius: 14px;
+      padding: 24px;
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    }
+    .card:hover {
+      border-color: var(--gold-primary);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      transform: translateY(-2px);
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gold-light);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-body {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+    .badge-gold {
+      background: rgba(212, 175, 55, 0.2);
+      color: var(--gold-light);
+      border: 1px solid var(--border-gold);
+    }
+    .badge-emerald {
+      background: rgba(35, 77, 58, 0.4);
+      color: #A3E635;
+      border: 1px solid rgba(163, 230, 53, 0.3);
+    }
+    .badge-red {
+      background: rgba(239, 68, 68, 0.2);
+      color: #F87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+    .badge-blue {
+      background: rgba(59, 130, 246, 0.2);
+      color: #93C5FD;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
+    /* Mermaid Diagrams */
+    .diagram-container {
+      background: #091310;
+      border: 1px solid var(--border-gold);
+      border-radius: 14px;
+      padding: 24px;
+      margin: 20px 0;
+      overflow-x: auto;
+      display: flex;
+      justify-content: center;
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 20px 0;
+      border: 1px solid var(--border-emerald);
+      border-radius: 12px;
+      background: var(--emerald-dark);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13px;
+    }
+    th {
+      background: rgba(19, 42, 32, 0.8);
+      color: var(--gold-light);
+      font-family: 'JetBrains Mono', monospace;
+      padding: 14px 18px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--border-emerald);
+    }
+    td {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(35, 77, 58, 0.2);
+      color: var(--text-muted);
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: #FFF;
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background: #FFF !important;
+        color: #000 !important;
+      }
+      header, .btn-print {
+        display: none !important;
+      }
+      .card, .diagram-container {
+        border-color: #CCC !important;
+        background: #F9F9F9 !important;
+        color: #000 !important;
+        break-inside: avoid;
+      }
+      h1, h2, h3, .section-title, .card-title {
+        color: #000 !important;
+      }
+      .stat-number {
+        color: #000 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sticky Header -->
+  <header>
+    <div class="container nav-wrapper">
+      <a href="#" class="brand">
+        <span class="brand-badge">አጋፋሪ</span>
+        <span class="brand-title">Agafari Visual System Guide</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="#roles">Roles</a></li>
+        <li><a href="#pages">12 Pages</a></li>
+        <li><a href="#dataflow">Data Flow</a></li>
+        <li><a href="#rsvp">1-Click RSVP</a></li>
+        <li><a href="#api">APIs</a></li>
+        <li><a href="#credentials">Credentials</a></li>
+      </ul>
+      <button class="btn-print" onclick="window.print()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+        Print / PDF
+      </button>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container">
+      <span class="hero-tag">✨ Complete Architectural Blueprint</span>
+      <h1>Agafari Wedding Celebration Platform</h1>
+      <p>A complete visual reference manual detailing all 12 frontend pages, 16+ API routes, role-based access controls, data models, real-time data flows, and gate scanner verification systems.</p>
+      
+      <div class="hero-stats">
+        <div class="stat-box">
+          <div class="stat-number">12</div>
+          <div class="stat-label">Frontend Pages</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">16+</div>
+          <div class="stat-label">REST API Endpoints</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">6</div>
+          <div class="stat-label">User Roles</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">1-Click</div>
+          <div class="stat-label">Instant RSVP</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-number">100%</div>
+          <div class="stat-label">Bilingual (EN / አማ)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1: System Architecture -->
+  <section id="architecture">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 01</div>
+        <h2 class="section-title">System Architecture & Tech Stack</h2>
+        <p class="section-desc">Agafari is constructed on Next.js 14 App Router, combining responsive client-side React rendering with serverless API route handlers and a JWT-secured role management layer.</p>
+      </div>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+graph TB
+    subgraph Client ["Frontend Client (React 18 + Next.js App Router)"]
+        Landing["Landing Page (/)"]
+        ComingSoon["Celebration Hub (/event/slug)"]
+        Feed["TikTok Video Feed (/event/slug/feed)"]
+        Live["Live Stream (/event/slug/live)"]
+        CoupleDash["Couple Dashboard (/couple/dashboard)"]
+        OrgDash["Organizer Dashboard (/organizer/dashboard)"]
+        AdminDash["Admin Dashboard (/admin/dashboard)"]
+        Scanner["Gate Scanner (/scanner)"]
+    end
+
+    subgraph API ["Next.js Serverless Route Handlers"]
+        AuthAPI["/api/auth/*"]
+        EventAPI["/api/events/[slug]/*"]
+        OrgAPI["/api/organizer/*"]
+        AdminAPI["/api/admin/*"]
+    end
+
+    subgraph Security ["Security & Identity"]
+        JWT["HMAC SHA-256 JWT Token"]
+        PBKDF2["PBKDF2 Salted Hashing"]
+        RBAC["6-Role Access Guard"]
+    end
+
+    subgraph DataStore ["Data Layer"]
+        MockStore["In-Memory Store (mockData.ts)"]
+        Prisma["Prisma ORM (PostgreSQL Ready)"]
+    end
+
+    Client --> API
+    API --> Security
+    API --> DataStore
+        </pre>
+      </div>
+
+      <div class="grid-3" style="margin-top: 30px;">
+        <div class="card">
+          <div class="card-title">⚡ Frontend Stack</div>
+          <div class="card-body">
+            Next.js 14.2.8 with React 18, Tailwind CSS, Framer Motion for smooth physics-based animations, and Lucide React icons.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🔒 Security Engine</div>
+          <div class="card-body">
+            HMAC SHA-256 JWT tokens with 24-hour expiration, HttpOnly SameSite cookie transmission, and PBKDF2 password salting.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">🌐 Internationalization</div>
+          <div class="card-body">
+            Instant client-side language switching between English and Amharic with Google Ethiopic typography (Noto Serif & Abyssinica SIL).
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2: Roles & RBAC -->
+  <section id="roles">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 02</div>
+        <h2 class="section-title">User Roles & Access Control (RBAC)</h2>
+        <p class="section-desc">Six hierarchical user roles ensure strict security boundaries between guests, couples, agency organizers, field staff, and system administrators.</p>
+      </div>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+graph LR
+    SA["👑 SYSTEM_ADMIN<br/>(Hamelmal Admin)"] -->|"Full Platform Access"| ALL["All Events & Users"]
+    EO["🏢 EVENT_ORGANIZER<br/>(Agency Planner)"] -->|"Multi-Event Scope"| ORG_SCOPE["Onboard Events & Moderation"]
+    BG["👰 BRIDE_GROOM<br/>(Wedding Couple)"] -->|"Single Event Scope"| COUPLE_SCOPE["Own Invites, Media & Team"]
+    LS["📹 LIVE_STREAMER<br/>(Broadcast Operator)"] -->|"Stream Control"| STREAM_SCOPE["Live Broadcast Page"]
+    GS["🔍 GATE_SCANNER<br/>(Gate Security)"] -->|"Verification Scope"| SCANNER_SCOPE["QR Pass Check-In"]
+    GU["👤 GUEST<br/>(Invited Family & Friends)"] -->|"Public View"| GUEST_SCOPE["Hub, Feed, Wishes & RSVP"]
+        </pre>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Login URL</th>
+              <th>Scope</th>
+              <th>Permissions Summary</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-gold">SYSTEM_ADMIN</span></td>
+              <td><code>/admin/login</code></td>
+              <td>Global Platform</td>
+              <td>Full CRUD on all events, users, approvals, live status toggle, and media vault</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">EVENT_ORGANIZER</span></td>
+              <td><code>/organizer/login</code></td>
+              <td>Agency Portfolio</td>
+              <td>Onboard new weddings, view role credentials, moderate wishes and videos across events</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-blue">BRIDE_GROOM</span></td>
+              <td><code>/couple/login</code></td>
+              <td>Own Event Only</td>
+              <td>Edit event settings, generate QR invitations, moderate wishes/media, assign field team</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">LIVE_STREAMER</span></td>
+              <td>Direct Stream Link</td>
+              <td>Own Event Broadcast</td>
+              <td>Broadcast YouTube live stream feed and view real-time audience engagement</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GATE_SCANNER</span></td>
+              <td><code>/scanner</code></td>
+              <td>Gate Security</td>
+              <td>Scan and verify QR passes, validate headcount quotas, prevent duplicate entries</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-blue">GUEST</span></td>
+              <td><code>/event/[slug]</code></td>
+              <td>Public Invitation</td>
+              <td>View countdown, 1-click RSVP, send blessings, suggest songs, watch live stream & feed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: 12 Page Map -->
+  <section id="pages">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 03</div>
+        <h2 class="section-title">Complete 12-Page Map & Visual Layouts</h2>
+        <p class="section-desc">Every page in the platform serves a specific role in the wedding lifecycle.</p>
+      </div>
+
+      <div class="grid-2">
+
+        <!-- Page 1 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">01</span> Landing Page
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /</p>
+          <div class="card-body">
+            Full marketing portal with Hero banner, 3 Feature showcase cards (Countdown, TikTok Feed, QR Pass), Pricing packages, Live Simulator, and mobile scroll-spy bottom navigation.
+          </div>
+        </div>
+
+        <!-- Page 2 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">02</span> Celebration Hub (Coming Soon)
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /event/[slug]</p>
+          <div class="card-body">
+            The core guest destination. Features real-time countdown timer, venue map, personalized QR card pass, Wish Wall with instant submission, song request form, and 1-Click RSVP popup.
+          </div>
+        </div>
+
+        <!-- Page 3 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">03</span> TikTok Memory Feed
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /event/[slug]/feed</p>
+          <div class="card-body">
+            Snap-scrolling vertical video reel feed with top navigation tabs (Wishes, Behind the Scenes, Live), double-tap heart animations, slide-up comments drawer, and video upload modal.
+          </div>
+        </div>
+
+        <!-- Page 4 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">04</span> Live Ceremony Stream
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /event/[slug]/live</p>
+          <div class="card-body">
+            Full-screen YouTube Live embed with live pulsing broadcast badge, simulated real-time viewer fluctuations, and interactive floating emoji reactions.
+          </div>
+        </div>
+
+        <!-- Page 5 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">05</span> QR Gate Scanner
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /scanner</p>
+          <div class="card-body">
+            Field tool for security guards. Scans or looks up invitation codes, validates headcount quotas (e.g., 2 guests), detects duplicate entries, and confirms check-in.
+          </div>
+        </div>
+
+        <!-- Page 6 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">06</span> Couple Dashboard
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /couple/dashboard</p>
+          <div class="card-body">
+            The bride & groom's command center. Manage event details, generate custom guest QR invitations with headcount quotas, moderate wishes, approve video reels, and assign field staff.
+          </div>
+        </div>
+
+        <!-- Page 7 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">07</span> Organizer Dashboard
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /organizer/dashboard</p>
+          <div class="card-body">
+            Agency management portal. Onboard new weddings, manage credentials for all assigned couples, monitor admin approval statuses, and oversee media moderation across multiple events.
+          </div>
+        </div>
+
+        <!-- Page 8 -->
+        <div class="card">
+          <div class="card-title">
+            <span class="badge badge-gold">08</span> System Admin Dashboard
+          </div>
+          <p class="badge badge-blue" style="margin-bottom: 12px;">Route: /admin/dashboard</p>
+          <div class="card-body">
+            God-mode control room. Approve or reject pending weddings, toggle live broadcast status, manage all system user accounts and passwords, and oversee platform-wide media vaults.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 4: End-to-End Data Flow -->
+  <section id="dataflow">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 04</div>
+        <h2 class="section-title">End-to-End Wedding Data Lifecycle</h2>
+        <p class="section-desc">Visualizing how data flows from event onboarding all the way through wedding day live streaming and post-event archiving.</p>
+      </div>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+sequenceDiagram
+    autonumber
+    actor Org as 🏢 Event Organizer
+    actor Admin as 👑 System Admin
+    actor Couple as 👰 Bride & Groom
+    actor Guest as 👤 Guest
+    actor Scanner as 🔍 Gate Scanner
+
+    Note over Org,Admin: Phase 1: Onboarding & Approval
+    Org->>Admin: POST /api/organizer/events (Submit new wedding)
+    Admin->>Admin: Review & PATCH /api/admin/events (Status: APPROVED)
+    Admin-->>Couple: Issue credentials (email + password)
+
+    Note over Couple,Guest: Phase 2: Invitations & Engagement
+    Couple->>Couple: Login -> /couple/dashboard
+    Couple->>Couple: Generate QR invitations (Headcount quota)
+    Couple-->>Guest: Distribute unique link (/event/slug?code=INV-XXX)
+    Guest->>Guest: Open Hub -> 1-Click Instant RSVP (Yes/Maybe/No)
+    Guest->>Guest: Submit text/video blessings -> Wish Wall
+
+    Note over Couple,Scanner: Phase 3: Wedding Day Execution
+    Admin->>Admin: Toggle Live Broadcast (isLive: true)
+    Guest->>Guest: Watch Live Ceremony (/event/slug/live)
+    Guest->>Guest: Upload video memories to TikTok Feed
+    Scanner->>Scanner: Scan guest QR code at gate
+    Scanner->>Scanner: Confirm check-in (Update scannedCount)
+
+    Note over Couple,Admin: Phase 4: Archive
+    Admin->>Admin: Mark event COMPLETED
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 5: 1-Click RSVP Flow -->
+  <section id="rsvp">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 05</div>
+        <h2 class="section-title">1-Click Instant RSVP Mechanism</h2>
+        <p class="section-desc">The RSVP system is engineered for zero friction: the modal automatically appears 5 seconds after page load, requiring only a single tap to record the response immediately.</p>
+      </div>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+flowchart TD
+    A["Guest Opens /event/[slug]"] --> B["Page loads event details & wish wall"]
+    B --> C{"5-Second Timer Fires"}
+    C --> D["RSVP Modal Emerges with 3 Choices"]
+    
+    D --> E["Choice 1: YES 🥂<br/>(Attending Confirmed)"]
+    D --> F["Choice 2: MAYBE 🤔<br/>(Undecided)"]
+    D --> G["Choice 3: NO 💔<br/>(Declined with Wishes)"]
+
+    E --> H["Instant POST /api/events/[slug]/rsvp"]
+    F --> H
+    G --> H
+
+    H --> I["Display Checkmark Confirmation Banner"]
+    I --> J["Auto-dismiss Modal after 1.8 seconds"]
+    J --> K["Update Guest Status in Couple Dashboard"]
+        </pre>
+      </div>
+
+      <div class="grid-3" style="margin-top: 24px;">
+        <div class="card" style="border-color: rgba(212, 175, 55, 0.5);">
+          <div class="card-title">🥂 Choice 1: YES</div>
+          <div class="card-body">
+            Saves status as <code>ATTENDING</code>. Confirms guest headcount and marks the invitation as confirmed on the couple's live dashboard.
+          </div>
+        </div>
+        <div class="card" style="border-color: rgba(245, 158, 11, 0.5);">
+          <div class="card-title">🤔 Choice 2: MAYBE</div>
+          <div class="card-body">
+            Saves status as <code>MAYBE</code>. Acknowledges response while allowing the guest to adjust their decision later before final catering lock.
+          </div>
+        </div>
+        <div class="card" style="border-color: rgba(239, 68, 68, 0.5);">
+          <div class="card-title">💔 Choice 3: NO</div>
+          <div class="card-body">
+            Saves status as <code>DECLINED</code>. Politely records non-attendance while inviting the guest to send their blessings on the Wish Wall.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 6: QR Gate Scanner Flow -->
+  <section id="scanner">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 06</div>
+        <h2 class="section-title">QR Gate Verification Flow</h2>
+        <p class="section-desc">The gate scanner system ensures venue security by validating unique invitation codes, tracking headcount quotas, and blocking duplicate entry attempts.</p>
+      </div>
+
+      <div class="diagram-container">
+        <pre class="mermaid">
+flowchart TD
+    A["Security Staff Opens /scanner"] --> B["Input / Scan QR Code (INV-SD2026-XXX)"]
+    B --> C{"Verify Code in Database"}
+
+    C -->|"Valid & Unscanned"| D["🟢 VALID PASS<br/>Show Guest Name & Quota (e.g. 2 Heads)"]
+    C -->|"Already Used"| E["🟡 ALREADY SCANNED<br/>Show Timestamp & Warning"]
+    C -->|"Unknown Code"| F["🔴 INVALID PASS<br/>Show Access Denied Alert"]
+
+    D --> G["Staff Selects Headcount & Taps 'Check In'"]
+    G --> H["Update scannedCount & Set isScanned = true"]
+    H --> I["Display Success Checkmark & Reset for Next Guest"]
+        </pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 7: API Route Reference -->
+  <section id="api">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 07</div>
+        <h2 class="section-title">API Route Reference (16+ Endpoints)</h2>
+        <p class="section-desc">Complete specification of all REST endpoints implemented across authentication, public event hubs, organizer tools, and system administration.</p>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>Endpoint</th>
+              <th>Description</th>
+              <th>Auth Required</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/auth/login</code></td>
+              <td>Authenticate user with email & password; issue JWT cookie</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/auth/me</code></td>
+              <td>Retrieve profile of the currently logged-in user</td>
+              <td>JWT Token</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/events/[slug]</code></td>
+              <td>Fetch public wedding event metadata, venue, and playlist</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">PUT</span></td>
+              <td><code>/api/events/[slug]</code></td>
+              <td>Update wedding details (bride/groom names, date, venue, dress code)</td>
+              <td>Couple / Admin</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/events/[slug]/wishes</code></td>
+              <td>Fetch approved guest blessings for the public Wish Wall</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/events/[slug]/wishes</code></td>
+              <td>Submit a new text or video blessing from a guest</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/events/[slug]/media</code></td>
+              <td>Fetch approved video reel memories for the TikTok feed</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/events/[slug]/media</code></td>
+              <td>Upload a new memory reel (Wishes, BTS, Live clips)</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/events/[slug]/rsvp</code></td>
+              <td>1-Click instant RSVP submission (Yes / Maybe / No)</td>
+              <td>Public</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/events/[slug]/invitations</code></td>
+              <td>List all generated guest invitations and scan statuses</td>
+              <td>Couple / Org</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/events/[slug]/invitations</code></td>
+              <td>Generate a unique invitation QR pass with headcount quota</td>
+              <td>Couple / Org</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/events/[slug]/team</code></td>
+              <td>Assign a new Live Streamer or Gate Scanner staff member</td>
+              <td>Couple / Org</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-red">DELETE</span></td>
+              <td><code>/api/events/[slug]/team</code></td>
+              <td>Remove an assigned field staff member</td>
+              <td>Couple / Org</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/organizer/events</code></td>
+              <td>Fetch all weddings under organizer agency with credentials</td>
+              <td>Organizer</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">POST</span></td>
+              <td><code>/api/organizer/events</code></td>
+              <td>Onboard a new wedding event for admin approval</td>
+              <td>Organizer</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/admin/events</code></td>
+              <td>Master list of all platform weddings with full credentials</td>
+              <td>System Admin</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-gold">PATCH</span></td>
+              <td><code>/api/admin/events</code></td>
+              <td>Approve/reject weddings, toggle live broadcast status</td>
+              <td>System Admin</td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-emerald">GET</span></td>
+              <td><code>/api/admin/users</code></td>
+              <td>List all user accounts across the entire platform</td>
+              <td>System Admin</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 8: Demo Credentials -->
+  <section id="credentials">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-num">Section 08</div>
+        <h2 class="section-title">Demo Testing Credentials & Quick Links</h2>
+        <p class="section-desc">Pre-configured accounts and links for testing each role and feature locally.</p>
+      </div>
+
+      <div class="grid-3">
+        <div class="card">
+          <div class="card-title">👑 System Admin</div>
+          <div class="card-body">
+            <p><strong>Login:</strong> <a href="/admin/login" style="color:var(--gold-light);">/admin/login</a></p>
+            <p><strong>Email:</strong> <code>admin@hamelmal.com</code></p>
+            <p><strong>Password:</strong> <code>admin123</code></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🏢 Event Organizer</div>
+          <div class="card-body">
+            <p><strong>Login:</strong> <a href="/organizer/login" style="color:var(--gold-light);">/organizer/login</a></p>
+            <p><strong>Email:</strong> <code>organizer@sara-dawit.com</code></p>
+            <p><strong>Password:</strong> <code>org123</code></p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">👰 Couple (Sara & Dawit)</div>
+          <div class="card-body">
+            <p><strong>Login:</strong> <a href="/couple/login" style="color:var(--gold-light);">/couple/login</a></p>
+            <p><strong>Email:</strong> <code>couple@sara-dawit.com</code></p>
+            <p><strong>Password:</strong> <code>couple123</code></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrapper" style="margin-top: 30px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature Demo</th>
+              <th>Test URL</th>
+              <th>Key Testing Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Coming Soon Hub</td>
+              <td><code>http://localhost:3001/event/sara-and-dawit-2026</code></td>
+              <td>Wait 5s for 1-Click RSVP popup; submit a wish to Wish Wall</td>
+            </tr>
+            <tr>
+              <td>Personalized QR Pass</td>
+              <td><code>http://localhost:3001/event/sara-and-dawit-2026?code=INV-SD2026-001</code></td>
+              <td>View Abebe Kebede's VIP pass and share button</td>
+            </tr>
+            <tr>
+              <td>TikTok Memory Feed</td>
+              <td><code>http://localhost:3001/event/sara-and-dawit-2026/feed</code></td>
+              <td>Switch Wishes/BTS/Live tabs; like videos; upload moment</td>
+            </tr>
+            <tr>
+              <td>Live Ceremony Stream</td>
+              <td><code>http://localhost:3001/event/sara-and-dawit-2026/live</code></td>
+              <td>Watch YouTube live embed; tap floating reaction emojis</td>
+            </tr>
+            <tr>
+              <td>QR Gate Scanner</td>
+              <td><code>http://localhost:3001/scanner</code></td>
+              <td>Verify <code>INV-SD2026-001</code> (valid) vs <code>INV-SD2026-002</code> (used)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="padding: 40px 0; text-align: center; border-top: 1px solid var(--border-emerald); color: var(--text-muted); font-size: 13px;">
+    <div class="container">
+      <p style="margin-bottom: 8px;"><strong>Agafari (አጋፋሪ)</strong> — Ethiopian Wedding Digital Celebration Platform</p>
+      <p>Architected and Developed by <strong>Hamelmal Creatives</strong> · Version 1.0.0 (August 2026)</p>
+    </div>
+  </footer>
+
+</body>
+</html>
