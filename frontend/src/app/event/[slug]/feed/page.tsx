@@ -345,6 +345,21 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
     }
   };
 
+  // Keyboard Arrow Key Listener for sliding left and right (Wishes <-> Behind Scenes <-> Live)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        if (activeTab === 'WISHES') handleTabChange('BTS');
+        else if (activeTab === 'BTS') handleTabChange('LIVE');
+      } else if (e.key === 'ArrowLeft') {
+        if (activeTab === 'LIVE') handleTabChange('BTS');
+        else if (activeTab === 'BTS') handleTabChange('WISHES');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab]);
+
   // Horizontal Swipe Handler for Tab Navigation (Wishes <-> Behind Scenes <-> Live)
   const touchStartX = useRef<number | null>(null);
 
@@ -528,36 +543,68 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
               </div>
             </section>
           ) : eventInfo?.status === 'ENDED' ? (
-            <div className="h-[100dvh] w-full flex flex-col items-center justify-center text-center px-6 text-neutral bg-black">
-              <div className="w-16 h-16 rounded-full bg-stone-900 text-gold-400 flex items-center justify-center mb-4 border border-gold-500/30">
+            <div className="h-[100dvh] w-full flex flex-col items-center justify-center text-center px-6 text-neutral bg-black space-y-4">
+              <div className="w-16 h-16 rounded-full bg-stone-900 text-gold-400 flex items-center justify-center border border-gold-500/30 shadow-lg">
                 <Radio className="w-8 h-8 text-gold-400" />
               </div>
-              <h3 className="font-serif font-bold text-xl mb-2 text-white">Broadcast Ended</h3>
-              <p className="text-xs text-neutral/70 max-w-xs mb-6">
-                The live video broadcast for {eventInfo?.brideName || 'Bride'} & {eventInfo?.groomName || 'Groom'}'s wedding has concluded. Thank you for celebrating with us!
+              <div className="space-y-1">
+                <span className="px-3 py-1 rounded-full bg-stone-800 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider border border-gold-500/30">
+                  Broadcast Concluded
+                </span>
+                <h3 className="font-serif font-bold text-2xl text-white pt-1">
+                  Live Stream Concluded
+                </h3>
+              </div>
+              <p className="text-xs text-neutral/70 max-w-sm leading-relaxed">
+                The live video broadcast for <strong>{eventInfo?.brideName || 'Bride'} & {eventInfo?.groomName || 'Groom'}</strong>'s wedding has concluded. You can swipe left/right to browse guest wish reels and behind-the-scenes videos!
               </p>
-              <button
-                onClick={() => setIsUploadOpen(true)}
-                className="px-6 py-3 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B89628] text-black font-bold text-xs shadow-accent flex items-center gap-2"
-              >
-                <Camera className="w-4 h-4" /> Send Wish Video for the Couple
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  onClick={() => handleTabChange('WISHES')}
+                  className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>‹ Slide to Guest Wishes</span>
+                </button>
+                <button
+                  onClick={() => setIsUploadOpen(true)}
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B89628] text-black font-extrabold text-xs shadow-accent flex items-center gap-2 cursor-pointer hover:brightness-110 transition-all"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Send Wish Video</span>
+                </button>
+              </div>
             </div>
           ) : (
-            <div className="h-[100dvh] w-full flex flex-col items-center justify-center text-center px-6 text-neutral bg-black">
-              <div className="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center mb-4 border border-rose-500/40 animate-pulse">
+            <div className="h-[100dvh] w-full flex flex-col items-center justify-center text-center px-6 text-neutral bg-black space-y-4">
+              <div className="w-16 h-16 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/40 animate-pulse shadow-lg">
                 <Radio className="w-8 h-8" />
               </div>
-              <h3 className="font-serif font-bold text-xl mb-2 text-white">Live Stream Scheduled</h3>
-              <p className="text-xs text-neutral/70 max-w-xs mb-6">
-                The official live video broadcast for {eventInfo?.brideName || 'Bride'} & {eventInfo?.groomName || 'Groom'}'s wedding will start right here when the streamer goes live.
+              <div className="space-y-1">
+                <span className="px-3 py-1 rounded-full bg-rose-950 text-rose-300 text-[10px] font-extrabold uppercase tracking-wider border border-rose-500/40">
+                  🔴 Live Broadcast Offline
+                </span>
+                <h3 className="font-serif font-bold text-2xl text-white pt-1">
+                  Live Stream Currently Offline
+                </h3>
+              </div>
+              <p className="text-xs text-neutral/70 max-w-sm leading-relaxed">
+                The official live video broadcast for <strong>{eventInfo?.brideName || 'Bride'} & {eventInfo?.groomName || 'Groom'}</strong>'s wedding is not streaming right now. As soon as the video crew starts broadcasting, the live feed will stream automatically right here!
               </p>
-              <button
-                onClick={() => setIsUploadOpen(true)}
-                className="px-6 py-3 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B89628] text-black font-bold text-xs shadow-accent flex items-center gap-2"
-              >
-                <Camera className="w-4 h-4" /> Send Wish Video for the Couple
-              </button>
+              <div className="flex flex-col sm:flex-row items-center gap-3 pt-2">
+                <button
+                  onClick={() => handleTabChange('WISHES')}
+                  className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>‹ Slide to Guest Wishes</span>
+                </button>
+                <button
+                  onClick={() => setIsUploadOpen(true)}
+                  className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#D4AF37] to-[#B89628] text-black font-extrabold text-xs shadow-accent flex items-center gap-2 cursor-pointer hover:brightness-110 transition-all"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Send Wish Video</span>
+                </button>
+              </div>
             </div>
           )
         ) : filteredMediaItems.length === 0 ? (

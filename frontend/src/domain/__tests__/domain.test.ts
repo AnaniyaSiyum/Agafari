@@ -7,23 +7,23 @@ import { AlreadyScannedError, HeadcountExceededError } from '../errors/DomainErr
 function runUnitTests() {
   console.log('=== DOMAIN UNIT TESTS (Pure In-Memory, No DB, No HTTP) ===\n');
 
-  // Test 1: RSVP 48-Hour Lock Window
-  console.log('Test 1: RSVP 48-Hour Lock Window');
+  // Test 1: RSVP 3-Day (72-Hour) Lock Window
+  console.log('Test 1: RSVP 3-Day (72-Hour) Lock Window');
   const now = new Date('2026-09-20T12:00:00.000Z');
   
-  // Event in 3 days (Sept 23, 12:00 UTC) -> should NOT be locked
+  // Event in 4 days (Sept 24, 12:00 UTC) -> should NOT be locked
   const futureEvent = new Event({
     id: 'evt-1',
     slug: 'future-wedding',
     title: 'Future Wedding',
     brideName: 'Bride',
     groomName: 'Groom',
-    eventDate: '2026-09-23T12:00:00.000Z',
+    eventDate: '2026-09-24T12:00:00.000Z',
     venueName: 'Sheraton',
     status: 'COMING_SOON',
     adminApprovalStatus: 'APPROVED'
   });
-  console.assert(!futureEvent.isRsvpLocked(now), 'Event in 3 days must NOT be locked');
+  console.assert(!futureEvent.isRsvpLocked(now), 'Event in 4 days must NOT be locked');
 
   // Event in 24 hours (Sept 21, 12:00 UTC) -> MUST be locked
   const imminentEvent = new Event({

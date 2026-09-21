@@ -6,7 +6,7 @@ import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
 
 async function resolveEventOrRespond(slug: string) {
-  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [slug]);
+  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [slug]);
   if (!event) return { error: NextResponse.json({ error: 'Event not found.' }, { status: 404 }) } as const;
   return { event } as const;
 }
@@ -36,10 +36,18 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       [resolved.event.id]
     );
   } catch (err) {
-    // If quota_groups table is absent, return empty list gracefully
     groups = [];
   }
-  return NextResponse.json({ totalAllocatedQuota: 150, quotaGroups: groups });
+
+  let totalAllocatedQuota = 300;
+  try {
+    const evtRow = await queryOne<{ expected_guests?: number }>('SELECT expected_guests FROM events WHERE id = $1', [resolved.event.id]);
+    if (evtRow && evtRow.expected_guests) {
+      totalAllocatedQuota = Number(evtRow.expected_guests);
+    }
+  } catch (e) {}
+
+  return NextResponse.json({ totalAllocatedQuota, quotaGroups: groups });
 }
 
 // POST: create a new allocation. If delegateEmail is given and no account

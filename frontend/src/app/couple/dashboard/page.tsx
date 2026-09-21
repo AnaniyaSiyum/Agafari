@@ -190,7 +190,10 @@ export default function CoupleDashboardPage() {
     setGuestErrorMsg('');
     setGuestSuccessMsg('');
 
-    if (!guestName.trim()) return;
+    if (!guestName.trim() || !guestPhone.trim() || !guestHeadcount) {
+      setGuestErrorMsg('All 3 fields (Guest Name, Headcount Quota, and Guest Phone/Contact) are required to submit guest data.');
+      return;
+    }
 
     if (currentTotalGuestsSubmitted + guestHeadcount > permittedTotalQuota) {
       setGuestErrorMsg(`Exceeds your total permitted quota of ${permittedTotalQuota} guests! Remaining available seats: ${remainingPermittedSeats}.`);
@@ -249,19 +252,21 @@ export default function CoupleDashboardPage() {
 
   if (!event && !loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 text-center font-sans">
-        <div className="max-w-md w-full bg-gray-900 border-2 border-gold-500/40 rounded-3xl p-8 space-y-6 shadow-2xl">
-          <Crown className="w-12 h-12 text-gold-400 mx-auto" />
+      <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="max-w-md w-full bg-white border border-slate-200/90 rounded-3xl p-8 space-y-6 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto text-amber-700">
+            <Crown className="w-8 h-8 text-amber-600" />
+          </div>
           <div className="space-y-2">
-            <h2 className="font-serif font-bold text-2xl text-white">No Active Wedding Event Provisioned</h2>
-            <p className="text-xs text-gold-400 font-semibold uppercase tracking-wider">Couples Control Hub</p>
-            <p className="text-xs text-gray-300 font-light leading-relaxed">
+            <h2 className="font-bold text-2xl text-slate-900 tracking-tight">No Active Wedding Event Provisioned</h2>
+            <p className="text-xs text-amber-800 font-bold uppercase tracking-wider bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">Couples Control Hub</p>
+            <p className="text-xs text-slate-500 font-medium leading-relaxed">
               Everything starts from the System Super Admin portal. Your System Admin or Event Organizer will register your wedding and provision your couple credentials.
             </p>
           </div>
           <Link
             href="/admin/login"
-            className="w-full py-3.5 rounded-2xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-gold"
+            className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 active:scale-95"
           >
             <span>Log In to System Super Admin Portal →</span>
           </Link>
@@ -271,7 +276,7 @@ export default function CoupleDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-gray-900 text-gray-100 flex font-sans selection:bg-gold-500 selection:text-black">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex font-sans selection:bg-amber-400 selection:text-slate-950">
       
       {/* =========================================================================
           LEFT SIDEBAR: COUPLE PORTAL NAVIGATION
@@ -535,10 +540,11 @@ export default function CoupleDashboardPage() {
 
                   <div>
                     <label className="block text-[11px] font-bold text-gold-400 mb-1">
-                      Guest Phone Number (Optional)
+                      Guest Phone / Contact *
                     </label>
                     <input
                       type="text"
+                      required
                       value={guestPhone}
                       onChange={(e) => setGuestPhone(e.target.value)}
                       placeholder="+251 91 122 3344"

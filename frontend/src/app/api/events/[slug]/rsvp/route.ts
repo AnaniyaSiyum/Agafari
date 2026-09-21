@@ -5,6 +5,8 @@ import { RsvpService } from '@/application/services/RsvpService';
 import { MySqlEventRepository } from '@/infrastructure/persistence/MySqlEventRepository';
 import { MySqlInvitationRepository } from '@/infrastructure/persistence/MySqlInvitationRepository';
 import { DomainError, RsvpLockedError, NotFoundError } from '@/domain/errors/DomainError';
+import { captureException } from '@/lib/errorTracking';
+import { verifyRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 const rsvpService = new RsvpService(
   new MySqlEventRepository(),
@@ -16,9 +18,17 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const { inviteCode, attendanceStatus, attendingCount, songRecommendation, dietaryNotes, guestName, guestPhone } =
       await req.json();
 
+    const clientIp = getClientIp(req);
+    const rateLimitKey = `rsvp:${params.slug}:${inviteCode || clientIp}`;
+    const rateLimitRes = await verifyRateLimit(rateLimitKey, { max: 5, windowSeconds: 600 });
+    if (!rateLimitRes.success) {
+      return buildRateLimitResponse(rateLimitRes);
+    }
+
     if (!attendanceStatus) {
       return NextResponse.json({ error: 'attendanceStatus is required.' }, { status: 400 });
     }
+
 
     const result = await rsvpService.submitRsvp({
       slug: params.slug,
@@ -33,6 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
     return NextResponse.json(result);
   } catch (error: any) {
+    captureException(error, { route: '/api/events/[slug]/rsvp', eventSlug: params.slug });
     if (error instanceof RsvpLockedError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
@@ -42,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     if (error instanceof DomainError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
-    console.error('RSVP Submission Error:', error);
     return NextResponse.json({ error: 'Failed to submit RSVP.' }, { status: 500 });
   }
 }
+

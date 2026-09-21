@@ -6,8 +6,10 @@
  * re-exports thin wrappers so any legacy callers still compile without changes.
  */
 import { Ticket } from '@/domain/entities/Ticket';
+import { config } from '@/config/env';
 
-const TICKET_SECRET = process.env.TICKET_SIGNING_SECRET || 'fallback-signing-secret-agafari-2026';
+const TICKET_SECRET = config.ticketSigningSecret;
+
 
 /** @deprecated Use Ticket.generateInviteCode() */
 export const generateInviteCode = (): string => Ticket.generateInviteCode();

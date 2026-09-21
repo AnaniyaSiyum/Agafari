@@ -24,7 +24,8 @@ import {
   ArrowLeft,
   Video, 
   Image as ImageIcon,
-  Heart
+  Heart,
+  ChevronLeft
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 
@@ -156,7 +157,7 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
             guestPhone: inv.guest_phone || inv.guestPhone || '',
             maxGuests: inv.max_guests || inv.maxGuests || 1,
             inviteType: inv.invite_type || inv.inviteType || 'CARD',
-            rsvpStatus: inv.rsvp_status || inv.rsvpStatus || 'ATTENDING',
+            rsvpStatus: inv.rsvp_status || inv.rsvpStatus || 'PENDING',
             scannedCount: inv.scanned_count || inv.scannedCount || 0,
             isScanned: Boolean(inv.is_scanned || inv.isScanned),
             qrCodeUrl: inv.qr_code_url || inv.qrCodeUrl,
@@ -192,7 +193,10 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
     setGuestErrorMsg('');
     setGuestSuccessMsg('');
 
-    if (!guestName.trim()) return;
+    if (!guestName.trim() || !guestPhone.trim() || !guestHeadcount) {
+      setGuestErrorMsg('All 3 fields (Guest Name, Allowed Persons Quota, and Guest Phone/Contact) are required to generate an invitation.');
+      return;
+    }
 
     if (currentTotalGuestsSubmitted + guestHeadcount > permittedTotalQuota) {
       setGuestErrorMsg(`Exceeds your total permitted quota of ${permittedTotalQuota} guests! Remaining available seats: ${remainingPermittedSeats}.`);
@@ -221,7 +225,7 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
           guestPhone: data.invitation.guest_phone || data.invitation.guestPhone || '',
           maxGuests: data.invitation.max_guests || data.invitation.maxGuests || 1,
           inviteType: data.invitation.invite_type || data.invitation.inviteType || 'CARD',
-          rsvpStatus: 'ATTENDING',
+          rsvpStatus: data.invitation.rsvp_status || data.invitation.rsvpStatus || 'PENDING',
           scannedCount: 0,
           isScanned: false,
           qrCodeUrl: data.invitation.qr_code_url || data.invitation.qrCodeUrl,
@@ -245,7 +249,9 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
   };
 
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
+    const appOrigin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002';
+    const fullUrl = `${appOrigin}/event/${eventSlug}?code=${code}`;
+    navigator.clipboard.writeText(fullUrl);
     setCopiedCode(code);
     setTimeout(() => setCopiedCode(''), 2500);
   };
@@ -256,466 +262,461 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
     return item.category === 'WISHES' || item.category === 'LIVE';
   });
 
-  return (
-    <div className="min-h-screen bg-stone-950 text-white font-sans selection:bg-gold-500 selection:text-black">
-      <div className="flex flex-col lg:flex-row min-h-screen">
-
-        {/* Sidebar Navigation */}
-        <aside className="w-full lg:w-72 bg-black/90 border-r border-gold-500/30 p-6 flex flex-col justify-between shrink-0">
-          <div className="space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-gold-500/20">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-gold-600 to-amber-400 text-black flex items-center justify-center font-serif font-bold text-lg shadow-gold">
-                  {event ? `${event.brideName.charAt(0)}&${event.groomName.charAt(0)}` : 'A&A'}
-                </div>
-                <div>
-                  <h2 className="font-serif font-bold text-base text-white leading-tight">
-                    {event ? `${event.brideName} & ${event.groomName}` : 'Adeday & Addisu'}
-                  </h2>
-                  <span className="text-[10px] text-gold-400 font-bold uppercase tracking-wider">
-                    COUPLE'S PORTAL
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Event Meta Summary */}
-            <div className="p-3.5 rounded-2xl bg-stone-900/90 border border-stone-800 space-y-2 text-xs text-gray-300 font-light">
-              <div className="flex items-center gap-2 text-gold-400 font-medium">
-                <Calendar className="w-3.5 h-3.5 text-gold-400" />
-                <span>{event?.eventDate || '2026-09-20'}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-                <span className="truncate">{event?.venueName || 'Sheraton Addis Luxury Ballroom'}</span>
-              </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <nav className="space-y-2">
-              <button
-                onClick={() => setActiveTab('GUESTS')}
-                className={`w-full p-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all cursor-pointer ${
-                  activeTab === 'GUESTS'
-                    ? 'bg-gold-500 text-black shadow-gold'
-                    : 'bg-stone-900/60 hover:bg-stone-900 text-gray-300 border border-stone-800'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Users className="w-4 h-4" />
-                  <span>1. Guest List & QR Passes</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                  activeTab === 'GUESTS' ? 'bg-black text-gold-400' : 'bg-stone-800 text-gray-400'
-                }`}>
-                  {invitations.length}
-                </span>
-              </button>
-
-              <button
-                onClick={() => setActiveTab('MEDIA')}
-                className={`w-full p-3.5 rounded-2xl text-xs font-extrabold flex items-center justify-between transition-all cursor-pointer ${
-                  activeTab === 'MEDIA'
-                    ? 'bg-gold-500 text-black shadow-gold'
-                    : 'bg-stone-900/60 hover:bg-stone-900 text-gray-300 border border-stone-800'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Film className="w-4 h-4" />
-                  <span>2. BTS & Gathered Media</span>
-                </div>
-                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                  activeTab === 'MEDIA' ? 'bg-black text-gold-400' : 'bg-stone-800 text-gray-400'
-                }`}>
-                  {mediaAssets.length}
-                </span>
-              </button>
-            </nav>
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center font-sans">
+        <div className="text-center space-y-3 bg-white p-8 rounded-3xl shadow-xl border border-slate-200 max-w-sm w-full">
+          <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto text-amber-600">
+            <Heart className="w-6 h-6 animate-pulse text-amber-600 fill-amber-600" />
           </div>
+          <p className="font-bold text-slate-800 text-sm">Loading Couple Portal...</p>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="pt-6 border-t border-stone-800 space-y-2">
+  const isApproved = (event as any)?.adminApprovalStatus === 'APPROVED' || (event as any)?.admin_approval_status === 'APPROVED';
+
+  if (!isApproved) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans">
+        <div className="p-8 max-w-lg w-full rounded-3xl bg-slate-900 border border-amber-500/30 text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto">
+            <Clock className="w-8 h-8 text-amber-400 animate-pulse" />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-500/40">
+              🔒 Couple Portal Locked
+            </span>
+            <h2 className="font-serif font-bold text-2xl text-white pt-2">
+              Awaiting System Super Admin Approval
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+              This wedding event is currently pending System Super Admin verification and approval. Couple credentials, invitation links, and guest management will unlock automatically once approved by the Super Admin under Admin Approvals.
+            </p>
+          </div>
+          <div className="pt-2">
             <Link
-              href={`/${organizerSlug}/${eventSlug}`}
-              className="w-full py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 text-gray-300 text-xs font-bold transition-all flex items-center justify-center gap-2 border border-stone-700"
+              href={`/organizer/dashboard?id=${organizerSlug}`}
+              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-2"
             >
-              <ArrowLeft className="w-4 h-4 text-gold-400" />
-              <span>Open Public Event Page</span>
+              <span>Return to Organizer Dashboard</span>
             </Link>
           </div>
-        </aside>
+        </div>
+      </div>
+    );
+  }
 
-        {/* Main Content Area */}
-        <main className="flex-1 p-4 sm:p-8 space-y-8 max-w-6xl">
+  return (
+    <div className="min-h-screen bg-slate-100 text-slate-900 font-sans selection:bg-amber-400 selection:text-slate-950 flex flex-col">
+      
+      {/* Header Mobile / Desktop Navigation Bar */}
+      <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
+        <div className="flex items-center gap-3">
+          <Link
+            href={`/${organizerSlug}/${eventSlug}`}
+            className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all border border-slate-200/80 active:scale-95"
+            title="Go to Event Hub"
+          >
+            <ChevronLeft className="w-5 h-5" />
+          </Link>
 
-          {/* Header Metric Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-gold-500/20 gap-4">
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-gold-400">
-                AGAFARI WEDDING SUITE
+          <div>
+            <div className="flex items-center gap-2 text-xs">
+              <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 font-bold uppercase tracking-wider text-[10px] border border-rose-200/60 flex items-center gap-1">
+                <Heart className="w-3 h-3 text-rose-600 fill-rose-600" />
+                Couple's Portal
               </span>
-              <h1 className="font-serif font-bold text-2xl text-white">
-                {activeTab === 'GUESTS' ? 'Guest Directory & QR Pass Center' : 'Behind-the-Scenes & Media Gallery'}
-              </h1>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500 font-mono text-[11px]">/{eventSlug}</span>
             </div>
-
-            <div className="flex items-center gap-3">
-              <span className="px-3 py-1.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 text-xs font-bold flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                Quota: {currentTotalGuestsSubmitted} / {permittedTotalQuota} Guests Submitted
-              </span>
-              <LanguageSwitcher />
-            </div>
+            <h1 className="font-bold text-base sm:text-lg text-slate-900 mt-0.5 tracking-tight">
+              {event ? `${event.brideName} & ${event.groomName}` : 'Adeday & Addisu'}
+            </h1>
           </div>
+        </div>
 
-          {/* TAB 1: GUEST DIRECTORY & QR PASS GENERATOR */}
-          {activeTab === 'GUESTS' && (
-            <div className="space-y-8">
-              
-              {/* Quota Summary Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-black/80 border border-gold-500/30 space-y-1">
-                  <span className="text-[10px] text-gold-400 font-bold uppercase tracking-wider">PERMITTED GUEST QUOTA</span>
-                  <div className="font-serif font-bold text-3xl text-white">{permittedTotalQuota}</div>
-                  <p className="text-[11px] text-gray-400">Allocated by Event Organizer</p>
-                </div>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <LanguageSwitcher />
+        </div>
+      </header>
 
-                <div className="p-5 rounded-2xl bg-black/80 border border-gold-500/30 space-y-1">
-                  <span className="text-[10px] text-emerald-400 font-bold uppercase tracking-wider">GUESTS SUBMITTED</span>
-                  <div className="font-serif font-bold text-3xl text-emerald-400">{currentTotalGuestsSubmitted}</div>
-                  <p className="text-[11px] text-emerald-300">✓ QR Passes & Links Active</p>
-                </div>
+      {/* Main Workspace */}
+      <main className="p-4 sm:p-8 max-w-6xl w-full mx-auto space-y-6 flex-1">
+        
+        {/* Top Segmented Navigation Control */}
+        <div className="bg-white p-1.5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('GUESTS')}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2.5 ${
+              activeTab === 'GUESTS'
+                ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Users className="w-4 h-4 text-amber-400" />
+            <span>1. Guest List & QR Passes ({invitations.length})</span>
+          </button>
 
-                <div className="p-5 rounded-2xl bg-black/80 border border-gold-500/30 space-y-1">
-                  <span className="text-[10px] text-amber-400 font-bold uppercase tracking-wider">REMAINING QUOTA</span>
-                  <div className="font-serif font-bold text-3xl text-amber-400">{remainingPermittedSeats}</div>
-                  <p className="text-[11px] text-gray-400">Available Seats Remaining</p>
-                </div>
+          <button
+            onClick={() => setActiveTab('MEDIA')}
+            className={`flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2.5 ${
+              activeTab === 'MEDIA'
+                ? 'bg-slate-900 text-white shadow-md shadow-slate-900/10'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Film className="w-4 h-4 text-rose-400" />
+            <span>2. BTS & Media Gallery ({mediaAssets.length})</span>
+          </button>
+        </div>
+
+        {/* TAB 1: GUEST DIRECTORY & QR PASS GENERATOR */}
+        {activeTab === 'GUESTS' && (
+          <div className="space-y-6">
+            
+            {/* Quota KPI Overview Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-1">
+                <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">PERMITTED GUEST QUOTA</span>
+                <div className="font-bold text-3xl text-slate-900">{permittedTotalQuota}</div>
+                <p className="text-xs text-slate-500 font-medium">Allocated by Event Organizer</p>
               </div>
 
-              {/* Guest Submission Form */}
-              <div className="p-6 rounded-3xl bg-black/80 border-2 border-gold-500/40 space-y-4 shadow-xl">
-                <div className="flex items-center justify-between pb-2 border-b border-stone-800">
-                  <div>
-                    <h3 className="font-serif font-bold text-lg text-white flex items-center gap-2">
-                      <Plus className="w-5 h-5 text-gold-400" />
-                      Submit Permitted Guest Data
-                    </h3>
-                    <p className="text-xs text-gray-400">
-                      Enter your guest names and permitted headcounts. Your submission will generate their scannable QR card & unique invitation link.
-                    </p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setInviteType('CARD')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                        inviteType === 'CARD'
-                          ? 'bg-gold-500 text-black border-gold-400'
-                          : 'bg-stone-900 text-gray-400 border-stone-700'
-                      }`}
-                    >
-                      Physical Card QR
-                    </button>
-                    <button
-                      onClick={() => setInviteType('LINK')}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
-                        inviteType === 'LINK'
-                          ? 'bg-gold-500 text-black border-gold-400'
-                          : 'bg-stone-900 text-gray-400 border-stone-700'
-                      }`}
-                    >
-                      Digital Link
-                    </button>
-                  </div>
-                </div>
-
-                {guestSuccessMsg && (
-                  <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500 text-emerald-200 text-xs flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                    <span>{guestSuccessMsg}</span>
-                  </div>
-                )}
-
-                {guestErrorMsg && (
-                  <div className="p-3.5 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-rose-400 shrink-0" />
-                    <span>{guestErrorMsg}</span>
-                  </div>
-                )}
-
-                <form onSubmit={handleAddGuest} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <label className="font-bold text-gray-300 uppercase tracking-wider">Guest / Family Name *</label>
-                    <input
-                      type="text"
-                      required
-                      value={guestName}
-                      onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="e.g. Uncle Bekele & Family"
-                      className="w-full px-4 py-3 rounded-2xl bg-stone-900 border border-gold-500/30 text-white text-xs focus:outline-none focus:ring-2 focus:ring-gold-500"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-gray-300 uppercase tracking-wider">Allowed Persons (Headcount Quota) *</label>
-                    <select
-                      value={guestHeadcount}
-                      onChange={(e) => setGuestHeadcount(Number(e.target.value))}
-                      className="w-full px-4 py-3 rounded-2xl bg-stone-900 border border-gold-500/30 text-white text-xs focus:outline-none focus:ring-2 focus:ring-gold-500"
-                    >
-                      <option value={1}>1 Person (Single Guest Pass)</option>
-                      <option value={2}>2 Persons (Couple VIP Entry)</option>
-                      <option value={3}>3 Persons (Family Entry)</option>
-                      <option value={4}>4 Persons (Family Entry)</option>
-                      <option value={5}>5 Persons (Group Entry)</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="font-bold text-gray-300 uppercase tracking-wider">Guest Phone Number (Optional)</label>
-                    <input
-                      type="text"
-                      value={guestPhone}
-                      onChange={(e) => setGuestPhone(e.target.value)}
-                      placeholder="+251 91 122 3344"
-                      className="w-full px-4 py-3 rounded-2xl bg-stone-900 border border-gold-500/30 text-white text-xs focus:outline-none focus:ring-2 focus:ring-gold-500"
-                    />
-                  </div>
-
-                  <div className="md:col-span-3 pt-2 flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={submittingGuest}
-                      className="px-6 py-3.5 rounded-2xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs shadow-gold transition-all flex items-center gap-2 cursor-pointer border border-gold-300"
-                    >
-                      {submittingGuest ? (
-                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                      ) : (
-                        <Plus className="w-4 h-4 text-black" />
-                      )}
-                      <span>Submit Guest Data & Generate QR Pass</span>
-                    </button>
-                  </div>
-                </form>
+              <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-1">
+                <span className="text-xs text-emerald-700 font-bold uppercase tracking-wider">GUESTS SUBMITTED</span>
+                <div className="font-bold text-3xl text-emerald-700">{currentTotalGuestsSubmitted}</div>
+                <p className="text-xs text-emerald-600 font-bold">✓ QR Passes & Links Active</p>
               </div>
 
-              {/* Guest Invitations Table */}
-              <div className="p-6 rounded-3xl bg-black/80 border border-gold-500/30 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-serif font-bold text-lg text-white">
-                    Accepted Guest Invitations ({invitations.length})
-                  </h3>
-                  <span className="text-xs text-gold-400 font-mono">
-                    Total Headcount: {currentTotalGuestsSubmitted} Seats
-                  </span>
-                </div>
-
-                {invitations.length === 0 ? (
-                  <div className="p-12 text-center text-gray-400 space-y-2">
-                    <QrCode className="w-10 h-10 text-gold-500/40 mx-auto" />
-                    <p className="font-serif text-base text-white">No guest data submitted yet</p>
-                    <p className="text-xs text-gray-500">Use the form above to add your guests within your permitted quota.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {invitations.map((inv) => (
-                      <div
-                        key={inv.id}
-                        className="p-5 rounded-2xl bg-stone-900/90 border border-gold-500/20 space-y-3 shadow-md flex flex-col justify-between"
-                      >
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center justify-between gap-2">
-                            <span className="font-mono text-[10px] text-gold-400 font-bold bg-black/60 px-2 py-0.5 rounded border border-gold-500/30">
-                              {inv.inviteCode}
-                            </span>
-
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              {inv.isScanned ? (
-                                <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/40 text-[10px] font-bold">
-                                  🎟 Checked In
-                                </span>
-                              ) : inv.rsvpStatus === 'ATTENDING' ? (
-                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                                  Attending
-                                </span>
-                              ) : inv.rsvpStatus === 'DECLINED' ? (
-                                <span className="px-2.5 py-0.5 rounded-full bg-rose-500/20 text-rose-400 border border-rose-500/40 text-[10px] font-bold flex items-center gap-1">
-                                  Cannot Attend
-                                </span>
-                              ) : inv.rsvpStatus === 'MAYBE' ? (
-                                <span className="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 text-[10px] font-bold">
-                                  Maybe
-                                </span>
-                              ) : (
-                                <span className="px-2.5 py-0.5 rounded-full bg-stone-800 text-gray-400 border border-stone-700 text-[10px] font-bold">
-                                  ⏳ RSVP Pending
-                                </span>
-                              )}
-
-                              <span className="px-2.5 py-0.5 rounded-full bg-stone-800 text-gold-400 border border-stone-700 text-[10px] font-bold">
-                                {inv.maxGuests} {inv.maxGuests > 1 ? 'Persons' : 'Person'}
-                              </span>
-                            </div>
-                          </div>
-
-                          <h4 className="font-serif font-bold text-base text-white">{inv.guestName}</h4>
-                          {inv.guestPhone && (
-                            <p className="text-xs text-gray-400 font-mono">{inv.guestPhone}</p>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 pt-2 border-t border-stone-800">
-                          <button
-                            onClick={() => setSelectedInviteForPass(inv)}
-                            className="flex-1 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                          >
-                            <QrCode className="w-3.5 h-3.5 text-black" />
-                            <span>View QR Card Pass</span>
-                          </button>
-
-                          <button
-                            onClick={() => handleCopyCode(`${window.location.origin}/event/${eventSlug}?code=${inv.inviteCode}`)}
-                            className="px-3 py-2.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-gray-300 text-xs font-bold transition-all border border-stone-700 cursor-pointer"
-                            title="Copy Invitation Link"
-                          >
-                            {copiedCode.includes(inv.inviteCode) ? (
-                              <Check className="w-4 h-4 text-emerald-400" />
-                            ) : (
-                              <Copy className="w-4 h-4 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+              <div className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-1">
+                <span className="text-xs text-amber-800 font-bold uppercase tracking-wider">REMAINING QUOTA</span>
+                <div className="font-bold text-3xl text-amber-700">{remainingPermittedSeats}</div>
+                <p className="text-xs text-slate-500 font-medium">Available Seats Remaining</p>
               </div>
-
             </div>
-          )}
 
-          {/* TAB 2: BTS & GATHERED MEDIA GALLERY */}
-          {activeTab === 'MEDIA' && (
-            <div className="space-y-6">
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+            {/* Guest Submission Form */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900 tracking-tight flex items-center gap-2">
+                    <Plus className="w-5 h-5 text-amber-600" />
+                    Submit Permitted Guest Data
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Enter your guest names and permitted headcounts to generate their scannable QR pass & invitation link.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
                   <button
-                    onClick={() => setMediaSubTab('ALL')}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer border ${
-                      mediaSubTab === 'ALL'
-                        ? 'bg-gold-500 text-black border-gold-400 shadow-gold'
-                        : 'bg-black/60 text-gray-400 border-stone-800'
+                    onClick={() => setInviteType('CARD')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      inviteType === 'CARD'
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    All Media ({mediaAssets.length})
+                    Printable Card QR
                   </button>
-
                   <button
-                    onClick={() => setMediaSubTab('BTS')}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer border ${
-                      mediaSubTab === 'BTS'
-                        ? 'bg-gold-500 text-black border-gold-400 shadow-gold'
-                        : 'bg-black/60 text-gray-400 border-stone-800'
+                    onClick={() => setInviteType('LINK')}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      inviteType === 'LINK'
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    Behind The Scenes (BTS)
-                  </button>
-
-                  <button
-                    onClick={() => setMediaSubTab('GATHERED')}
-                    className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all cursor-pointer border ${
-                      mediaSubTab === 'GATHERED'
-                        ? 'bg-gold-500 text-black border-gold-400 shadow-gold'
-                        : 'bg-black/60 text-gray-400 border-stone-800'
-                    }`}
-                  >
-                    Guest Wishes & Gathered Clips
+                    Digital Link
                   </button>
                 </div>
               </div>
 
-              {filteredMedia.length === 0 ? (
-                <div className="p-12 rounded-3xl bg-black/80 border border-stone-800 text-center text-gray-400 space-y-2">
-                  <Film className="w-10 h-10 text-gold-400/40 mx-auto" />
-                  <p className="font-serif text-base text-white">No media uploads available yet</p>
-                  <p className="text-xs text-gray-500">Guest photos, videos, and behind-the-scenes clips will display here.</p>
+              {guestSuccessMsg && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-bold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{guestSuccessMsg}</span>
+                </div>
+              )}
+
+              {guestErrorMsg && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-bold flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{guestErrorMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleAddGuest} className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Guest / Family Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    placeholder="e.g. Bekele & Family"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Allowed Persons (Quota) *</label>
+                  <select
+                    value={guestHeadcount}
+                    onChange={(e) => setGuestHeadcount(Number(e.target.value))}
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 font-bold"
+                  >
+                    <option value={1}>1 Person (Single Pass)</option>
+                    <option value={2}>2 Persons (Couple Pass)</option>
+                    <option value={3}>3 Persons (Family Pass)</option>
+                    <option value={4}>4 Persons (Family Group)</option>
+                    <option value={5}>5 Persons (Group Pass)</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="font-bold text-slate-700 uppercase tracking-wider text-[11px]">Guest Phone / Contact *</label>
+                  <input
+                    type="text"
+                    required
+                    value={guestPhone}
+                    onChange={(e) => setGuestPhone(e.target.value)}
+                    placeholder="+251 91 122 3344"
+                    className="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 font-medium"
+                  />
+                </div>
+
+                <div className="md:col-span-3 pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submittingGuest}
+                    className="px-6 py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center gap-2 cursor-pointer border border-amber-300 active:scale-95"
+                  >
+                    {submittingGuest ? (
+                      <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 text-slate-950" />
+                    )}
+                    <span>Generate Guest Pass & QR Code</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Guest Invitations List Grid */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-slate-200/90 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-bold text-lg text-slate-900 tracking-tight">
+                  Guest Directory ({invitations.length})
+                </h3>
+                <span className="text-xs text-amber-800 font-mono font-bold bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+                  Total Seats: {currentTotalGuestsSubmitted} / {permittedTotalQuota}
+                </span>
+              </div>
+
+              {invitations.length === 0 ? (
+                <div className="p-12 text-center text-slate-400 space-y-2">
+                  <QrCode className="w-10 h-10 text-slate-300 mx-auto" />
+                  <p className="font-bold text-base text-slate-800">No guest data submitted yet</p>
+                  <p className="text-xs text-slate-400">Use the form above to add your guests within your permitted quota.</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredMedia.map((media) => (
-                    <div key={media.id} className="p-4 rounded-3xl bg-black/80 border border-gold-500/30 space-y-3">
-                      <div className="aspect-video rounded-2xl overflow-hidden bg-stone-900 border border-stone-800 relative">
-                        {media.mediaType === 'VIDEO' || media.cdnUrl.includes('.mp4') ? (
-                          <video src={media.cdnUrl} controls className="w-full h-full object-cover" />
-                        ) : (
-                          <img src={media.cdnUrl} alt={media.caption} className="w-full h-full object-cover" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {invitations.map((inv) => (
+                    <div
+                      key={inv.id}
+                      className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 shadow-sm flex flex-col justify-between"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-mono text-[10px] text-slate-700 font-bold bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                            {inv.inviteCode}
+                          </span>
+
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {inv.isScanned ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-bold">
+                                🎟 Checked In
+                              </span>
+                            ) : inv.rsvpStatus === 'ATTENDING' ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-bold flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                Attending
+                              </span>
+                            ) : inv.rsvpStatus === 'DECLINED' ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold">
+                                Cannot Attend
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 border border-slate-300 text-[10px] font-bold">
+                                ⏳ Pending RSVP
+                              </span>
+                            )}
+
+                            <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px] font-bold">
+                              {inv.maxGuests} {inv.maxGuests > 1 ? 'Persons' : 'Person'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <h4 className="font-bold text-base text-slate-900">{inv.guestName}</h4>
+                        {inv.guestPhone && (
+                          <p className="text-xs text-slate-500 font-mono">{inv.guestPhone}</p>
                         )}
                       </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-bold text-white">{media.uploaderName}</span>
-                        <span className="text-[10px] text-gold-400 font-semibold uppercase">{media.category}</span>
+
+                      <div className="flex items-center gap-2 pt-3 border-t border-slate-200/80">
+                        <button
+                          onClick={() => setSelectedInviteForPass(inv)}
+                          className="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                        >
+                          <QrCode className="w-3.5 h-3.5 text-slate-950" />
+                          <span>View QR Card Pass</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleCopyCode(inv.inviteCode)}
+                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all border border-slate-200 cursor-pointer active:scale-95"
+                          title="Copy Unique Invitation Link"
+                        >
+                          {copiedCode === inv.inviteCode ? (
+                            <Check className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Copy className="w-4 h-4 text-slate-500" />
+                          )}
+                        </button>
                       </div>
-                      {media.caption && (
-                        <p className="text-xs text-gray-300 font-light bg-stone-900/60 p-2.5 rounded-xl border border-stone-800">
-                          "{media.caption}"
-                        </p>
-                      )}
                     </div>
                   ))}
                 </div>
               )}
-
             </div>
-          )}
 
-        </main>
-      </div>
+          </div>
+        )}
+
+        {/* TAB 2: BTS & GATHERED MEDIA GALLERY */}
+        {activeTab === 'MEDIA' && (
+          <div className="space-y-6">
+            
+            <div className="flex items-center justify-between bg-white p-3 rounded-2xl border border-slate-200/80 shadow-sm">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setMediaSubTab('ALL')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    mediaSubTab === 'ALL'
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  All Media ({mediaAssets.length})
+                </button>
+
+                <button
+                  onClick={() => setMediaSubTab('BTS')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    mediaSubTab === 'BTS'
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Behind The Scenes (BTS)
+                </button>
+
+                <button
+                  onClick={() => setMediaSubTab('GATHERED')}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    mediaSubTab === 'GATHERED'
+                      ? 'bg-slate-900 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Guest Wishes & Clips
+                </button>
+              </div>
+            </div>
+
+            {filteredMedia.length === 0 ? (
+              <div className="p-12 rounded-3xl bg-white border border-slate-200/90 text-center text-slate-400 space-y-2 shadow-sm">
+                <Film className="w-10 h-10 text-slate-300 mx-auto" />
+                <p className="font-bold text-base text-slate-800">No media uploads available yet</p>
+                <p className="text-xs text-slate-400">Guest photos, videos, and behind-the-scenes clips will display here.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredMedia.map((media) => (
+                  <div key={media.id} className="p-5 rounded-3xl bg-white border border-slate-200/90 space-y-3 shadow-sm">
+                    <div className="aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative shadow-inner">
+                      {media.mediaType === 'VIDEO' || media.cdnUrl.includes('.mp4') ? (
+                        <video src={media.cdnUrl} controls className="w-full h-full object-cover" />
+                      ) : (
+                        <img src={media.cdnUrl} alt={media.caption} className="w-full h-full object-cover" />
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-900">{media.uploaderName}</span>
+                      <span className="text-[10px] text-amber-800 font-bold uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded border border-amber-200">{media.category}</span>
+                    </div>
+                    {media.caption && (
+                      <p className="text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200/80 font-medium">
+                        "{media.caption}"
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </div>
+        )}
+
+      </main>
 
       {/* QR PASS MODAL */}
       {selectedInviteForPass && (
-        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="max-w-sm w-full bg-black border-2 border-gold-500 rounded-3xl p-6 text-center space-y-6 shadow-2xl relative">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="max-w-sm w-full bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-2xl relative text-slate-900">
             <button
               onClick={() => setSelectedInviteForPass(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white p-2"
+              className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 text-slate-500 hover:text-slate-900 transition-all"
             >
               ✕
             </button>
 
             <div>
-              <span className="text-[10px] font-mono text-gold-400 font-bold uppercase tracking-wider">
+              <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block mb-2">
                 OFFICIAL AGAFARI INVITATION PASS
               </span>
-              <h3 className="font-serif font-bold text-xl text-white mt-1">
+              <h3 className="font-bold text-xl text-slate-900">
                 {selectedInviteForPass.guestName}
               </h3>
-              <p className="text-xs text-gold-400 font-semibold mt-0.5">
+              <p className="text-xs text-slate-500 font-bold mt-1">
                 Headcount Quota: {selectedInviteForPass.maxGuests} Persons
               </p>
             </div>
 
-            <div className="w-56 h-56 mx-auto bg-white p-4 rounded-2xl border-2 border-gold-500 flex items-center justify-center shadow-lg">
+            <div className="w-56 h-56 mx-auto bg-white p-3 rounded-2xl border-2 border-amber-400 flex items-center justify-center shadow-md">
               <img
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-                  JSON.stringify({ code: selectedInviteForPass.inviteCode, guests: selectedInviteForPass.maxGuests })
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                  `${typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3002'}/event/${eventSlug}?code=${selectedInviteForPass.inviteCode}`
                 )}`}
                 alt="Guest Pass QR Code"
                 className="w-full h-full object-contain"
               />
             </div>
 
-            <div className="p-3 rounded-xl bg-stone-900 border border-stone-800 font-mono text-xs text-gold-400 font-bold">
+            <div className="p-3 rounded-xl bg-slate-100 border border-slate-200 font-mono text-xs text-slate-900 font-bold">
               {selectedInviteForPass.inviteCode}
             </div>
 
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               <button
-                onClick={() => handleCopyCode(`${window.location.origin}/event/${eventSlug}?code=${selectedInviteForPass.inviteCode}`)}
-                className="w-full py-3 rounded-2xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => handleCopyCode(selectedInviteForPass.inviteCode)}
+                className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs shadow-md shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
               >
-                <Copy className="w-4 h-4 text-black" />
+                <Copy className="w-4 h-4 text-slate-950" />
                 <span>Copy Invitation Digital Link</span>
               </button>
             </div>

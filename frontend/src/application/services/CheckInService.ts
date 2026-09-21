@@ -84,8 +84,9 @@ export class CheckInService {
       message: `Checked in ${admitted} guest(s).`,
       guestName: invitation.guestName,
       admitted,
-      remaining: invitation.maxGuests - (invitation.scannedCount + admitted),
+      remaining: Math.max(0, invitation.maxGuests - invitation.scannedCount),
       invitationId: invitation.id,
     };
   }
 }
+

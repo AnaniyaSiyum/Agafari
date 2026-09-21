@@ -167,6 +167,7 @@ export default function OrganizerDashboardPage() {
   const [coupleEmail, setCoupleEmail] = useState('');
   const [eventDate, setEventDate] = useState('2026-10-15');
   const [venueName, setVenueName] = useState('');
+  const [expectedGuests, setExpectedGuests] = useState<number | ''>(300);
   const [requestingApproval, setRequestingApproval] = useState(false);
   const [provisionSuccessMsg, setProvisionSuccessMsg] = useState('');
   const [provisionErrorMsg, setProvisionErrorMsg] = useState('');
@@ -249,8 +250,8 @@ export default function OrganizerDashboardPage() {
     setProvisionErrorMsg('');
     setProvisionSuccessMsg('');
 
-    if (!brideName.trim() || !groomName.trim() || !coupleEmail.trim() || !venueName.trim()) {
-      setProvisionErrorMsg('Please fill in all required fields (Bride Name, Groom Name, Couple Email, Venue).');
+    if (!brideName.trim() || !groomName.trim() || !coupleEmail.trim() || !venueName.trim() || expectedGuests === '' || Number(expectedGuests) < 1) {
+      setProvisionErrorMsg('Please fill in all required fields (Bride Name, Groom Name, Couple Email, Venue, and Expected Guest Limit).');
       return;
     }
 
@@ -273,6 +274,7 @@ export default function OrganizerDashboardPage() {
           coupleEmail: coupleEmail.trim(),
           eventDate,
           venueName: venueName.trim(),
+          expectedGuests: Number(expectedGuests),
           organizerId: orgId,
         }),
       });
@@ -785,330 +787,7 @@ export default function OrganizerDashboardPage() {
               )}
 
               {/* =========================================================================
-                  DRILL-DOWN COMMAND ROOM FOR SELECTED WEDDING
-                 ========================================================================= */}
-              {selectedEvent && (
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-6 sm:p-8 rounded-3xl bg-white border-2 border-gold-500 shadow-xl space-y-6"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gold-500/20">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-gold-400 text-xs font-bold mb-2">
-                        <Sparkles className="w-3.5 h-3.5 text-gold-400" />
-                        {t('organizerDashboard.fleet.selectedRoom')}
-                      </div>
-                      <h2 className="font-serif font-bold text-2xl text-gray-900">
-                        {selectedEvent.title}
-                      </h2>
-                      <div className="text-xs text-gray-600 flex flex-wrap items-center gap-3 mt-1">
-                        <span>Date: <strong>{new Date(selectedEvent.eventDate).toLocaleDateString()}</strong></span>
-                        <span>•</span>
-                        <span>Venue: <strong>{selectedEvent.venueName}</strong></span>
-                        <span>•</span>
-                        <span>Slug: <strong>/event/{selectedEvent.slug}</strong></span>
-                      </div>
-                    </div>
-
-                    {/* Admin Approval Status Display */}
-                    <div className="flex items-center gap-3">
-                      <div className="text-right text-xs">
-                        <div className="text-gray-500 text-[10px] uppercase font-bold">{t('organizerDashboard.fleet.adminStatus')}</div>
-                        {selectedEvent.adminApprovalStatus === 'APPROVED' || (selectedEvent as any).admin_approval_status === 'APPROVED' ? (
-                          <span className="text-emerald-800 font-bold flex items-center gap-1 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" /> Approved & Licensed
-                          </span>
-                        ) : selectedEvent.adminApprovalStatus === 'REJECTED' || (selectedEvent as any).admin_approval_status === 'REJECTED' ? (
-                          <span className="text-rose-800 font-bold flex items-center gap-1 bg-rose-50 px-3 py-1 rounded-full border border-rose-300">
-                            <XCircle className="w-3.5 h-3.5 text-rose-600" /> Rejected by System Admin
-                          </span>
-                        ) : (
-                          <span className="text-amber-900 font-bold flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full border border-amber-300">
-                            <Clock className="w-3.5 h-3.5 text-amber-600 animate-pulse" /> Awaiting System Admin Approval
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3 Dedicated Role Launch Cards */}
-                  <div>
-                    <h3 className="font-serif font-bold text-base text-gray-900 mb-2 flex items-center gap-2">
-                      <KeyRound className="w-4 h-4 text-gold-500" />
-                      {t('organizerDashboard.fleet.roleCredentialsTitle')}
-                    </h3>
-                    <p className="text-xs text-gray-600 mb-4">
-                      {t('organizerDashboard.fleet.roleCredentialsSubtitle')}
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-                      
-                      {/* 1. Couple Dashboard Card */}
-                      <div className="p-5 rounded-2xl border border-gold-500/30 bg-gray-50 flex flex-col justify-between space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-9 h-9 rounded-xl bg-black text-gold-400 flex items-center justify-center font-bold shadow-sm">
-                              <Crown className="w-5 h-5" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-950">
-                              👑 Primary Role
-                            </span>
-                          </div>
-
-                          <h4 className="font-serif font-bold text-sm text-gray-900">
-                            {t('organizerDashboard.fleet.coupleRole')} ({selectedEvent.brideName} & {selectedEvent.groomName})
-                          </h4>
-                          <p className="text-[11px] text-gray-600 mt-1">
-                            {t('organizerDashboard.fleet.coupleDesc')}
-                          </p>
-
-                          <div className="mt-3 p-3 rounded-xl bg-white border border-gold-500/20 text-xs space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500 text-[10px]">Login:</span>
-                              <span className="font-mono font-bold text-gray-900">
-                                {selectedEvent.credentials?.couple.email || selectedEvent.coupleCredentials?.email || `couple@${selectedEvent.slug}.com`}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-500 text-[10px]">Password:</span>
-                              <span className="font-mono text-gray-900 font-bold">
-                                {showPasswords['couple'] ? (selectedEvent.credentials?.couple.temporaryPassword || selectedEvent.coupleCredentials?.temporaryPassword || 'couple123') : '••••••••'}
-                              </span>
-                              <button onClick={() => toggleShowPassword('couple')} className="text-gold-600 hover:text-gray-900">
-                                {showPasswords['couple'] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          {selectedEvent.adminApprovalStatus === 'APPROVED' || (selectedEvent as any).admin_approval_status === 'APPROVED' ? (
-                            <Link
-                              href={`/${(selectedEvent as any).organizer_id || (selectedEvent as any).organizerId || currentOrgId || 'org-default'}/${selectedEvent.slug}/couple`}
-                              className="w-full py-2.5 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all border border-gold-500/40"
-                            >
-                              <span>{t('organizerDashboard.fleet.launchCouple')}</span>
-                              <ExternalLink className="w-3.5 h-3.5 text-gold-400" />
-                            </Link>
-                          ) : selectedEvent.adminApprovalStatus === 'REJECTED' || (selectedEvent as any).admin_approval_status === 'REJECTED' ? (
-                            <button
-                              disabled
-                              className="w-full py-2.5 px-3 rounded-xl bg-rose-100 text-rose-900 font-bold text-xs flex items-center justify-center gap-1.5 border border-rose-300 cursor-not-allowed opacity-90"
-                            >
-                              <XCircle className="w-3.5 h-3.5 text-rose-700" />
-                              <span>Event Rejected by Admin</span>
-                            </button>
-                          ) : (
-                            <button
-                              disabled
-                              className="w-full py-2.5 px-3 rounded-xl bg-amber-100/80 text-amber-900 font-bold text-xs flex items-center justify-center gap-1.5 border border-amber-300 cursor-not-allowed opacity-85"
-                            >
-                              <Clock className="w-3.5 h-3.5 text-amber-700 animate-pulse" />
-                              <span>Awaiting Admin Approval</span>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleCopy(
-                              `Couple Portal: ${window.location.origin}/couple/login\nEmail: ${selectedEvent.credentials?.couple.email || selectedEvent.coupleCredentials?.email}\nPassword: ${selectedEvent.credentials?.couple.temporaryPassword || selectedEvent.coupleCredentials?.temporaryPassword || 'couple123'}`,
-                              'couple'
-                            )}
-                            className="w-full py-1.5 px-3 rounded-lg border border-gold-500/30 bg-white hover:bg-gray-50 text-gray-900 text-[11px] font-bold flex items-center justify-center gap-1"
-                          >
-                            {copiedKey === 'couple' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-gold-600" />}
-                            <span>{copiedKey === 'couple' ? t('common.copied') : t('organizerDashboard.fleet.copyCouple')}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 2. Live Streamer Card */}
-                      <div className="p-5 rounded-2xl border border-gold-500/30 bg-gray-50 flex flex-col justify-between space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-9 h-9 rounded-xl bg-black text-gold-400 flex items-center justify-center font-bold shadow-sm">
-                              <Video className="w-5 h-5" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-950">
-                              📹 Video Crew
-                            </span>
-                          </div>
-
-                          <h4 className="font-serif font-bold text-sm text-gray-900">
-                            {t('organizerDashboard.fleet.streamerRole')}
-                          </h4>
-                          <p className="text-[11px] text-gray-600 mt-1">
-                            {t('organizerDashboard.fleet.streamerDesc')}
-                          </p>
-
-                          <div className="mt-3 p-3 rounded-xl bg-white border border-gold-500/20 text-xs space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500 text-[10px]">Login:</span>
-                              <span className="font-mono font-bold text-gray-900">
-                                {selectedEvent.credentials?.streamer.email || `streamer@${selectedEvent.slug}.com`}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-500 text-[10px]">Password:</span>
-                              <span className="font-mono text-gray-900 font-bold">
-                                {showPasswords['streamer'] ? (selectedEvent.credentials?.streamer.temporaryPassword || 'stream123') : '••••••••'}
-                              </span>
-                              <button onClick={() => toggleShowPassword('streamer')} className="text-gold-600 hover:text-gray-900">
-                                {showPasswords['streamer'] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Link
-                            href={`/event/${selectedEvent.slug}`}
-                            target="_blank"
-                            className="w-full py-2.5 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all border border-gold-500/40"
-                          >
-                            <span>{t('organizerDashboard.fleet.launchStreamer')}</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-gold-400" />
-                          </Link>
-
-                          <button
-                            onClick={() => handleCopy(
-                              `Streamer Portal: ${window.location.origin}/event/${selectedEvent.slug}\nEmail: ${selectedEvent.credentials?.streamer.email}\nPassword: ${selectedEvent.credentials?.streamer.temporaryPassword || 'stream123'}`,
-                              'streamer'
-                            )}
-                            className="w-full py-1.5 px-3 rounded-lg border border-gold-500/30 bg-white hover:bg-gray-50 text-gray-900 text-[11px] font-bold flex items-center justify-center gap-1"
-                          >
-                            {copiedKey === 'streamer' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-gold-600" />}
-                            <span>{copiedKey === 'streamer' ? t('common.copied') : t('organizerDashboard.fleet.copyStreamer')}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 3. Gate Scanner Card */}
-                      <div className="p-5 rounded-2xl border border-gold-500/30 bg-gray-50 flex flex-col justify-between space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-9 h-9 rounded-xl bg-black text-gold-400 flex items-center justify-center font-bold shadow-sm">
-                              <ScanLine className="w-5 h-5" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-950">
-                              📱 Security Terminal
-                            </span>
-                          </div>
-
-                          <h4 className="font-serif font-bold text-sm text-gray-900">
-                            {t('organizerDashboard.fleet.scannerRole')}
-                          </h4>
-                          <p className="text-[11px] text-gray-600 mt-1">
-                            {t('organizerDashboard.fleet.scannerDesc')}
-                          </p>
-
-                          <div className="mt-3 p-3 rounded-xl bg-white border border-gold-500/20 text-xs space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500 text-[10px]">Login:</span>
-                              <span className="font-mono font-bold text-gray-900">
-                                {selectedEvent.credentials?.scanner.email || `scanner@${selectedEvent.slug}.com`}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-500 text-[10px]">Password:</span>
-                              <span className="font-mono text-gray-900 font-bold">
-                                {showPasswords['scanner'] ? (selectedEvent.credentials?.scanner.temporaryPassword || 'scan123') : '••••••••'}
-                              </span>
-                              <button onClick={() => toggleShowPassword('scanner')} className="text-gold-600 hover:text-gray-900">
-                                {showPasswords['scanner'] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Link
-                            href={`/event/${selectedEvent.slug}/scanner`}
-                            target="_blank"
-                            className="w-full py-2.5 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all border border-gold-500/40"
-                          >
-                            <span>{t('organizerDashboard.fleet.launchScanner')}</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-gold-400" />
-                          </Link>
-
-                          <button
-                            onClick={() => handleCopy(
-                              `Gate Terminal: ${window.location.origin}/scanner\nEmail: ${selectedEvent.credentials?.scanner.email}\nPassword: ${selectedEvent.credentials?.scanner.temporaryPassword || 'scan123'}`,
-                              'scanner'
-                            )}
-                            className="w-full py-1.5 px-3 rounded-lg border border-gold-500/30 bg-white hover:bg-gray-50 text-gray-900 text-[11px] font-bold flex items-center justify-center gap-1"
-                          >
-                            {copiedKey === 'scanner' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-gold-600" />}
-                            <span>{copiedKey === 'scanner' ? t('common.copied') : t('organizerDashboard.fleet.copyScanner')}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 4. Media Content Moderator Card */}
-                      <div className="p-5 rounded-2xl border border-gold-500/30 bg-gray-50 flex flex-col justify-between space-y-4">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-9 h-9 rounded-xl bg-black text-gold-400 flex items-center justify-center font-bold shadow-sm">
-                              <ShieldCheck className="w-5 h-5" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-950">
-                              🛡️ Content Moderator
-                            </span>
-                          </div>
-
-                          <h4 className="font-serif font-bold text-sm text-gray-900">
-                            {t('organizerDashboard.fleet.moderatorRole')}
-                          </h4>
-                          <p className="text-[11px] text-gray-600 mt-1">
-                            {t('organizerDashboard.fleet.moderatorDesc')}
-                          </p>
-
-                          <div className="mt-3 p-3 rounded-xl bg-white border border-gold-500/20 text-xs space-y-1">
-                            <div className="flex justify-between">
-                              <span className="text-gray-500 text-[10px]">Login:</span>
-                              <span className="font-mono font-bold text-gray-900">
-                                {selectedEvent.credentials?.moderator?.email || `moderator@${selectedEvent.slug}.com`}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-500 text-[10px]">Password:</span>
-                              <span className="font-mono text-gray-900 font-bold">
-                                {showPasswords['moderator'] ? (selectedEvent.credentials?.moderator?.temporaryPassword || 'mod123') : '••••••••'}
-                              </span>
-                              <button onClick={() => toggleShowPassword('moderator')} className="text-gold-600 hover:text-gray-900">
-                                {showPasswords['moderator'] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Link
-                            href={`/event/${selectedEvent.slug}/moderation`}
-                            target="_blank"
-                            className="w-full py-2.5 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all border border-gold-500/40"
-                          >
-                            <span>{t('organizerDashboard.fleet.launchModerator')}</span>
-                            <ExternalLink className="w-3.5 h-3.5 text-gold-400" />
-                          </Link>
-
-                          <button
-                            onClick={() => handleCopy(
-                              `Media Moderator Portal: ${window.location.origin}/event/${selectedEvent.slug}/moderation\nEmail: ${selectedEvent.credentials?.moderator?.email || `moderator@${selectedEvent.slug}.com`}\nPassword: ${selectedEvent.credentials?.moderator?.temporaryPassword || 'mod123'}`,
-                              'moderator'
-                            )}
-                            className="w-full py-1.5 px-3 rounded-lg border border-gold-500/30 bg-white hover:bg-gray-50 text-gray-900 text-[11px] font-bold flex items-center justify-center gap-1"
-                          >
-                            {copiedKey === 'moderator' ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3 text-gold-600" />}
-                            <span>{copiedKey === 'moderator' ? t('common.copied') : t('organizerDashboard.fleet.copyModerator')}</span>
-                          </button>
-                        </div>
-                      </div>
-
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+              {/* End of Fleet Cards Grid */}
             </div>
           )}
 
@@ -1204,6 +883,30 @@ export default function OrganizerDashboardPage() {
                       value={eventDate}
                       onChange={(e) => setEventDate(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl border border-gold-500/30 bg-gray-50 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-900 mb-1">
+                      Expected Guest Limit / Quota (Max Guests) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="50000"
+                      value={expectedGuests}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setExpectedGuests(val === '' ? '' : Number(val));
+                      }}
+                      onBlur={() => {
+                        if (expectedGuests === '' || Number(expectedGuests) < 1) {
+                          setExpectedGuests(1);
+                        }
+                      }}
+                      placeholder="e.g. 300"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gold-500/30 bg-gray-50 text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gold-500 font-semibold"
                     />
                   </div>
 

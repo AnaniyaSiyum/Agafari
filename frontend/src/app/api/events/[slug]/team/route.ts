@@ -6,7 +6,7 @@ import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
 
 async function resolveEventOrRespond(slug: string) {
-  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [slug]);
+  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [slug]);
   if (!event) return { error: NextResponse.json({ error: 'Event not found.' }, { status: 404 }) } as const;
   return { event } as const;
 }

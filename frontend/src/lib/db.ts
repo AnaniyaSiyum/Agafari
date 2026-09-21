@@ -22,6 +22,7 @@ function getMysqlPool(): mysql.Pool {
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
+      connectTimeout: 3000,
       charset: 'utf8mb4'
     });
   }
@@ -55,7 +56,14 @@ export async function query<T = any>(
 ): Promise<T[]> {
   const pool = getMysqlPool();
   const { sql, mysqlParams } = convertPgToMysqlQuery(text, params);
-  const [rows] = await pool.query(sql, mysqlParams as any[]);
+  
+  // Timeout after 3 seconds if DB connection hangs
+  const queryPromise = pool.query(sql, mysqlParams as any[]);
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error('MySQL Query Timeout (3s)')), 3000)
+  );
+
+  const [rows] = (await Promise.race([queryPromise, timeoutPromise])) as any;
   return Array.isArray(rows) ? (rows as T[]) : [];
 }
 

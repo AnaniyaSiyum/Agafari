@@ -179,10 +179,9 @@ export class MySqlInvitationRepository implements IInvitationRepository {
           `UPDATE invitations SET
              scanned_count = $1,
              is_scanned = $2,
-             scanned_at = CURRENT_TIMESTAMP,
-             scanned_by = $3
-           WHERE id = $4`,
-          [newScannedCount, isFullyScanned, staffUserId, invitationId]
+             scanned_at = CURRENT_TIMESTAMP
+           WHERE id = $3`,
+          [newScannedCount, isFullyScanned, invitationId]
         );
 
         domainInv.props.scannedCount = newScannedCount;

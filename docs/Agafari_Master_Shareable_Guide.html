@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agafari — Master System Guide & Client Proposal</title>
+  <title>Agafari (አጋፋሪ) — Master System Specification & Shareable Guide</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Playfair+Display:ital,wght@0,600;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Serif+Ethiopic:wght@600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>
     mermaid.initialize({
@@ -34,6 +34,8 @@
       --card-border: #1B4533;
       --text: #F5F7F6;
       --text-muted: #A3B8AD;
+      --accent-green: #10B981;
+      --accent-blue: #3B82F6;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -42,7 +44,7 @@
       color: var(--text);
       line-height: 1.65;
     }
-    .container { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
     
     /* Header */
     header {
@@ -63,6 +65,7 @@
       padding: 4px 10px;
       border-radius: 6px;
       font-size: 13px;
+      font-family: 'Noto Serif Ethiopic', serif;
     }
     .brand-title { font-size: 20px; font-weight: 700; color: #FFF; font-family: 'Playfair Display', serif; }
     .btn-pdf {
@@ -114,7 +117,7 @@
       -webkit-text-fill-color: transparent;
     }
     .hero p {
-      max-width: 740px;
+      max-width: 780px;
       margin: 0 auto 30px;
       font-size: 16px;
       color: var(--text-muted);
@@ -143,7 +146,7 @@
     .sec-desc {
       color: var(--text-muted);
       font-size: 15px;
-      max-width: 800px;
+      max-width: 840px;
       margin-bottom: 30px;
     }
 
@@ -183,6 +186,7 @@
     }
     .badge-gold { background: rgba(212,175,55,0.2); color: var(--gold-light); border: 1px solid rgba(212,175,55,0.4); }
     .badge-emerald { background: rgba(35,77,58,0.4); color: #A3E635; border: 1px solid rgba(163,230,53,0.3); }
+    .badge-blue { background: rgba(59,130,246,0.2); color: #93C5FD; border: 1px solid rgba(59,130,246,0.4); }
 
     /* Tables */
     .table-box {
@@ -219,7 +223,7 @@
       justify-content: center;
     }
 
-    /* ASCII Wireframe Box */
+    /* Wireframe & Code Box */
     .wireframe-box {
       background: #040A07;
       border: 1px solid var(--gold);
@@ -266,9 +270,9 @@
   <!-- Hero -->
   <section class="hero">
     <div class="container">
-      <span class="tag">Complete Platform Specification</span>
+      <span class="tag">Production Architecture & Client Guide</span>
       <h1>Agafari (አጋፋሪ) <span>Master System Guide</span></h1>
-      <p>The comprehensive digital wedding ecosystem uniting real-time 1-Click RSVP, instant QR gate verification, TikTok-style memory reels, and global HD ceremony streaming.</p>
+      <p>The premier digital wedding celebration ecosystem uniting real-time 1-Click RSVP, instant QR gate verification, TikTok-style memory reels, global HD ceremony streaming, and enterprise multi-tenant security.</p>
     </div>
   </section>
 
@@ -277,35 +281,71 @@
     <div class="container">
       <div class="sec-num">Section 01</div>
       <h2 class="sec-title">The 4 Core Pillars of Agafari</h2>
-      <p class="sec-desc">Four integrated pillars that transform the traditional Ethiopian wedding into an unforgettable digital celebration.</p>
+      <p class="sec-desc">Four seamlessly integrated digital pillars that transform traditional wedding logistics into a high-touch, memorable celebration.</p>
 
       <div class="grid-4">
         <div class="card">
           <div class="card-title">🎟️ 1-Click RSVP & QR Pass</div>
-          <div class="card-body">Unique digital cards with instant zero-typing RSVP (Yes / Maybe / No). Door scanning takes under 2 seconds. Eliminates catering waste.</div>
+          <div class="card-body">Personalized digital invitations with instant zero-typing RSVP (Yes / Maybe / No). Door scanning takes under 2 seconds. Eliminates venue overcrowding and catering waste.</div>
         </div>
         <div class="card">
-          <div class="card-title">⏳ Coming Soon Hub</div>
-          <div class="card-body">Personalized couple website with live countdown clock, venue Google Maps link, dress code guidelines, and an interactive Wish Wall.</div>
+          <div class="card-title">⏳ Celebration Hub</div>
+          <div class="card-body">Personalized luxury couple website featuring a live countdown clock, venue Google Maps integration, dress code guidelines, mezmur song requests, and an interactive Wish Wall.</div>
         </div>
         <div class="card">
           <div class="card-title">🎬 TikTok Memory Feed</div>
-          <div class="card-body">Vertical video reel feed for guests to upload authentic backstage moments, wishes, and dance practice videos in real time.</div>
+          <div class="card-body">Vertical video reel feed for guests to upload authentic backstage moments, video blessings, and dance rehearsals in real time with likes and comments.</div>
         </div>
         <div class="card">
           <div class="card-title">📡 Global HD Live Stream</div>
-          <div class="card-body">Broadcast-quality ceremony streaming with real-time floating emoji reactions for family in the USA, Europe, and Canada.</div>
+          <div class="card-body">Broadcast-quality ceremony streaming with real-time floating emoji reactions for remote family members celebrating in North America, Europe, and worldwide.</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Section 2: 3-Phase Journey -->
+  <!-- Section 2: Architecture & Security -->
   <section>
     <div class="container">
       <div class="sec-num">Section 02</div>
-      <h2 class="sec-title">The 3-Phase Wedding Lifecycle</h2>
-      <p class="sec-desc">A seamless end-to-end journey before, during, and after the wedding day.</p>
+      <h2 class="sec-title">Domain-Driven Design (DDD) Architecture & Security</h2>
+      <p class="sec-desc">A hardened Next.js App Router monolith backed by MySQL, structured cleanly into 4 distinct architectural layers.</p>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">🏗️ 4-Layer DDD Architecture</div>
+          <div class="card-body">
+            <ul style="padding-left: 18px; margin-top: 8px;">
+              <li><strong>Domain Layer (src/domain/):</strong> Rich domain entities, value objects, domain events, and repository interfaces. Completely decoupled from frameworks.</li>
+              <li><strong>Application Layer (src/application/):</strong> Orchestrates use cases, application services, input/output DTOs, and transaction boundaries.</li>
+              <li><strong>Infrastructure Layer (src/infrastructure/):</strong> MySQL connection pool, repository implementations, Upstash Redis rate limiting, and Sentry error tracking.</li>
+              <li><strong>Presentation Layer (src/app/ & components/):</strong> Next.js Server & Client Components, API route handlers, and modular feature components.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">🛡️ Security & Hardening Features</div>
+          <div class="card-body">
+            <ul style="padding-left: 18px; margin-top: 8px;">
+              <li><strong>JWT Cookie Auth:</strong> Cryptographic HMAC SHA-256 tokens stored in secure, HttpOnly, SameSite cookies.</li>
+              <li><strong>Salted Password Hashing:</strong> PBKDF2-SHA512 algorithm with 16-byte random cryptographic salts.</li>
+              <li><strong>Rate Limiting:</strong> Dual-layer protection (Upstash Redis + in-memory token bucket fallback) against brute force attacks.</li>
+              <li><strong>Telemetry & Masking:</strong> Sentry integration with automatic masking of sensitive PII (passwords, emails, phone numbers).</li>
+              <li><strong>Strict Env Validation:</strong> Zod schema validation ensuring all secrets exist before app startup.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3: 3-Phase Lifecycle Journey -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 03</div>
+      <h2 class="sec-title">The 3-Phase Wedding Lifecycle Journey</h2>
+      <p class="sec-desc">An end-to-end operational workflow before, during, and after the wedding celebration.</p>
 
       <div class="diagram-container">
         <pre class="mermaid">
@@ -331,25 +371,25 @@ flowchart LR
     </div>
   </section>
 
-  <!-- Section 3: 1-Click RSVP Mechanism -->
+  <!-- Section 4: 1-Click Instant RSVP Engine -->
   <section>
     <div class="container">
-      <div class="sec-num">Section 03</div>
-      <h2 class="sec-title">1-Click Instant RSVP Mechanism</h2>
-      <p class="sec-desc">Zero typing required: popup emerges after 5 seconds, and tapping any choice submits immediately.</p>
+      <div class="sec-num">Section 04</div>
+      <h2 class="sec-title">1-Click Instant RSVP Engine</h2>
+      <p class="sec-desc">Zero typing required: popup triggers automatically after 5 seconds, recording instant responses without page reloads.</p>
 
       <div class="diagram-container">
         <pre class="mermaid">
 flowchart TD
     A["Guest Opens Wedding Link"] --> B["Page loads countdown & details"]
-    B --> C{"5-Second Delay"}
-    C --> D["RSVP Popup Emerges (3 Choices)"]
+    B --> C{"5-Second Timer"}
+    C --> D["RSVP Modal Appears (3 Choices)"]
 
-    D --> E["Choice 1: YES 🥂 (Attending)"]
-    D --> F["Choice 2: MAYBE 🤔 (Undecided)"]
-    D --> G["Choice 3: NO 💔 (Declined)"]
+    D --> E["Option 1: YES 🥂 (Attending)"]
+    D --> F["Option 2: MAYBE 🤔 (Undecided)"]
+    D --> G["Option 3: NO 💔 (Declined)"]
 
-    E --> H["Instant Auto-Submit to Server"]
+    E --> H["Instant Background POST to Server"]
     F --> H
     G --> H
 
@@ -361,16 +401,16 @@ flowchart TD
     </div>
   </section>
 
-  <!-- Section 4: All 12 Pages Walkthrough -->
+  <!-- Section 5: Route Map & Visual Wireframes -->
   <section>
     <div class="container">
-      <div class="sec-num">Section 04</div>
-      <h2 class="sec-title">Complete 12-Page Map & Visual Wireframes</h2>
-      <p class="sec-desc">Every screen designed for maximum elegance and ease of use.</p>
+      <div class="sec-num">Section 05</div>
+      <h2 class="sec-title">Complete System Route Map & Visual Wireframes</h2>
+      <p class="sec-desc">14 dedicated routes designed for maximum elegance, security, and mobile responsiveness.</p>
 
       <div class="grid-2">
         <div class="card">
-          <div class="card-title">1. Coming Soon Celebration Hub</div>
+          <div class="card-title">1. Celebration Web Hub</div>
           <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /event/[slug]</p>
           <div class="wireframe-box">[ 👑 SARA & DAWIT'S ROYAL WEDDING ]
 ⏳ COUNTDOWN: 14d : 06h : 22m : 18s
@@ -378,7 +418,7 @@ flowchart TD
 🎟️ PASS: Abebe Kebede (Quota: 2 Heads)
 [ ■■■■■ SECURE QR CODE ■■■■■ ]
 💌 WISH WALL: "Congratulations! ✨"</div>
-          <div class="card-body">The central guest page with live countdown, personalized QR pass, Wish Wall, song suggestions, and 1-Click RSVP popup.</div>
+          <div class="card-body">Central guest destination featuring countdown timer, venue details, personalized QR invitation pass, Wish Wall, and mezmur song suggestions.</div>
         </div>
 
         <div class="card">
@@ -390,19 +430,19 @@ flowchart TD
           (❤️) 192 Likes | (💬) 24 Comments
 =======================================
 💍 Eskista dance rehearsal! [ + Upload ]</div>
-          <div class="card-body">Vertical snap-scroll video reels with Wishes, BTS, and Live tabs, double-tap heart bursts, comments drawer, and video upload modal.</div>
+          <div class="card-body">Vertical snap-scroll video feed with Wishes, BTS, and Live tabs, double-tap heart animations, comments drawer, and direct upload modal.</div>
         </div>
 
         <div class="card">
           <div class="card-title">3. QR Gate Security Scanner</div>
-          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /scanner</p>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /event/[slug]/scanner & /scanner</p>
           <div class="wireframe-box">🔍 AGAFARI GATE VERIFICATION SCANNER
 Code: INV-SD2026-001 [ VERIFY ]
 ---------------------------------------
 ✅ VALID PASS: Abebe Kebede & Guest
 Quota: 2 Heads (0/2 Checked In)
 [ CHECK IN 1 GUEST ] [ CHECK IN 2 GUESTS ]</div>
-          <div class="card-body">Door verification tool showing Valid, Already Scanned, or Invalid pass states with anti-counterfeit duplicate prevention.</div>
+          <div class="card-body">Mobile door check-in scanner displaying Valid, Scanned Warning, or Invalid pass status with anti-counterfeit duplicate prevention.</div>
         </div>
 
         <div class="card">
@@ -414,53 +454,82 @@ Total: 250 | Confirmed: 210 | Declined: 15
 [ + Generate New Guest QR Pass ]
 • Dr. Michael (London) - 1 Guest [COPIED]
 • Sara Bekele - 2 Guests [PENDING]</div>
-          <div class="card-body">Live attendance tracker, custom QR pass generator, wish/video moderation, and security/streamer staff assignment.</div>
+          <div class="card-body">Real-time attendance counter, QR pass generator, wish & media moderation hub, and staff role assignment portal.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">5. Event Organizer Dashboard</div>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /organizer/dashboard</p>
+          <div class="wireframe-box">🏢 AGENCY PORTFOLIO DASHBOARD
+Active Weddings: 8 | Pending Approval: 2
+---------------------------------------
+[ + Onboard New Wedding Client ]
+• Abenezer & Selam [ APPROVED - LIVE ]
+• Dawit & Sara [ PENDING REVIEW ]</div>
+          <div class="card-body">Multi-wedding management portal for wedding planning agencies to register clients, manage credentials, and monitor event approvals.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">6. System Admin Master Control</div>
+          <p class="badge badge-emerald" style="margin-bottom: 8px;">Route: /admin/dashboard</p>
+          <div class="wireframe-box">👑 AGAFARI MASTER CONTROL
+Platform Weddings: 42 | Users: 184
+---------------------------------------
+[ APPROVE ] Dawit & Sara Wedding
+[ TOGGLE LIVE STREAM ] Broadcast Status
+[ USER MANAGEMENT ] Reset Credentials</div>
+          <div class="card-body">Platform-wide governance: event licensing approvals, live stream activation toggles, user account management, and CMS content control.</div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Section 5: Traditional vs Agafari -->
+  <!-- Section 6: Traditional vs Agafari -->
   <section>
     <div class="container">
-      <div class="sec-num">Section 05</div>
+      <div class="sec-num">Section 06</div>
       <h2 class="sec-title">Traditional Wedding vs. Agafari Platform</h2>
-      <p class="sec-desc">A direct side-by-side comparison illustrating why couples and planners choose Agafari.</p>
+      <p class="sec-desc">A direct side-by-side comparison illustrating why couples and event agencies choose Agafari.</p>
 
       <div class="table-box">
         <table>
           <thead>
             <tr>
-              <th>Feature</th>
+              <th>Feature Dimension</th>
               <th>Traditional Ethiopian Wedding</th>
-              <th>With Agafari Platform</th>
+              <th>With Agafari Digital Platform</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>Invitations</strong></td>
-              <td>Expensive paper printing; manual hand delivery; lost cards</td>
-              <td>Instant personalized QR cards via Telegram, WhatsApp, or SMS</td>
+              <td><strong>Invitations & Delivery</strong></td>
+              <td>Expensive paper printing; manual hand delivery; cards easily misplaced</td>
+              <td>Instant personalized digital QR cards shared via Telegram, WhatsApp, or SMS</td>
             </tr>
             <tr>
-              <td><strong>RSVP Headcount</strong></td>
-              <td>30-40% uncertainty; heavy catering & seat wastage</td>
-              <td>Exact real-time attendance numbers with 1-Click RSVP</td>
+              <td><strong>RSVP & Headcount Accuracy</strong></td>
+              <td>Unpredictable numbers; 30-40% seat and catering budget wastage</td>
+              <td>Exact real-time attendance numbers with zero-friction 1-Click RSVP</td>
             </tr>
             <tr>
-              <td><strong>Gate Security</strong></td>
-              <td>Slow paper lists; gate crashing; duplicate card reuse</td>
-              <td>2-second QR scan; anti-counterfeit duplicate entry alert</td>
+              <td><strong>Gate Security & Access Control</strong></td>
+              <td>Slow paper guest lists; gate crashing; card copying</td>
+              <td>2-second QR scan; anti-counterfeit duplicate entry alert & quota enforcement</td>
             </tr>
             <tr>
-              <td><strong>Diaspora Family</strong></td>
+              <td><strong>Diaspora Family Connection</strong></td>
               <td>Unstable personal phone video calls</td>
-              <td>Broadcast HD live stream with floating heart reactions</td>
+              <td>Broadcast HD live stream with floating heart reactions and real-time counter</td>
             </tr>
             <tr>
-              <td><strong>Guest Videos</strong></td>
+              <td><strong>Guest Photo & Video Memories</strong></td>
               <td>Scattered on 100+ guest phones; couple loses 80%</td>
-              <td>Centralized TikTok-style memory reel vault</td>
+              <td>Centralized TikTok-style memory feed and permanent cloud keepsake vault</td>
+            </tr>
+            <tr>
+              <td><strong>Language & Localization</strong></td>
+              <td>Single fixed paper language</td>
+              <td>Instant zero-reload bilingual toggle (English & Amharic with Ethiopic fonts)</td>
             </tr>
           </tbody>
         </table>
@@ -468,23 +537,157 @@ Total: 250 | Confirmed: 210 | Declined: 15
     </div>
   </section>
 
-  <!-- Section 6: Packages -->
+  <!-- Section 7: User Roles & Permissions Matrix -->
   <section>
     <div class="container">
-      <div class="sec-num">Section 06</div>
-      <h2 class="sec-title">Packages & Deliverables</h2>
-      <p class="sec-desc">Tailored service tiers to fit intimate celebrations and royal grand weddings.</p>
+      <div class="sec-num">Section 07</div>
+      <h2 class="sec-title">User Roles & Granular RBAC Permissions Matrix</h2>
+      <p class="sec-desc">Role-based access control protecting system resources across 6 distinct user roles.</p>
+
+      <div class="table-box">
+        <table>
+          <thead>
+            <tr>
+              <th>System Capability</th>
+              <th>Guest</th>
+              <th>Gate Scanner</th>
+              <th>Live Streamer</th>
+              <th>Bride & Groom</th>
+              <th>Organizer</th>
+              <th>System Admin</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>View Celebration Hub</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Submit 1-Click RSVP</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Post Wishes & Mezmur Songs</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Upload Video Memory Reels</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Scan QR Gate Pass at Door</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Broadcast HD Live Stream</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Manage Invitations & QR Codes</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Moderate Wishes & Video Feeds</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Assign Field Staff Accounts</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Onboard New Weddings</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Approve & License Weddings</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+            </tr>
+            <tr>
+              <td>Manage Platform User Accounts</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>❌</td>
+              <td>✅</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 8: Packages & Pricing -->
+  <section>
+    <div class="container">
+      <div class="sec-num">Section 08</div>
+      <h2 class="sec-title">Packages, Deliverables & Pricing</h2>
+      <p class="sec-desc">Tailored service tiers for intimate gatherings to grand royal wedding celebrations.</p>
 
       <div class="grid-3">
         <div class="card">
           <div class="card-title">Silver Package</div>
           <div class="card-body">
-            <ul style="list-style: none; margin-top: 10px;">
-              <li>✓ Coming Soon Celebration Web Hub</li>
-              <li>✓ Live Countdown Clock</li>
-              <li>✓ 1-Click Instant RSVP System</li>
+            <ul style="list-style: none; margin-top: 10px; line-height: 1.8;">
+              <li>✓ Celebration Web Hub & Countdown Clock</li>
+              <li>✓ 1-Click Instant RSVP Engine</li>
               <li>✓ Up to 200 Unique QR Passes</li>
-              <li>✓ Interactive Digital Wish Wall</li>
+              <li>✓ Interactive Wish Wall & Mezmur Request Hub</li>
               <li>✓ Couple Management Dashboard</li>
               <li>✓ 3 Months Cloud Hosting</li>
             </ul>
@@ -494,13 +697,12 @@ Total: 250 | Confirmed: 210 | Declined: 15
         <div class="card" style="border-color: var(--gold);">
           <div class="card-title" style="color: var(--gold);">Gold Package (Most Popular)</div>
           <div class="card-body">
-            <ul style="list-style: none; margin-top: 10px;">
+            <ul style="list-style: none; margin-top: 10px; line-height: 1.8;">
               <li>✓ Everything in Silver Package</li>
-              <li>✓ TikTok-Style Memory Reel Feed</li>
+              <li>✓ TikTok-Style Memory Reel Video Feed</li>
               <li>✓ Guest Video Blessing Uploads</li>
               <li>✓ Up to 500 Unique QR Passes</li>
-              <li>✓ Gate Security Scanner Account</li>
-              <li>✓ Mezmur & Song Recommendation Hub</li>
+              <li>✓ Dedicated Gate Security Scanner Account</li>
               <li>✓ 6 Months Cloud Hosting</li>
             </ul>
           </div>
@@ -509,14 +711,14 @@ Total: 250 | Confirmed: 210 | Declined: 15
         <div class="card">
           <div class="card-title">Diamond Package (Royal VIP)</div>
           <div class="card-body">
-            <ul style="list-style: none; margin-top: 10px;">
+            <ul style="list-style: none; margin-top: 10px; line-height: 1.8;">
               <li>✓ Everything in Gold Package</li>
-              <li>✓ Dedicated HD Live Ceremony Stream</li>
+              <li>✓ Dedicated HD Live Stream Broadcast</li>
               <li>✓ Custom Wedding Domain URL</li>
               <li>✓ Unlimited Unique QR Passes</li>
-              <li>✓ 3 Gate Scanner Staff Accounts</li>
-              <li>✓ Lifetime Video Reel Archive Vault</li>
-              <li>✓ 1 Year VIP Hosting & Priority Support</li>
+              <li>✓ 3 Gate Scanner & Broadcaster Accounts</li>
+              <li>✓ Lifetime Cloud Memory Vault Archive</li>
+              <li>✓ 1 Year VIP Priority Support</li>
             </ul>
           </div>
         </div>
@@ -524,50 +726,69 @@ Total: 250 | Confirmed: 210 | Declined: 15
     </div>
   </section>
 
-  <!-- Section 7: Demo Links & Credentials -->
+  <!-- Section 9: Demo Links & Verified Credentials -->
   <section>
     <div class="container">
-      <div class="sec-num">Section 07</div>
-      <h2 class="sec-title">Live Testing Links & Demo Credentials</h2>
-      <p class="sec-desc">Pre-configured accounts ready for live demonstration.</p>
+      <div class="sec-num">Section 09</div>
+      <h2 class="sec-title">Live Environment URLs & Verified Demo Credentials</h2>
+      <p class="sec-desc">Pre-configured testing accounts verified against the production MySQL seed database.</p>
 
       <div class="table-box">
         <table>
           <thead>
             <tr>
               <th>Role</th>
-              <th>Login Portal</th>
-              <th>Demo Email</th>
-              <th>Demo Password</th>
+              <th>Login Portal URL</th>
+              <th>Verified Email / Account</th>
+              <th>Password</th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td><strong>Bride & Groom</strong></td>
-              <td><code>/couple/login</code></td>
-              <td><code>couple@sara-dawit.com</code></td>
-              <td><code>couple123</code></td>
+              <td><strong>System Super Admin</strong></td>
+              <td><code>/admin/login</code></td>
+              <td><code>admin@agafari.com</code></td>
+              <td><code>Admin123!</code></td>
             </tr>
             <tr>
-              <td><strong>Event Organizer</strong></td>
-              <td><code>/organizer/login</code></td>
-              <td><code>organizer@sara-dawit.com</code></td>
-              <td><code>org123</code></td>
-            </tr>
-            <tr>
-              <td><strong>System Admin</strong></td>
+              <td><strong>System Admin (Secondary)</strong></td>
               <td><code>/admin/login</code></td>
               <td><code>admin@hamelmal.com</code></td>
               <td><code>admin123</code></td>
             </tr>
             <tr>
-              <td><strong>Gate Security</strong></td>
-              <td><code>/scanner</code></td>
-              <td><code>scanner@sara-dawit.com</code></td>
-              <td><code>scan123</code></td>
+              <td><strong>Event Organizer Agency</strong></td>
+              <td><code>/organizer/login</code></td>
+              <td><code>organizer@agafari.com</code></td>
+              <td><code>Organizer123!</code> or <code>admin123</code></td>
+            </tr>
+            <tr>
+              <td><strong>Bride & Groom (Couple)</strong></td>
+              <td><code>/couple/login</code></td>
+              <td><code>couple@agafari.com</code></td>
+              <td><code>Couple123!</code> or <code>admin123</code></td>
+            </tr>
+            <tr>
+              <td><strong>Gate Security Scanner</strong></td>
+              <td><code>/event/aynalem-and-birhanu-mtxgppv9/scanner</code></td>
+              <td><code>gate@agafari.com</code></td>
+              <td><code>admin123</code></td>
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="card" style="margin-top: 20px;">
+        <div class="card-title">🔗 Key Demonstration Web Routes (Server: http://localhost:3000)</div>
+        <div class="card-body" style="line-height: 2;">
+          • <strong>Public Landing Page:</strong> <code>http://localhost:3000/</code><br>
+          • <strong>Celebration Hub:</strong> <code>http://localhost:3000/event/aynalem-and-birhanu-mtxgppv9</code><br>
+          • <strong>Personalized Pass:</strong> <code>http://localhost:3000/event/aynalem-and-birhanu-mtxgppv9?code=AGAFARI-INV-1001</code><br>
+          • <strong>TikTok Memory Feed:</strong> <code>http://localhost:3000/event/aynalem-and-birhanu-mtxgppv9/feed</code><br>
+          • <strong>HD Live Stream:</strong> <code>http://localhost:3000/event/aynalem-and-birhanu-mtxgppv9/live</code><br>
+          • <strong>QR Gate Security Scanner:</strong> <code>http://localhost:3000/scanner</code><br>
+          • <strong>Shareable Guide Webpage:</strong> <code>http://localhost:3000/shareable-guide.html</code>
+        </div>
       </div>
     </div>
   </section>
@@ -576,7 +797,7 @@ Total: 250 | Confirmed: 210 | Declined: 15
   <footer style="text-align: center; padding: 40px 0; border-top: 1px solid var(--card-border); color: var(--text-muted); font-size: 13px;">
     <div class="container">
       <p style="margin-bottom: 6px;"><strong>Agafari (አጋፋሪ)</strong> — Smart Digital Wedding Celebration Platform</p>
-      <p>Architected & Built by <strong>Hamelmal Creatives</strong> · Version 1.0.0 (2026)</p>
+      <p>Architected & Engineered by <strong>Hamelmal Creatives</strong> · Production Version 1.0.0 (2026)</p>
     </div>
   </footer>
 

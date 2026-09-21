@@ -1,387 +1,236 @@
 -- =============================================================================
--- AGAFARI (አጋፋሪ) WEDDING PLATFORM — FIXED SCHEMA (Phase 3)
--- Replaces frontend/db/schema.sql. Fixes vs. the audited version:
---   - stray "]" syntax error in event_status_enum (was breaking this file)
---   - users.event_id removed (blocked an organizer from owning >1 event)
---   - organizers table + event_staff join table added (multi-tenancy, multi-role staff)
---   - templates + per-event customization added
---   - cms_sections added (admin-controlled landing page blocks)
---   - post_likes added (media_assets.likes_count was an unprotected counter)
---   - invitations.rsvp_locked_at added (2-day-before-wedding RSVP lock)
+-- AGAFARI (አጋፋሪ) WEDDING PLATFORM — MYSQL / MARIADB BASE SCHEMA
+-- Converted from PostgreSQL schema.sql to MySQL 8.0+ / MariaDB syntax
 -- =============================================================================
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+SET FOREIGN_KEY_CHECKS = 0;
 
--- =============================================================================
--- ENUM TYPES
--- =============================================================================
+DROP TABLE IF EXISTS post_likes;
+DROP TABLE IF EXISTS media_comments;
+DROP TABLE IF EXISTS media_assets;
+DROP TABLE IF EXISTS wishes;
+DROP TABLE IF EXISTS rsvps;
+DROP TABLE IF EXISTS invitations;
+DROP TABLE IF EXISTS event_staff;
+DROP TABLE IF EXISTS event_locations;
+DROP TABLE IF EXISTS live_streams;
+DROP TABLE IF EXISTS mezmur_playlist;
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS templates;
+DROP TABLE IF EXISTS organizers;
+DROP TABLE IF EXISTS cms_sections;
+DROP TABLE IF EXISTS users;
 
-CREATE TYPE event_status_enum AS ENUM (
-    'DRAFT',
-    'COMING_SOON',
-    'LIVE',
-    'COMPLETED',
-    'ARCHIVED'
-);
+SET FOREIGN_KEY_CHECKS = 1;
 
-CREATE TYPE admin_approval_enum AS ENUM (
-    'PENDING',
-    'APPROVED',
-    'REJECTED'
-);
-
--- Kept identical to the existing frontend enum values on purpose — every page
--- component and lib/auth.ts UserRole type already depends on these exact
--- strings, and renaming them would mean touching ~58 frontend files for no
--- functional gain. The fix for the "one event per user" problem is structural
--- (see `organizers` / `event_staff` below), not a role-name change.
-CREATE TYPE user_role_enum AS ENUM (
-    'SYSTEM_ADMIN',
-    'EVENT_ORGANIZER',
-    'BRIDE_GROOM',
-    'LIVE_STREAMER',
-    'GATE_SCANNER',
-    'GUEST'
-);
-
-CREATE TYPE event_managed_by_enum AS ENUM (
-    'ORGANIZER',
-    'ADMIN'
-);
-
-CREATE TYPE staff_role_enum AS ENUM (
-    'GATE_SCANNER',
-    'LIVE_STREAMER',
-    'CONTENT_MODERATOR',
-    'QUOTA_DELEGATE'
-);
-
-CREATE TYPE rsvp_status_enum AS ENUM (
-    'ATTENDING',
-    'MAYBE',
-    'DECLINED',
-    'PENDING'
-);
-
-CREATE TYPE invitation_type_enum AS ENUM (
-    'CARD',
-    'LINK'
-);
-
-CREATE TYPE media_category_enum AS ENUM (
-    'WISHES',
-    'BTS',
-    'LIVE'
-);
-
-CREATE TYPE media_type_enum AS ENUM (
-    'VIDEO',
-    'IMAGE'
-);
-
--- =============================================================================
--- 1. USER ACCOUNTS (global identity — no event_id here, see event_staff below)
--- =============================================================================
-
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 1. USERS
+CREATE TABLE IF NOT EXISTS users (
+    id VARCHAR(36) PRIMARY KEY,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
     full_name VARCHAR(150) NOT NULL,
-    role user_role_enum NOT NULL DEFAULT 'GUEST',
-    created_by UUID REFERENCES users(id), -- e.g. the admin who created an organizer login
+    role ENUM('SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'BRIDE_GROOM', 'LIVE_STREAMER', 'GATE_SCANNER', 'GUEST') NOT NULL DEFAULT 'GUEST',
+    created_by VARCHAR(36),
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_users_email (email),
+    INDEX idx_users_role (role)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
-
--- =============================================================================
--- 2. ORGANIZERS (a EVENT_ORGANIZER user can own many events)
--- =============================================================================
-
-CREATE TABLE organizers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    owner_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+-- 2. ORGANIZERS
+CREATE TABLE IF NOT EXISTS organizers (
+    id VARCHAR(36) PRIMARY KEY,
+    owner_user_id VARCHAR(36) NOT NULL,
     business_name VARCHAR(255) NOT NULL,
     contact_phone VARCHAR(50),
-    created_by_admin_id UUID REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    created_by_admin_id VARCHAR(36),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_organizers_owner (owner_user_id),
+    CONSTRAINT fk_organizers_owner FOREIGN KEY (owner_user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_organizers_owner ON organizers(owner_user_id);
-
--- =============================================================================
--- 3. TEMPLATES (couples pick one, then customize)
--- =============================================================================
-
-CREATE TABLE templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+-- 3. TEMPLATES
+CREATE TABLE IF NOT EXISTS templates (
+    id VARCHAR(36) PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
     preview_url TEXT,
-    config_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+    config_json JSON NOT NULL,
     is_active BOOLEAN DEFAULT TRUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- =============================================================================
--- 4. WEDDING EVENTS TABLE
--- =============================================================================
-
-CREATE TABLE events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    slug VARCHAR(120) UNIQUE NOT NULL,
+-- 4. EVENTS
+CREATE TABLE IF NOT EXISTS events (
+    id VARCHAR(36) PRIMARY KEY,
+    slug VARCHAR(150) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
-    managed_by event_managed_by_enum NOT NULL DEFAULT 'ADMIN',
-    organizer_id UUID REFERENCES organizers(id),        -- NULL when managed_by = 'ADMIN'
-    couple_user_id UUID REFERENCES users(id),            -- the BRIDE_GROOM login for this event
-    template_id UUID REFERENCES templates(id),
-    template_customization_json JSONB DEFAULT '{}'::jsonb,
+    managed_by ENUM('DIRECT', 'ORGANIZER') NOT NULL DEFAULT 'DIRECT',
+    organizer_id VARCHAR(36),
+    couple_user_id VARCHAR(36),
+    template_id VARCHAR(36),
+    template_customization_json JSON,
+    template_locked_at DATETIME,
+    template_locked_by VARCHAR(36),
     bride_name VARCHAR(150) NOT NULL,
     groom_name VARCHAR(150) NOT NULL,
-    event_date TIMESTAMPTZ NOT NULL,
-    start_time VARCHAR(20) DEFAULT '14:00',
-    second_event_date TIMESTAMPTZ,
+    event_date DATETIME NOT NULL,
+    start_time VARCHAR(20),
+    second_event_date DATETIME,
     venue_name VARCHAR(255) NOT NULL,
     venue_address TEXT,
     venue_map_url TEXT,
     dress_code VARCHAR(255),
     welcome_message TEXT,
     cover_image_url TEXT,
-    status event_status_enum DEFAULT 'COMING_SOON' NOT NULL,
-    admin_approval_status admin_approval_enum DEFAULT 'APPROVED' NOT NULL,
-    youtube_video_id VARCHAR(50),
+    status ENUM('DRAFT', 'COMING_SOON', 'LIVE', 'COMPLETED', 'ARCHIVED') NOT NULL DEFAULT 'DRAFT',
+    admin_approval_status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'APPROVED',
     is_live BOOLEAN DEFAULT FALSE NOT NULL,
+    youtube_stream_url TEXT,
+    youtube_video_id VARCHAR(50),
+    background_music_url TEXT,
+    background_music_title VARCHAR(255),
     thank_you_message TEXT,
     thank_you_image_url TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    CHECK (
-        (managed_by = 'ORGANIZER' AND organizer_id IS NOT NULL)
-        OR (managed_by = 'ADMIN' AND organizer_id IS NULL)
-    )
-);
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_events_slug (slug),
+    INDEX idx_events_status (status),
+    INDEX idx_events_approval (admin_approval_status),
+    INDEX idx_events_organizer (organizer_id),
+    INDEX idx_events_couple (couple_user_id),
+    CONSTRAINT fk_events_organizer FOREIGN KEY (organizer_id) REFERENCES organizers(id) ON DELETE SET NULL,
+    CONSTRAINT fk_events_couple FOREIGN KEY (couple_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_events_template FOREIGN KEY (template_id) REFERENCES templates(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_events_slug ON events(slug);
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_date ON events(event_date);
-CREATE INDEX idx_events_organizer ON events(organizer_id);
-CREATE INDEX idx_events_couple ON events(couple_user_id);
+-- 5. EVENT_STAFF
+CREATE TABLE IF NOT EXISTS event_staff (
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
+    user_id VARCHAR(36) NOT NULL,
+    role ENUM('LIVE_STREAMER', 'GATE_SCANNER') NOT NULL,
+    assigned_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_event_staff_event (event_id),
+    INDEX idx_event_staff_user (user_id),
+    UNIQUE KEY uq_event_user_role (event_id, user_id, role),
+    CONSTRAINT fk_event_staff_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    CONSTRAINT fk_event_staff_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Multiple venues per wedding (ceremony / hall / melse, etc.)
-CREATE TABLE event_locations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    label VARCHAR(100) NOT NULL,     -- "Church", "Reception Hall", "Melse Venue"
-    address TEXT NOT NULL,
-    map_url TEXT,
-    order_index INT DEFAULT 0 NOT NULL
-);
-
-CREATE INDEX idx_event_locations_event ON event_locations(event_id);
-
--- =============================================================================
--- 5. EVENT STAFF (per-event role assignment — one user, many events, many roles)
--- =============================================================================
-
-CREATE TABLE event_staff (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    role staff_role_enum NOT NULL,
-    assigned_by UUID REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    UNIQUE(event_id, user_id, role)
-);
-
-CREATE INDEX idx_event_staff_event ON event_staff(event_id);
-CREATE INDEX idx_event_staff_user ON event_staff(user_id);
-
--- =============================================================================
--- 6. DIGITAL GUEST INVITATIONS & QR PASSES
--- =============================================================================
-
-CREATE TABLE invitations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    invite_code VARCHAR(50) UNIQUE NOT NULL,
-    invite_type invitation_type_enum DEFAULT 'CARD' NOT NULL,
-    guest_name VARCHAR(150) NOT NULL,
+-- 6. INVITATIONS
+CREATE TABLE IF NOT EXISTS invitations (
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
+    invite_code VARCHAR(100) NOT NULL,
+    invite_type ENUM('CARD', 'LINK') DEFAULT 'LINK' NOT NULL,
+    guest_name VARCHAR(255) NOT NULL,
     guest_phone VARCHAR(50),
     max_guests INT DEFAULT 1 NOT NULL,
-    table_number VARCHAR(100),
-    rsvp_status rsvp_status_enum DEFAULT 'PENDING' NOT NULL,
-    rsvp_updated_at TIMESTAMPTZ,
-    rsvp_locked_at TIMESTAMPTZ,           -- set by scheduled job at (event_date - 2 days); NULL = still editable
+    table_number VARCHAR(50),
+    rsvp_status ENUM('ATTENDING', 'DECLINED', 'PENDING') DEFAULT 'PENDING' NOT NULL,
+    rsvp_updated_at DATETIME,
+    rsvp_locked_at DATETIME,
     attending_headcount INT DEFAULT 0 NOT NULL,
     is_scanned BOOLEAN DEFAULT FALSE NOT NULL,
     scanned_count INT DEFAULT 0 NOT NULL,
-    scanned_at TIMESTAMPTZ,
-    scanned_by UUID REFERENCES users(id) ON DELETE SET NULL,
-    qr_code_url TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    scanned_at DATETIME,
+    qr_code_url TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_invitations_event (event_id),
+    INDEX idx_invitations_code (invite_code),
+    INDEX idx_invitations_rsvp (rsvp_status),
+    CONSTRAINT fk_invitations_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_invitations_code ON invitations(invite_code);
-CREATE INDEX idx_invitations_event ON invitations(event_id);
-CREATE INDEX idx_invitations_is_scanned ON invitations(is_scanned);
-
--- =============================================================================
--- 7. 1-CLICK INSTANT RSVPS (also carries the singer/zemari recommendation —
---    kept merged per the Phase 2 confirmed decision, not split into its own table)
--- =============================================================================
-
-CREATE TABLE rsvps (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    invitation_id UUID REFERENCES invitations(id) ON DELETE SET NULL,
-    invite_code VARCHAR(50),
-    guest_name VARCHAR(150) NOT NULL,
-    guest_phone VARCHAR(50),
-    attendance_status rsvp_status_enum NOT NULL,
-    attending_count INT DEFAULT 1 NOT NULL,
-    song_recommendation TEXT,      -- singer/zemari recommendation, free text
+-- 7. RSVPS
+CREATE TABLE IF NOT EXISTS rsvps (
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
+    invitation_id VARCHAR(36),
+    attendance_status ENUM('ATTENDING', 'DECLINED', 'PENDING') NOT NULL,
+    attending_count INT DEFAULT 0 NOT NULL,
     dietary_notes TEXT,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_rsvps_event (event_id),
+    INDEX idx_rsvps_invitation (invitation_id),
+    CONSTRAINT fk_rsvps_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+    CONSTRAINT fk_rsvps_invitation FOREIGN KEY (invitation_id) REFERENCES invitations(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_rsvps_event_id ON rsvps(event_id);
-CREATE INDEX idx_rsvps_status ON rsvps(attendance_status);
-
--- =============================================================================
--- 8. GUEST WISHES & BLESSINGS (text/video wishes to the couple)
--- =============================================================================
-
-CREATE TABLE wishes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    sender_name VARCHAR(150) NOT NULL,
+-- 8. WISHES
+CREATE TABLE IF NOT EXISTS wishes (
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
+    sender_name VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
-    media_type media_type_enum,
+    media_type ENUM('TEXT', 'VIDEO') DEFAULT 'TEXT' NOT NULL,
     video_url TEXT,
-    status admin_approval_enum DEFAULT 'APPROVED' NOT NULL,
-    is_featured BOOLEAN DEFAULT FALSE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING' NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_wishes_event (event_id),
+    INDEX idx_wishes_status (status),
+    CONSTRAINT fk_wishes_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_wishes_event_id ON wishes(event_id);
-CREATE INDEX idx_wishes_status ON wishes(status);
-
--- =============================================================================
--- 9. TIKTOK-STYLE VIDEO MEMORY FEED
--- =============================================================================
-
-CREATE TABLE media_assets (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    uploader_name VARCHAR(150) NOT NULL,
-    media_type media_type_enum DEFAULT 'VIDEO' NOT NULL,
-    category media_category_enum DEFAULT 'WISHES' NOT NULL,
+-- 9. MEDIA_ASSETS
+CREATE TABLE IF NOT EXISTS media_assets (
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
+    uploader_name VARCHAR(255) NOT NULL,
+    media_type ENUM('VIDEO', 'IMAGE') NOT NULL,
+    category ENUM('WISHES', 'BTS', 'LIVE') DEFAULT 'BTS' NOT NULL,
     cdn_url TEXT NOT NULL,
     thumbnail_url TEXT,
     caption TEXT,
     views_count INT DEFAULT 0 NOT NULL,
-    likes_count INT DEFAULT 0 NOT NULL,    -- kept as a fast-read cache, now driven by post_likes via trigger below
-    status admin_approval_enum DEFAULT 'PENDING' NOT NULL,
-    moderated_by UUID REFERENCES users(id),
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    likes_count INT DEFAULT 0 NOT NULL,
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') DEFAULT 'PENDING' NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_media_event (event_id),
+    INDEX idx_media_category (category),
+    INDEX idx_media_status (status),
+    CONSTRAINT fk_media_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_media_event_id ON media_assets(event_id);
-CREATE INDEX idx_media_category ON media_assets(category);
-CREATE INDEX idx_media_status ON media_assets(status);
+-- 10. MEDIA_COMMENTS
+CREATE TABLE IF NOT EXISTS media_comments (
+    id VARCHAR(36) PRIMARY KEY,
+    media_id VARCHAR(36) NOT NULL,
+    author_name VARCHAR(255) NOT NULL,
+    comment_text TEXT NOT NULL,
+    status ENUM('APPROVED', 'REJECTED', 'PENDING') DEFAULT 'APPROVED' NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_comments_media (media_id),
+    CONSTRAINT fk_comments_media FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Per-guest like tracking (fixes the unprotected likes_count counter)
-CREATE TABLE post_likes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    media_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
-    guest_identifier VARCHAR(255) NOT NULL,   -- device/session id; guests aren't authenticated users
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    UNIQUE(media_id, guest_identifier)
-);
+-- 11. POST_LIKES
+CREATE TABLE IF NOT EXISTS post_likes (
+    id VARCHAR(36) PRIMARY KEY,
+    media_id VARCHAR(36) NOT NULL,
+    client_ip VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    UNIQUE KEY uq_media_ip (media_id, client_ip),
+    CONSTRAINT fk_post_likes_media FOREIGN KEY (media_id) REFERENCES media_assets(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE OR REPLACE FUNCTION sync_media_likes_count() RETURNS TRIGGER AS $$
-BEGIN
-    IF TG_OP = 'INSERT' THEN
-        UPDATE media_assets SET likes_count = likes_count + 1 WHERE id = NEW.media_id;
-        RETURN NEW;
-    ELSIF TG_OP = 'DELETE' THEN
-        UPDATE media_assets SET likes_count = GREATEST(likes_count - 1, 0) WHERE id = OLD.media_id;
-        RETURN OLD;
-    END IF;
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_post_likes_insert AFTER INSERT ON post_likes
-    FOR EACH ROW EXECUTE PROCEDURE sync_media_likes_count();
-CREATE TRIGGER trg_post_likes_delete AFTER DELETE ON post_likes
-    FOR EACH ROW EXECUTE PROCEDURE sync_media_likes_count();
-
-CREATE TABLE media_comments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    media_id UUID NOT NULL REFERENCES media_assets(id) ON DELETE CASCADE,
-    sender_name VARCHAR(150) NOT NULL,
-    comment TEXT NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
-CREATE INDEX idx_comments_media_id ON media_comments(media_id);
-
-CREATE TABLE live_streams (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    started_by UUID REFERENCES users(id),
-    youtube_video_id VARCHAR(50),
-    status VARCHAR(20) CHECK (status IN ('SCHEDULED','LIVE','ENDED')) DEFAULT 'SCHEDULED' NOT NULL,
-    started_at TIMESTAMPTZ,
-    ended_at TIMESTAMPTZ
-);
-
-CREATE INDEX idx_live_streams_event ON live_streams(event_id);
-
--- =============================================================================
--- 10. MEZMUR & WEDDING MUSIC PLAYLIST
--- =============================================================================
-
-CREATE TABLE mezmur_playlist (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+-- 12. MEZMUR_PLAYLIST
+CREATE TABLE IF NOT EXISTS mezmur_playlist (
+    id VARCHAR(36) PRIMARY KEY,
+    event_id VARCHAR(36) NOT NULL,
     title VARCHAR(255) NOT NULL,
-    artist VARCHAR(150) NOT NULL,
-    category VARCHAR(50) DEFAULT 'MEZMUR' NOT NULL,
-    order_index INT DEFAULT 0 NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
+    artist VARCHAR(255),
+    category ENUM('MEZMUR', 'TRADITIONAL', 'DANCE', 'SLOW') DEFAULT 'MEZMUR' NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    INDEX idx_mezmur_event (event_id),
+    CONSTRAINT fk_mezmur_event FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_mezmur_event_id ON mezmur_playlist(event_id);
-
--- =============================================================================
--- 11. ADMIN-CONTROLLED LANDING PAGE SECTIONS
--- =============================================================================
-
-CREATE TABLE cms_sections (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    section_key VARCHAR(100) UNIQUE NOT NULL,  -- 'memories_powered_by_agafari_card' | 'packages' | 'experience_agafari_live'
-    content_json JSONB NOT NULL DEFAULT '{}'::jsonb,
-    updated_by UUID REFERENCES users(id),
-    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
-);
-
--- =============================================================================
--- AUTOMATIC updated_at TRIGGER
--- =============================================================================
-
-CREATE OR REPLACE FUNCTION update_updated_at_column() RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_events_updated_at BEFORE UPDATE ON events FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER trg_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-CREATE TRIGGER trg_invitations_updated_at BEFORE UPDATE ON invitations FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+-- 13. CMS_SECTIONS
+CREATE TABLE IF NOT EXISTS cms_sections (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    section_key VARCHAR(100) UNIQUE NOT NULL,
+    content_json JSON NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

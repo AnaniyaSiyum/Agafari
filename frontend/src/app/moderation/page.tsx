@@ -68,7 +68,9 @@ export default function MediaModerationRootPage() {
 
         // If user has exactly one assigned event, auto-redirect to that event's moderation portal
         if (eventList.length === 1) {
-          router.replace(`/event/${eventList[0].slug}/moderation`);
+          const e = eventList[0] as any;
+          const targetOrg = e.isIndividual || e.managedBy === 'INDIVIDUAL' ? 'event' : (e.organizer_id || e.organizerId || 'org-ethio-weddings');
+          router.replace(`/${targetOrg}/${e.slug}/moderation`);
         }
       } catch (err) {
         console.error('Failed to initialize moderation portal:', err);
@@ -158,7 +160,7 @@ export default function MediaModerationRootPage() {
             {events.map((evt) => (
               <Link
                 key={evt.id}
-                href={`/event/${evt.slug}/moderation`}
+                href={`/${(evt as any).isIndividual ? 'event' : ((evt as any).organizer_id || (evt as any).organizerId || 'org-ethio-weddings')}/${evt.slug}/moderation`}
                 className="p-6 rounded-3xl bg-black/80 border-2 border-gold-500/30 hover:border-gold-500 transition-all space-y-3 group shadow-xl flex flex-col justify-between"
               >
                 <div className="space-y-2">

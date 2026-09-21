@@ -44,18 +44,18 @@ function assertThrows<E>(fn: () => unknown, ErrorClass: new (...a: any[]) => E, 
   }
 }
 
-// ------------- Test Suite 1: RSVP 48-Hour Lock Window ------------------------
+// ------------- Test Suite 1: RSVP 3-Day (72-Hour) Lock Window ------------------------
 
-console.log('\n=== Test Suite 1: RSVP 48-Hour Lock Window ===');
+console.log('\n=== Test Suite 1: RSVP 3-Day (72-Hour) Lock Window ===');
 
 const NOW = new Date('2026-09-20T12:00:00.000Z');
 
 const futureEvent = new Event({
   id: 'evt-1', slug: 'future-wedding', title: 'Future Wedding',
-  brideName: 'Bride', groomName: 'Groom', eventDate: '2026-09-23T12:00:00.000Z',
+  brideName: 'Bride', groomName: 'Groom', eventDate: '2026-09-24T12:00:00.000Z',
   venueName: 'Sheraton', status: 'COMING_SOON', adminApprovalStatus: 'APPROVED',
 });
-assert(!futureEvent.isRsvpLocked(NOW), 'Event 3 days out must NOT be locked');
+assert(!futureEvent.isRsvpLocked(NOW), 'Event 4 days out must NOT be locked');
 
 const imminentEvent = new Event({
   id: 'evt-2', slug: 'imminent-wedding', title: 'Imminent Wedding',
@@ -64,14 +64,14 @@ const imminentEvent = new Event({
 });
 assert(imminentEvent.isRsvpLocked(NOW), 'Event 24 hours out MUST be locked');
 
-// Boundary: exactly at 48-hour mark should be locked
+// Boundary: exactly at 72-hour (3 days) mark should be locked
 const exactBoundaryDate = new Date(NOW.getTime() + LockWindow.LOCK_WINDOW_MS).toISOString();
 const boundaryEvent = new Event({
   id: 'evt-3', slug: 'boundary-wedding', title: 'Boundary Wedding',
   brideName: 'B', groomName: 'G', eventDate: exactBoundaryDate,
   venueName: 'V', status: 'COMING_SOON', adminApprovalStatus: 'APPROVED',
 });
-assert(boundaryEvent.isRsvpLocked(NOW), 'Event exactly at 48h boundary MUST be locked');
+assert(boundaryEvent.isRsvpLocked(NOW), 'Event exactly at 72h (3 days) boundary MUST be locked');
 
 // ------------- Test Suite 2: Ticket HMAC Signature ---------------------------
 
@@ -253,12 +253,93 @@ assertThrows(
 // (singleInvite still has 0 scanned — if headcount ran it'd be 1)
 assert(singleInvite.scannedCount === 0, '(e) Headcount was NOT evaluated — still 0 after expired event rejection');
 
+// ------------- Test Suite 7: Wish Entity Invariants ---------------------------
+
+console.log('\n=== Test Suite 7: Wish Entity Invariants ===');
+
+import { Wish } from '../../src/domain/entities/Wish';
+import { MediaAsset } from '../../src/domain/entities/MediaAsset';
+import {
+  DomainError,
+  NotFoundError,
+  UnauthorizedError,
+  ForbiddenError,
+  OrganizerHasActiveEventsError,
+} from '../../src/domain/errors/DomainError';
+
+const validWish = new Wish({
+  id: 'w-1', eventId: 'evt-1', senderName: '  Abebe  ', message: '  Congratulations!  ',
+  mediaType: 'TEXT', status: 'PENDING',
+});
+assert(validWish.senderName === 'Abebe', 'Sender name trimmed on instantiation');
+assert(validWish.message === 'Congratulations!', 'Wish message trimmed on instantiation');
+assert(!validWish.isApproved, 'Wish status default PENDING is not approved');
+
+validWish.approve();
+assert(validWish.isApproved, 'Wish approve() sets status to APPROVED');
+
+validWish.reject();
+assert(validWish.status === 'REJECTED' && !validWish.isApproved, 'Wish reject() sets status to REJECTED');
+
+assertThrows(
+  () => new Wish({ id: 'w-2', eventId: 'evt-1', senderName: '', message: 'Msg', status: 'PENDING' }),
+  Error,
+  'Wish throws Error when senderName is empty'
+);
+
+assertThrows(
+  () => new Wish({ id: 'w-3', eventId: 'evt-1', senderName: 'Name', message: 'a'.repeat(2001), status: 'PENDING' }),
+  Error,
+  'Wish throws Error when message > 2000 chars'
+);
+
+// ------------- Test Suite 8: MediaAsset Entity Invariants ---------------------
+
+console.log('\n=== Test Suite 8: MediaAsset Entity Invariants ===');
+
+const mediaAsset = new MediaAsset({
+  id: 'm-1', eventId: 'evt-1', uploaderName: 'Guest', mediaType: 'IMAGE',
+  category: 'FEED', cdnUrl: 'https://cdn.example.com/photo.jpg', status: 'PENDING',
+  likesCount: 5,
+});
+
+assert(mediaAsset.cdnUrl === 'https://cdn.example.com/photo.jpg', 'MediaAsset stores valid cdnUrl');
+assert(mediaAsset.incrementLikes() === 6, 'incrementLikes() increments likes count to 6');
+mediaAsset.approve();
+assert(mediaAsset.isApproved, 'MediaAsset approve() sets status to APPROVED');
+
+assertThrows(
+  () => new MediaAsset({ id: 'm-2', eventId: 'evt-1', uploaderName: 'G', mediaType: 'IMAGE', cdnUrl: '', status: 'PENDING' }),
+  Error,
+  'MediaAsset throws Error when cdnUrl is empty'
+);
+
+// ------------- Test Suite 9: DomainError Subclasses --------------------------
+
+console.log('\n=== Test Suite 9: DomainError Subclasses Coverage ===');
+
+const baseErr = new DomainError('Base error');
+assert(baseErr instanceof Error && baseErr.name === 'DomainError', 'DomainError inherits from Error');
+
+const notFoundErr = new NotFoundError('Event', 'evt-999');
+assert(notFoundErr.message.includes('evt-999'), 'NotFoundError includes entity ID');
+
+const unauthErr = new UnauthorizedError();
+assert(unauthErr.message === 'Unauthorized', 'UnauthorizedError default message');
+
+const forbiddenErr = new ForbiddenError();
+assert(forbiddenErr.message.includes('Forbidden'), 'ForbiddenError default message');
+
+const orgErr = new OrganizerHasActiveEventsError('org-123', 3);
+assert(orgErr.message.includes('org-123') && orgErr.message.includes('3'), 'OrganizerHasActiveEventsError formats message');
+
 // ------------- Final Result ---------------------------------------------------
 
 console.log(`\n${'='.repeat(60)}`);
 if (failed === 0) {
-  console.log(`✅ ALL ${passed} TESTS PASSED — QR Audit Complete`);
+  console.log(`✅ ALL ${passed} TESTS PASSED — Pure Domain Suite Complete`);
 } else {
   console.error(`❌ ${failed} TESTS FAILED, ${passed} PASSED`);
   process.exit(1);
 }
+

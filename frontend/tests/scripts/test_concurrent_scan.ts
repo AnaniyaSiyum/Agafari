@@ -32,6 +32,14 @@ function makeId(prefix: string): string {
 }
 
 async function seedTestData(eventId: string, invId: string, inviteCode: string): Promise<void> {
+  // Insert a minimal staff user row for FK validity
+  await query(
+    `INSERT INTO users (id, email, password_hash, full_name, role)
+     VALUES ($1, $2, $3, $4, $5)
+     ON DUPLICATE KEY UPDATE id = id`,
+    ['staff-test-001', 'staff-test-001@agafari.com', 'hash', 'Test Staff', 'GATE_SCANNER']
+  );
+
   // Insert a minimal event row
   await query(
     `INSERT INTO events
@@ -62,8 +70,10 @@ async function seedTestData(eventId: string, invId: string, inviteCode: string):
 }
 
 async function cleanupTestData(eventId: string, invId: string): Promise<void> {
+  await query('DELETE FROM gate_scan_logs WHERE invitation_id = $1', [invId]);
   await query('DELETE FROM invitations WHERE id = $1', [invId]);
   await query('DELETE FROM events WHERE id = $1', [eventId]);
+  await query('DELETE FROM users WHERE id = $1', ['staff-test-001']);
 }
 
 // ── main test ─────────────────────────────────────────────────────────────────

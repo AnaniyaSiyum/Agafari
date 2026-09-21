@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
+import { verifyRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 // GET: the couple's public wishes wall. Guests only ever see APPROVED wishes;
 // an organizer/couple/admin/moderator can pass ?status= to review PENDING/REJECTED.
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const { searchParams } = new URL(req.url);
   const requestedStatus = searchParams.get('status');
 
-  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [params.slug]);
+  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
   if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
   let statusFilter: string | null = 'APPROVED';
@@ -39,7 +40,14 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 // POST: a guest leaves a wish/blessing for the couple. No auth required — guests
 // aren't logged-in users on this platform, same as RSVP and media uploads.
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+  const clientIp = getClientIp(req);
+  const rateLimitRes = await verifyRateLimit(`wishes:${params.slug}:${clientIp}`, { max: 3, windowSeconds: 300 });
+  if (!rateLimitRes.success) {
+    return buildRateLimitResponse(rateLimitRes);
+  }
+
   try {
+
     const { senderName, message, mediaType, videoUrl } = await req.json();
     if (!senderName?.trim() || !message?.trim()) {
       return NextResponse.json({ error: 'senderName and message are required.' }, { status: 400 });
@@ -48,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'message is too long (max 2000 characters).' }, { status: 400 });
     }
 
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const wishId = 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);

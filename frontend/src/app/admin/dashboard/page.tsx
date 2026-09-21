@@ -147,6 +147,7 @@ export default function SystemAdminDashboardPage() {
   const [newVenueName, setNewVenueName] = useState('');
   const [newVenueAddress, setNewVenueAddress] = useState('Addis Ababa, Ethiopia');
   const [newCoupleEmail, setNewCoupleEmail] = useState('');
+  const [newExpectedGuests, setNewExpectedGuests] = useState<number | ''>(300);
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [createdAdminControlUrl, setCreatedAdminControlUrl] = useState<string | null>(null);
   const [createdOrgCreds, setCreatedOrgCreds] = useState<{ id: string; email: string; password?: string; url: string } | null>(null);
@@ -390,6 +391,7 @@ export default function SystemAdminDashboardPage() {
           venueName: newVenueName,
           venueAddress: newVenueAddress,
           coupleEmail: newCoupleEmail,
+          expectedGuests: Number(newExpectedGuests),
           managedBy: 'ADMIN',
         }),
       });
@@ -409,6 +411,7 @@ export default function SystemAdminDashboardPage() {
         setNewGroomName('');
         setNewVenueName('');
         setNewCoupleEmail('');
+        setNewExpectedGuests(300);
       }
     } catch (err) {
       console.error('Failed to create wedding:', err);
@@ -1113,272 +1116,7 @@ export default function SystemAdminDashboardPage() {
                 </div>
               )}
 
-              {/* =========================================================================
-                  MASTER EVENT COMMAND ROOM & MULTI-ROLE 1-CLICK LAUNCH
-                 ========================================================================= */}
-              {selectedEvent && (
-                <motion.div
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="p-6 sm:p-8 rounded-3xl bg-white border-2 border-gold-500 shadow-xl space-y-6"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-gray-100">
-                    <div>
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black text-gold-400 text-xs font-bold mb-2 border border-gold-500/30">
-                        <Crown className="w-3.5 h-3.5 text-gold-400" />
-                        {t('adminDashboard.header.tag')}
-                      </div>
-                      <h2 className="font-serif font-bold text-2xl text-gray-900">
-                        {selectedEvent.title}
-                      </h2>
-                      <div className="text-xs text-gray-500 flex flex-wrap items-center gap-3 mt-1.5">
-                        <span>Date: <strong>{new Date(selectedEvent.eventDate).toLocaleDateString()}</strong></span>
-                        <span>•</span>
-                        <span>Venue: <strong>{selectedEvent.venueName}</strong></span>
-                        <span>•</span>
-                        <span>Slug: <strong>/event/{selectedEvent.slug}</strong></span>
-                        <span>•</span>
-                        {selectedEvent.isIndividual ? (
-                          <span className="inline-flex items-center gap-1 text-purple-900 font-bold bg-purple-100 px-2.5 py-0.5 rounded-full text-[11px] border border-purple-200">
-                            👤 Individual Event (Direct)
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-blue-900 font-bold bg-blue-100 px-2.5 py-0.5 rounded-full text-[11px] border border-blue-200">
-                            <Building2 className="w-3.5 h-3.5 text-blue-700" />
-                            Organizer: <strong>{selectedEvent.organizerName || 'Certified Organizer Agency'}</strong>
-                          </span>
-                        )}
-                      </div>
-                    </div>
 
-                    {/* Stream Live Broadcaster Switcher & Open Admin Control Room */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      {(() => {
-                        const rawOrgId = (selectedEvent as any).organizerId || (selectedEvent as any).organizer_id || `org-${selectedEvent.slug}`;
-                        const cleanOrgId = String(rawOrgId).startsWith('org-') ? String(rawOrgId) : `org-${String(rawOrgId)}`;
-                        const dedicatedUrl = `/${cleanOrgId}/${selectedEvent.slug}`;
-
-                        return (
-                          <Link
-                            href={dedicatedUrl}
-                            className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold text-xs shadow-md hover:brightness-110 flex items-center gap-1.5 transition-all"
-                          >
-                            <Crown className="w-4 h-4 text-black" />
-                            <span>Open Dedicated Control Room ({dedicatedUrl})</span>
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </Link>
-                        );
-                      })()}
-
-                      <button
-                        onClick={() => handleToggleLiveStream(selectedEvent.id, !!selectedEvent.isLive)}
-                        className={`px-4 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all flex items-center gap-1.5 ${
-                          selectedEvent.isLive
-                            ? 'bg-rose-800 hover:bg-rose-900 text-white animate-pulse'
-                            : 'bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/40'
-                        }`}
-                      >
-                        <Radio className="w-4 h-4" />
-                        <span>{selectedEvent.isLive ? t('adminDashboard.fleet.streamLive') : t('adminDashboard.fleet.startStream')}</span>
-                      </button>
-
-                      <button
-                        onClick={(e) => handleDeleteEvent(e, selectedEvent.id, selectedEvent.title)}
-                        className="px-4 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs shadow-sm transition-all flex items-center gap-1.5 border border-rose-200 cursor-pointer"
-                        title="Delete Wedding Event (Asks twice)"
-                      >
-                        <Trash2 className="w-4 h-4 text-rose-600" />
-                        <span>Delete Event</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 4 Multi-Role Impersonation Cards */}
-                  <div>
-                    <h3 className="font-serif font-bold text-base text-gray-900 mb-3 flex items-center gap-2">
-                      <KeyRound className="w-4 h-4 text-gold-500" />
-                      {t('adminDashboard.fleet.rolesTitle')}
-                    </h3>
-                    <p className="text-xs text-gray-500 mb-4">
-                      Directly launch into any role portal for this wedding without entering passwords:
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                      
-                      {/* 1. Couple Dashboard */}
-                      <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-black text-gold-400 flex items-center justify-center font-bold border border-gold-500/30">
-                              <Crown className="w-4 h-4 text-gold-400" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900">
-                              👑 Primary
-                            </span>
-                          </div>
-                          <div className="font-serif font-bold text-sm text-gray-900">
-                            {selectedEvent.brideName} & {selectedEvent.groomName}
-                          </div>
-                          <div className="text-[11px] font-mono text-gray-500 truncate">
-                            {selectedEvent.credentials?.couple.email || `couple@${selectedEvent.slug}.com`}
-                          </div>
-                        </div>
-
-                        <Link
-                          href={`/${(selectedEvent as any).organizer_id || (selectedEvent as any).organizerId || 'org-default'}/${selectedEvent.slug}/couple`}
-                          className="w-full py-2 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1 shadow-sm border border-gold-500/30"
-                        >
-                          <span>Launch Couple Suite</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </div>
-
-                      {/* 2. Event Organizer Dashboard */}
-                      <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-black text-gold-400 flex items-center justify-center font-bold border border-gold-500/30">
-                              <Briefcase className="w-4 h-4 text-gold-400" />
-                            </div>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${selectedEvent.isIndividual ? 'bg-purple-100 text-purple-900 border border-purple-200' : 'bg-blue-100 text-blue-900 border border-blue-200'}`}>
-                              {selectedEvent.isIndividual ? '👤 Individual Event' : '👔 Agency Partner'}
-                            </span>
-                          </div>
-                          <div className="font-serif font-bold text-sm text-gray-900">
-                            {selectedEvent.isIndividual ? 'Individual Event (Direct)' : (selectedEvent.organizerName || selectedEvent.credentials?.organizer.fullName || 'Organizer Agency')}
-                          </div>
-                          <div className="text-[11px] font-mono text-gray-500 truncate">
-                            {selectedEvent.isIndividual ? 'System Super Admin Managed' : (selectedEvent.credentials?.organizer.email || `organizer@${selectedEvent.slug}.com`)}
-                          </div>
-                        </div>
-
-                        <Link
-                          href="/organizer/dashboard"
-                          className="w-full py-2 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1 shadow-sm border border-gold-500/30"
-                        >
-                          <span>Launch Organizer Suite</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </div>
-
-                      {/* 3. Live Streamer Studio */}
-                      <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-black text-gold-400 flex items-center justify-center font-bold border border-gold-500/30">
-                              <Video className="w-4 h-4 text-gold-400" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-900">
-                              📹 Streamer
-                            </span>
-                          </div>
-                          <div className="font-serif font-bold text-sm text-gray-900">
-                            {selectedEvent.credentials?.streamer.fullName || 'Stream Operator'}
-                          </div>
-                          <div className="text-[11px] font-mono text-gray-500 truncate">
-                            {selectedEvent.credentials?.streamer.email || `streamer@${selectedEvent.slug}.com`}
-                          </div>
-                        </div>
-
-                        <Link
-                          href={`/event/${selectedEvent.slug}`}
-                          target="_blank"
-                          className="w-full py-2 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1 shadow-sm border border-gold-500/30"
-                        >
-                          <span>Launch Live Studio</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </div>
-
-                      {/* 4. Gate Scanner Terminal */}
-                      <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-black text-gold-400 flex items-center justify-center font-bold border border-gold-500/30">
-                              <ScanLine className="w-4 h-4 text-gold-400" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">
-                              📱 Scanner
-                            </span>
-                          </div>
-                          <div className="font-serif font-bold text-sm text-gray-900">
-                            {selectedEvent.credentials?.scanner.fullName || 'Gate Security Team'}
-                          </div>
-                          <div className="text-[11px] font-mono text-gray-500 truncate">
-                            {selectedEvent.credentials?.scanner.email || `scanner@${selectedEvent.slug}.com`}
-                          </div>
-                        </div>
-
-                        <Link
-                          href={`/event/${selectedEvent.slug}/scanner`}
-                          target="_blank"
-                          className="w-full py-2 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1 shadow-sm border border-gold-500/30"
-                        >
-                          <span>Launch Gate Terminal</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </div>
-
-                      {/* 5. Media Content Moderator */}
-                      <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50/50 flex flex-col justify-between space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="w-8 h-8 rounded-lg bg-black text-gold-400 flex items-center justify-center font-bold border border-gold-500/30">
-                              <ShieldCheck className="w-4 h-4 text-gold-400" />
-                            </div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-900">
-                              🛡️ Moderator
-                            </span>
-                          </div>
-                          <div className="font-serif font-bold text-sm text-gray-900">
-                            {selectedEvent.credentials?.moderator?.fullName || 'Media Moderator'}
-                          </div>
-                          <div className="text-[11px] font-mono text-gray-500 truncate">
-                            {selectedEvent.credentials?.moderator?.email || `moderator@${selectedEvent.slug}.com`}
-                          </div>
-                        </div>
-
-                        <Link
-                          href={`/event/${selectedEvent.slug}/moderation`}
-                          target="_blank"
-                          className="w-full py-2 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-1 shadow-sm border border-gold-500/30"
-                        >
-                          <span>Launch Moderation Portal</span>
-                          <ExternalLink className="w-3 h-3" />
-                        </Link>
-                      </div>
-
-                    </div>
-                  </div>
-
-                  {/* Public Guest Hub Links */}
-                  <div className="pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
-                    <div className="text-xs text-gray-500">
-                      Public celebration links for <strong>{selectedEvent.title}</strong>:
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/event/${selectedEvent.slug}`}
-                        target="_blank"
-                        className="px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 text-xs font-bold flex items-center gap-1.5 shadow-sm"
-                      >
-                        <Eye className="w-3.5 h-3.5 text-gold-500" />
-                        <span>Public Celebration Hub</span>
-                      </Link>
-
-                      <Link
-                        href={`/event/${selectedEvent.slug}/feed`}
-                        target="_blank"
-                        className="px-4 py-2 rounded-xl bg-white border border-gray-200 hover:bg-gray-50 text-gray-900 text-xs font-bold flex items-center gap-1.5 shadow-sm"
-                      >
-                        <Film className="w-3.5 h-3.5 text-gold-500" />
-                        <span>TikTok Reel Feed</span>
-                      </Link>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
             </div>
           )}
 
@@ -1871,6 +1609,30 @@ export default function SystemAdminDashboardPage() {
                       onChange={(e) => setNewVenueName(e.target.value)}
                       placeholder="Sheraton Addis Luxury Ballroom"
                       className="w-full px-3 py-2 rounded-xl border border-gold-500/30 bg-gray-50 text-xs focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-900 mb-1">
+                      Permitted Guest Limit / Quota (Max Guests) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      max="50000"
+                      value={newExpectedGuests}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewExpectedGuests(val === '' ? '' : Number(val));
+                      }}
+                      onBlur={() => {
+                        if (newExpectedGuests === '' || Number(newExpectedGuests) < 1) {
+                          setNewExpectedGuests(1);
+                        }
+                      }}
+                      placeholder="e.g. 300"
+                      className="w-full px-3 py-2 rounded-xl border border-gold-500/30 bg-gray-50 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-gold-500"
                     />
                   </div>
 

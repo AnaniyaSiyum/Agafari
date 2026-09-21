@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const guestIdentifier = searchParams.get('guestId'); // device/session id, for "did I like this"
 
   try {
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const user = getAuthUser(req);
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'uploaderName, mediaType, and cdnUrl are required.' }, { status: 400 });
     }
 
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const mediaId = `med_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;

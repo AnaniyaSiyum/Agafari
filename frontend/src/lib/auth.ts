@@ -1,6 +1,8 @@
 import { createHmac, pbkdf2Sync, randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
+import { config } from '@/config/env';
+
 // Role names kept identical to the original build on purpose — every page
 // component already depends on these exact strings. The "one event per user"
 // problem is fixed structurally (organizers/event_staff tables), not by
@@ -21,7 +23,8 @@ export interface AuthTokenPayload {
   exp: number;
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'agafari_super_secret_jwt_key_2026_change_in_production_32bytes';
+const JWT_SECRET = config.jwtSecret;
+
 
 // ---------- Passwords ----------
 

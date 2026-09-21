@@ -57,22 +57,26 @@ function formatEvent(e: any) {
     organizerName,
     organizer_name: organizerName,
     isIndividual: Boolean(isIndividual),
+    expectedGuests: Number(e.expected_guests || e.expectedGuests || 300),
+    expected_guests: Number(e.expected_guests || e.expectedGuests || 300),
+    coupleCredentials: e.coupleCredentials || e.couple_credentials || null,
+    couple_credentials: e.coupleCredentials || e.couple_credentials || null,
     stats: {
       totalInvites: Number(e.total_invites || 0),
       totalWishes: Number(e.total_wishes || 0),
       totalMedia: Number(e.total_media || 0),
     },
-    coupleCredentials: e.coupleCredentials || {
+    coupleCredentials: adminApprovalStatus === 'APPROVED' ? (e.coupleCredentials || {
       email: e.couple_email || `couple@${e.slug}.com`,
       temporaryPassword: 'agafari2026',
-    },
-    credentials: e.credentials || {
+    }) : null,
+    credentials: adminApprovalStatus === 'APPROVED' ? (e.credentials || {
       couple: { fullName: `${brideName} & ${groomName}`, email: e.couple_email || `couple@${e.slug}.com`, temporaryPassword: 'agafari2026', role: 'BRIDE_GROOM' },
       organizer: { fullName: isIndividual ? 'System Super Admin (Individual Event)' : (organizerName || 'Event Organizer'), email: `organizer@${e.slug}.com`, temporaryPassword: 'org2026', role: 'EVENT_ORGANIZER' },
       streamer: { fullName: 'Live Streamer Crew', email: `streamer@${e.slug}.com`, temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
       scanner: { fullName: 'Gate QR Scanner', email: `scanner@${e.slug}.com`, temporaryPassword: 'scan123', role: 'GATE_SCANNER' },
       moderator: { fullName: 'Media Content Moderator', email: `moderator@${e.slug}.com`, temporaryPassword: 'mod123', role: 'MEDIA_MODERATOR' },
-    }
+    }) : null
   };
 }
 
@@ -119,7 +123,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const {
       title, slug, brideName, groomName, eventDate, venueName, venueAddress,
-      dressCode, welcomeMessage, coupleEmail,
+      dressCode, welcomeMessage, coupleEmail, expectedGuests, expected_guests,
       managedBy,      // 'ORGANIZER' | 'ADMIN'
       organizerId,    // required when managedBy === 'ORGANIZER'
       templateId,
@@ -133,6 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     const cleanSlug = String(slug).toLowerCase().trim().replace(/[^a-z0-9-]/g, '-');
+    const numExpectedGuests = Math.max(1, Number(expectedGuests || expected_guests || 300));
 
     try {
       const existing = await queryOne('SELECT id FROM events WHERE slug = $1', [cleanSlug]);
@@ -169,14 +174,14 @@ export async function POST(req: NextRequest) {
           `INSERT INTO events (
              id, slug, title, managed_by, organizer_id, couple_user_id, template_id,
              bride_name, groom_name, event_date, venue_name, venue_address,
-             dress_code, welcome_message, status, admin_approval_status
-           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'COMING_SOON','APPROVED')`,
+             dress_code, welcome_message, expected_guests, status, admin_approval_status
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'COMING_SOON','APPROVED')`,
           [
             eventId, cleanSlug, title.trim(), managedBy === 'ORGANIZER' ? 'ORGANIZER' : 'ADMIN',
             managedBy === 'ORGANIZER' ? (organizerId || null) : null, coupleUserId, templateId || null,
             brideName.trim(), groomName.trim(), formattedDate,
             venueName.trim(), venueAddress?.trim() || null,
-            dressCode?.trim() || null, welcomeMessage?.trim() || null,
+            dressCode?.trim() || null, welcomeMessage?.trim() || null, numExpectedGuests
           ]
         );
 
@@ -211,6 +216,8 @@ export async function POST(req: NextRequest) {
         eventDate: new Date(eventDate).toISOString(),
         venueName: venueName.trim(),
         venueAddress: venueAddress?.trim() || 'Addis Ababa, Ethiopia',
+        expectedGuests: numExpectedGuests,
+        expected_guests: numExpectedGuests,
         status: 'COMING_SOON',
         adminApprovalStatus: 'APPROVED',
         managedBy: managedBy === 'ORGANIZER' ? 'ORGANIZER' : 'ADMIN',
@@ -263,35 +270,116 @@ export async function PATCH(req: NextRequest) {
     if (!eventId) return NextResponse.json({ error: 'eventId is required.' }, { status: 400 });
 
     try {
-      const isLiveVal = isLive !== undefined && isLive !== null ? (isLive ? 1 : 0) : null;
+      const isLiveVal = isLive !== undefined && isLive !== null ? Boolean(isLive) : null;
+      const cleanId = eventId.startsWith('evt-') ? eventId : `evt-${eventId}`;
+      const cleanSlug = eventId.replace(/^evt-/, '');
+
       await query(
         `UPDATE events SET
            admin_approval_status = COALESCE($2, admin_approval_status),
            status = COALESCE($3, status),
            is_live = COALESCE($4, is_live),
            youtube_video_id = COALESCE($5, youtube_video_id)
-         WHERE id = $1 OR slug = $1`,
-        [eventId, adminApprovalStatus ?? null, status ?? null, isLiveVal, youtubeVideoId ?? null]
+         WHERE id = $1 OR slug = $1 OR id = $6 OR slug = $7`,
+        [eventId, adminApprovalStatus ?? null, status ?? null, isLiveVal, youtubeVideoId ?? null, cleanId, cleanSlug]
       );
 
-      const event = await queryOne('SELECT * FROM events WHERE id = $1 OR slug = $1', [eventId]);
+      const event = await queryOne('SELECT * FROM events WHERE id = $1 OR slug = $1 OR id = $2 OR slug = $3', [eventId, cleanId, cleanSlug]);
 
       if (event) {
         // Keep mockStore in sync
-        const idx = mockStore.events.findIndex((e) => e.id === eventId || e.slug === eventId);
+        const matchEvent = (e: any) =>
+          e.id === eventId ||
+          e.slug === eventId ||
+          e.id === `evt-${eventId}` ||
+          e.slug === `evt-${eventId}` ||
+          e.id === eventId.replace(/^evt-/, '') ||
+          e.slug === eventId.replace(/^evt-/, '');
+
+        const idx = mockStore.events.findIndex(matchEvent);
         if (idx >= 0) {
-          if (adminApprovalStatus) mockStore.events[idx].adminApprovalStatus = adminApprovalStatus as any;
+          if (adminApprovalStatus) {
+            mockStore.events[idx].adminApprovalStatus = adminApprovalStatus as any;
+            (mockStore.events[idx] as any).admin_approval_status = adminApprovalStatus;
+            if (adminApprovalStatus === 'APPROVED') {
+              const slugVal = mockStore.events[idx].slug || eventId;
+              mockStore.events[idx].coupleCredentials = mockStore.events[idx].coupleCredentials || {
+                email: `couple-${slugVal}@test.com`,
+                temporaryPassword: 'pass' + Date.now()
+              };
+            } else if (adminApprovalStatus === 'REJECTED') {
+              mockStore.events[idx].coupleCredentials = null;
+            }
+          }
           if (status) mockStore.events[idx].status = status as any;
           if (isLive !== undefined) mockStore.events[idx].isLive = isLive;
         }
-        return NextResponse.json({ success: true, event: formatEvent(event) });
+
+        const formatted = formatEvent(event);
+        if (formatted.adminApprovalStatus === 'APPROVED' || formatted.admin_approval_status === 'APPROVED') {
+          const slugVal = formatted.slug || eventId;
+          formatted.coupleCredentials = (idx >= 0 && mockStore.events[idx].coupleCredentials) || {
+            email: `couple-${slugVal.replace(/^evt-/, '')}@agafari.com`,
+            temporaryPassword: 'TempPassword123!'
+          };
+        }
+        return NextResponse.json({ success: true, event: formatted });
+      }
+
+      // If DB returned null (e.g. event was created in mockStore fallback), check mockStore
+      const matchEvent = (e: any) =>
+        e.id === eventId ||
+        e.slug === eventId ||
+        e.id === `evt-${eventId}` ||
+        e.slug === `evt-${eventId}` ||
+        e.id === eventId.replace(/^evt-/, '') ||
+        e.slug === eventId.replace(/^evt-/, '');
+
+      const idx = mockStore.events.findIndex(matchEvent);
+      if (idx >= 0) {
+        if (adminApprovalStatus) {
+          mockStore.events[idx].adminApprovalStatus = adminApprovalStatus as any;
+          (mockStore.events[idx] as any).admin_approval_status = adminApprovalStatus;
+          if (adminApprovalStatus === 'APPROVED') {
+            const slugVal = mockStore.events[idx].slug || eventId;
+            mockStore.events[idx].coupleCredentials = mockStore.events[idx].coupleCredentials || {
+              email: `couple-${slugVal}@test.com`,
+              temporaryPassword: 'pass' + Date.now()
+            };
+          } else if (adminApprovalStatus === 'REJECTED') {
+            mockStore.events[idx].coupleCredentials = null;
+          }
+        }
+        if (status) mockStore.events[idx].status = status as any;
+        if (isLive !== undefined) mockStore.events[idx].isLive = isLive;
+        return NextResponse.json({ success: true, event: formatEvent(mockStore.events[idx]) });
       }
     } catch (dbErr) {
       console.warn('DB PATCH event fallback:', dbErr);
       // DB failed, fallback to mockStore
-      const idx = mockStore.events.findIndex((e) => e.id === eventId || e.slug === eventId);
+      const matchEvent = (e: any) =>
+        e.id === eventId ||
+        e.slug === eventId ||
+        e.id === `evt-${eventId}` ||
+        e.slug === `evt-${eventId}` ||
+        e.id === eventId.replace(/^evt-/, '') ||
+        e.slug === eventId.replace(/^evt-/, '');
+
+      const idx = mockStore.events.findIndex(matchEvent);
       if (idx >= 0) {
-        if (adminApprovalStatus) mockStore.events[idx].adminApprovalStatus = adminApprovalStatus as any;
+        if (adminApprovalStatus) {
+          mockStore.events[idx].adminApprovalStatus = adminApprovalStatus as any;
+          (mockStore.events[idx] as any).admin_approval_status = adminApprovalStatus;
+          if (adminApprovalStatus === 'APPROVED') {
+            const slugVal = mockStore.events[idx].slug || eventId;
+            mockStore.events[idx].coupleCredentials = mockStore.events[idx].coupleCredentials || {
+              email: `couple-${slugVal}@test.com`,
+              temporaryPassword: 'pass' + Date.now()
+            };
+          } else if (adminApprovalStatus === 'REJECTED') {
+            mockStore.events[idx].coupleCredentials = null;
+          }
+        }
         if (status) mockStore.events[idx].status = status as any;
         if (isLive !== undefined) mockStore.events[idx].isLive = isLive;
         return NextResponse.json({ success: true, event: formatEvent(mockStore.events[idx]) });

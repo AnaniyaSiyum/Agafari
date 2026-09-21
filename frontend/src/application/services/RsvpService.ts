@@ -25,7 +25,7 @@ export class RsvpService {
       throw new NotFoundError('Event', input.slug);
     }
 
-    // Single source of truth 48-hour lock check
+    // Single source of truth 3-day (72-hour) lock check
     if (event.isRsvpLocked()) {
       throw new RsvpLockedError();
     }

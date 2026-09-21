@@ -69,17 +69,33 @@ async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?:
         [rawInput, rawUserId, normalizedKey]
       );
 
+      if (!ownerUser) {
+        const fallbackUserId = `usr-${rawUserId}`;
+        const autoAgencyName = cleanAgencyName(undefined, undefined, rawInput);
+        await query(
+          `INSERT INTO users (id, email, password_hash, full_name, role)
+           VALUES ($1, $2, $3, $4, 'EVENT_ORGANIZER')
+           ON CONFLICT DO NOTHING`,
+          [fallbackUserId, rawInput.includes('@') ? rawInput : `organizer-${rawUserId}@agafari.com`, hashPassword('org2026'), autoAgencyName]
+        );
+        ownerUser = await queryOne<{ id: string; full_name: string; email: string }>(
+          `SELECT id, full_name, email FROM users WHERE id = $1`,
+          [fallbackUserId]
+        );
+      }
+
       if (ownerUser) {
         const autoAgencyName = cleanAgencyName(ownerUser.full_name, ownerUser.email, ownerUser.id);
         const newOrgId = `org-${ownerUser.id}`;
         await query(
           `INSERT INTO organizers (id, owner_user_id, business_name)
-           VALUES ($1, $2, $3)`,
+           VALUES ($1, $2, $3)
+           ON CONFLICT DO NOTHING`,
           [newOrgId, ownerUser.id, autoAgencyName]
         );
         orgRow = await queryOne<{ id: string; business_name: string; owner_user_id: string; full_name?: string; email?: string }>(
-          `SELECT id, business_name, owner_user_id FROM organizers WHERE id = $1`,
-          [newOrgId]
+          `SELECT id, business_name, owner_user_id FROM organizers WHERE id = $1 OR owner_user_id = $2`,
+          [newOrgId, ownerUser.id]
         );
         if (orgRow) {
           orgRow.full_name = ownerUser.full_name;
@@ -187,22 +203,24 @@ function formatEvent(e: any) {
     youtube_video_id: youtubeVideoId,
     isLive,
     is_live: isLive,
+    expectedGuests: Number(e.expected_guests || e.expectedGuests || 300),
+    expected_guests: Number(e.expected_guests || e.expectedGuests || 300),
     stats: {
       totalInvites: Number(e.total_invites || e.stats?.totalInvites || 0),
       totalWishes: Number(e.total_wishes || e.stats?.totalWishes || 0),
       totalMedia: Number(e.total_media || e.stats?.totalMedia || 0),
     },
-    coupleCredentials: {
+    coupleCredentials: adminApprovalStatus === 'APPROVED' ? {
       email: coupleEmail,
       temporaryPassword: couplePassword,
-    },
-    credentials: e.credentials || {
+    } : null,
+    credentials: adminApprovalStatus === 'APPROVED' ? (e.credentials || {
       couple: { fullName: `${brideName} & ${groomName}`, email: coupleEmail, temporaryPassword: couplePassword, role: 'BRIDE_GROOM' },
       organizer: { fullName: 'Event Organizer', email: `organizer@${e.slug}.com`, temporaryPassword: 'org2026', role: 'EVENT_ORGANIZER' },
       streamer: { fullName: 'Live Streamer Crew', email: `streamer@${e.slug}.com`, temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
       scanner: { fullName: 'Gate QR Scanner', email: `scanner@${e.slug}.com`, temporaryPassword: 'scan123', role: 'GATE_SCANNER' },
       moderator: { fullName: 'Media Content Moderator', email: `moderator@${e.slug}.com`, temporaryPassword: 'mod123', role: 'MEDIA_MODERATOR' },
-    }
+    }) : null
   };
 }
 
@@ -290,9 +308,10 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    let { title, slug, brideName, groomName, eventDate, venueName, venueAddress, dressCode, coupleEmail, templateId, organizerId: bodyOrgId } = body;
+    let { title, slug, brideName, groomName, eventDate, venueName, venueAddress, dressCode, coupleEmail, templateId, expectedGuests, organizerId: bodyOrgId } = body;
     const targetOrgParam = req.nextUrl.searchParams.get('id') || req.nextUrl.searchParams.get('organizerId');
     let targetOrgId = bodyOrgId || targetOrgParam || null;
+    const finalExpectedGuests = Math.max(1, Number(expectedGuests || 300));
 
     if (!brideName || !groomName || !eventDate || !venueName) {
       return NextResponse.json({ error: 'Missing required fields (brideName, groomName, eventDate, venueName).' }, { status: 400 });
@@ -325,6 +344,16 @@ export async function POST(req: NextRequest) {
           cleanSlug = `${cleanSlug}-${Math.floor(100 + Math.random() * 900)}`;
         }
 
+        // Ensure organizer record exists if assignedOrgId is provided
+        if (assignedOrgId) {
+          try {
+            await client.query(
+              `INSERT INTO organizers (id, business_name, company_name) VALUES ($1, 'Certified Agency', 'Certified Agency') ON DUPLICATE KEY UPDATE id=id`,
+              [assignedOrgId]
+            );
+          } catch (e) {}
+        }
+
         // Reuse user if email already exists in DB
         let coupleUser = (await client.query('SELECT id, email FROM users WHERE email = $1', [targetCoupleEmail])).rows[0];
         if (!coupleUser) {
@@ -345,18 +374,40 @@ export async function POST(req: NextRequest) {
           formattedDate = eventDate;
         }
 
-        await client.query(
-          `INSERT INTO events (
-             id, slug, title, managed_by, organizer_id, couple_user_id, template_id,
-             bride_name, groom_name, event_date, venue_name, venue_address, dress_code,
-             status, admin_approval_status
-           ) VALUES ($1,$2,$3,'ORGANIZER',$4,$5,$6,$7,$8,$9,$10,$11,$12,'COMING_SOON','PENDING')`,
-          [
-            newEventId, cleanSlug, title.trim(), assignedOrgId, coupleUser.id, templateId || null,
-            brideName.trim(), groomName.trim(), formattedDate,
-            venueName.trim(), venueAddress?.trim() || null, dressCode?.trim() || null,
-          ]
-        );
+        // Ensure column expected_guests exists
+        try {
+          await client.query('ALTER TABLE events ADD COLUMN IF NOT EXISTS expected_guests INT DEFAULT 300 NOT NULL');
+        } catch (e) {}
+
+        try {
+          await client.query(
+            `INSERT INTO events (
+               id, slug, title, managed_by, organizer_id, couple_user_id, template_id,
+               bride_name, groom_name, event_date, venue_name, venue_address, dress_code,
+               expected_guests, status, admin_approval_status
+             ) VALUES ($1,$2,$3,'ORGANIZER',$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'COMING_SOON','PENDING')`,
+            [
+              newEventId, cleanSlug, title.trim(), assignedOrgId, coupleUser.id, templateId || null,
+              brideName.trim(), groomName.trim(), formattedDate,
+              venueName.trim(), venueAddress?.trim() || null, dressCode?.trim() || null,
+              finalExpectedGuests,
+            ]
+          );
+        } catch (e) {
+          // Fallback query if expected_guests column not altered
+          await client.query(
+            `INSERT INTO events (
+               id, slug, title, managed_by, organizer_id, couple_user_id, template_id,
+               bride_name, groom_name, event_date, venue_name, venue_address, dress_code,
+               status, admin_approval_status
+             ) VALUES ($1,$2,$3,'ORGANIZER',$4,$5,$6,$7,$8,$9,$10,$11,$12,'COMING_SOON','PENDING')`,
+            [
+              newEventId, cleanSlug, title.trim(), assignedOrgId, coupleUser.id, templateId || null,
+              brideName.trim(), groomName.trim(), formattedDate,
+              venueName.trim(), venueAddress?.trim() || null, dressCode?.trim() || null,
+            ]
+          );
+        }
 
         const event = (await client.query('SELECT * FROM events WHERE id = $1', [newEventId])).rows[0];
 
@@ -367,7 +418,6 @@ export async function POST(req: NextRequest) {
         ...result.event,
         couple_email: result.coupleEmail,
       });
-      formattedEvent.coupleCredentials = { email: result.coupleEmail, temporaryPassword: result.coupleTempPassword };
       formattedEvent.organizerId = cleanKey;
       (formattedEvent as any).organizer_id = cleanKey;
 
@@ -383,7 +433,7 @@ export async function POST(req: NextRequest) {
         {
           success: true,
           event: formattedEvent,
-          coupleCredentials: { email: result.coupleEmail, temporaryPassword: result.coupleTempPassword },
+          coupleCredentials: null,
           note: 'Event created with admin_approval_status = PENDING — awaiting System Admin review.',
         },
         { status: 201 }
@@ -391,30 +441,27 @@ export async function POST(req: NextRequest) {
     } catch (dbErr) {
       console.error('DB Insert Event Failed, falling back to mockStore:', dbErr);
       // Fallback in-memory insertion for mock environment
+      let safeIsoDate: string;
+      try {
+        safeIsoDate = new Date(eventDate).toISOString();
+      } catch (e) {
+        safeIsoDate = new Date().toISOString();
+      }
+
       const newEventData: any = {
         id: `evt-${cleanSlug}`,
         slug: cleanSlug,
         title: title.trim(),
         brideName: brideName.trim(),
         groomName: groomName.trim(),
-        eventDate: new Date(eventDate).toISOString(),
+        eventDate: safeIsoDate,
         venueName: venueName.trim(),
         venueAddress: venueAddress?.trim() || 'Addis Ababa, Ethiopia',
         status: 'COMING_SOON',
         adminApprovalStatus: 'PENDING',
         organizerId: cleanKey,
         organizer_id: cleanKey,
-        coupleCredentials: {
-          email: targetCoupleEmail,
-          temporaryPassword: tempPassword,
-        },
-        credentials: {
-          couple: { fullName: `${brideName.trim()} & ${groomName.trim()}`, email: targetCoupleEmail, temporaryPassword: tempPassword, role: 'BRIDE_GROOM' },
-          organizer: { fullName: 'Event Organizer', email: 'organizer@agafari.com', temporaryPassword: 'org123', role: 'EVENT_ORGANIZER' },
-          streamer: { fullName: 'Live Stream Operator', email: `streamer@${cleanSlug}.com`, temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
-          scanner: { fullName: 'Gate QR Security', email: `scanner@${cleanSlug}.com`, temporaryPassword: 'scan123', role: 'GATE_SCANNER' },
-          moderator: { fullName: 'Media Content Moderator', email: `moderator@${cleanSlug}.com`, temporaryPassword: 'mod123', role: 'MEDIA_MODERATOR' },
-        }
+        couple_email: targetCoupleEmail,
       };
 
       const existingIdx = mockStore.events.findIndex((e) => e.id === newEventData.id || e.slug === newEventData.slug);
@@ -430,10 +477,7 @@ export async function POST(req: NextRequest) {
         {
           success: true,
           event: formatted,
-          coupleCredentials: {
-            email: targetCoupleEmail,
-            temporaryPassword: tempPassword
-          },
+          coupleCredentials: null,
           note: 'Event created with admin_approval_status = PENDING — awaiting System Admin review.'
         },
         { status: 201 }

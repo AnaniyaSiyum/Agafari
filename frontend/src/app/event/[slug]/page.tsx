@@ -37,7 +37,9 @@ import {
   Copy, 
   Check, 
   ExternalLink,
-  Home
+  Home,
+  Clock,
+  XCircle
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 
@@ -67,6 +69,7 @@ interface EventData {
   youtubeVideoId?: string;
   isLive?: boolean;
   status?: string;
+  adminApprovalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   backgroundAudioUrl?: string;
   backgroundMusicUrl?: string;
   backgroundMusicTitle?: string;
@@ -131,7 +134,7 @@ function PublicWeddingCelebrationContent({
 
   // Active Guest Profile State
   const [activeInviteCode, setActiveInviteCode] = useState<string>(codeParam || 'INV-SD2026-001');
-  const [rsvpGuestName, setRsvpGuestName] = useState<string>('Abebe Kebede & Guest');
+  const [rsvpGuestName, setRsvpGuestName] = useState<string>('');
   const [invitationSource, setInvitationSource] = useState<'CARD' | 'LINK'>('CARD');
 
   // Interactive Wish State (VIDEO BLESSING DEFAULT)
@@ -158,7 +161,17 @@ function PublicWeddingCelebrationContent({
   const [copiedPass, setCopiedPass] = useState(false);
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [currentAudioSrc, setCurrentAudioSrc] = useState<string>('/audio/leykunu_mezmur.wav');
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const uploadedAudio = event?.backgroundAudioUrl || (event as any)?.background_audio_url || event?.backgroundMusicUrl;
+    if (uploadedAudio && typeof uploadedAudio === 'string' && uploadedAudio.trim().length > 0) {
+      setCurrentAudioSrc(uploadedAudio.trim());
+    } else {
+      setCurrentAudioSrc('/audio/leykunu_mezmur.wav');
+    }
+  }, [event]);
 
   const toggleAudio = () => {
     if (!audioRef.current) return;
@@ -169,10 +182,50 @@ function PublicWeddingCelebrationContent({
       audioRef.current.play().then(() => {
         setIsPlayingAudio(true);
       }).catch((err) => {
-        console.error('Audio playback error:', err);
+        console.warn('Audio playback error on user toggle:', err);
       });
     }
   };
+
+  // Auto-play background audio by default on page load or on any guest interaction
+  useEffect(() => {
+    if (!audioRef.current) return;
+
+    const attemptPlay = () => {
+      if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch((err) => {
+          console.log('Autoplay deferred until guest interaction:', err);
+        });
+      }
+    };
+
+    attemptPlay();
+
+    const handleUserGesture = () => {
+      if (audioRef.current && audioRef.current.paused) {
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(() => {});
+      }
+    };
+
+    const options = { capture: true, passive: true };
+    window.addEventListener('click', handleUserGesture, options);
+    window.addEventListener('touchstart', handleUserGesture, options);
+    window.addEventListener('pointerdown', handleUserGesture, options);
+    window.addEventListener('keydown', handleUserGesture, options);
+    window.addEventListener('scroll', handleUserGesture, options);
+
+    return () => {
+      window.removeEventListener('click', handleUserGesture, options);
+      window.removeEventListener('touchstart', handleUserGesture, options);
+      window.removeEventListener('pointerdown', handleUserGesture, options);
+      window.removeEventListener('keydown', handleUserGesture, options);
+      window.removeEventListener('scroll', handleUserGesture, options);
+    };
+  }, [currentAudioSrc]);
 
   // Real-time Countdown Timer State
   const [timeLeft, setTimeLeft] = useState<{
@@ -192,7 +245,8 @@ function PublicWeddingCelebrationContent({
 
         if (eventRes.ok) {
           const eventData = await eventRes.json();
-          setEvent(eventData.event);
+          const evt = eventData.event;
+          setEvent(evt);
         }
 
         if (wishesRes.ok) {
@@ -274,13 +328,13 @@ function PublicWeddingCelebrationContent({
     return () => clearInterval(interval);
   }, [event?.eventDate]);
 
-  // Calculate if RSVP is locked (less than 2 days / 48h before event)
+  // Calculate if RSVP is locked (less than 3 days / 72h before event)
   const isRsvpLocked = React.useMemo(() => {
     if (!event?.eventDate) return false;
     const target = new Date(event.eventDate).getTime();
     const now = new Date().getTime();
     const diffHours = (target - now) / (1000 * 60 * 60);
-    return diffHours < 48;
+    return diffHours < 72;
   }, [event?.eventDate]);
 
   // Submit RSVP Attendance Directly (1-Click Instant Automatic Submit)
@@ -397,6 +451,62 @@ function PublicWeddingCelebrationContent({
     );
   }
 
+  if (event.adminApprovalStatus === 'PENDING') {
+    return (
+      <div className="min-h-screen bg-stone-950 text-white flex items-center justify-center px-6 font-sans">
+        <div className="p-8 sm:p-10 rounded-3xl bg-stone-900 border-2 border-amber-500/50 text-center max-w-lg shadow-2xl space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto shadow-inner">
+            <Clock className="w-8 h-8 text-amber-400 animate-pulse" />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-widest text-amber-400 font-extrabold px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
+              ⏳ Licensing Approval Pending
+            </span>
+            <h2 className="font-serif text-2xl font-bold text-white mt-3">
+              {event.brideName && event.groomName ? `${event.brideName} & ${event.groomName}'s Wedding` : event.title}
+            </h2>
+            <p className="text-stone-300 text-xs sm:text-sm leading-relaxed mt-3">
+              This wedding request was submitted by the organizer and is currently awaiting System Admin review and licensing verification. Public invitation pages, digital passes, and guest services will become active immediately upon approval.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/" className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow-lg transition-all">
+              Return to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (event.adminApprovalStatus === 'REJECTED') {
+    return (
+      <div className="min-h-screen bg-stone-950 text-white flex items-center justify-center px-6 font-sans">
+        <div className="p-8 sm:p-10 rounded-3xl bg-stone-900 border-2 border-rose-500/50 text-center max-w-lg shadow-2xl space-y-5">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto shadow-inner">
+            <XCircle className="w-8 h-8 text-rose-500" />
+          </div>
+          <div>
+            <span className="text-[10px] uppercase tracking-widest text-rose-400 font-extrabold px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30">
+              🔴 Request Rejected
+            </span>
+            <h2 className="font-serif text-2xl font-bold text-white mt-3">
+              Wedding Request Rejected
+            </h2>
+            <p className="text-stone-300 text-xs sm:text-sm leading-relaxed mt-3">
+              This wedding request was rejected by the System Admin and is not active on Agafari. Access to this invitation page and associated staff portals is blocked.
+            </p>
+          </div>
+          <div className="pt-2 flex items-center justify-center">
+            <Link href="/" className="px-6 py-2.5 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs shadow-md transition-all">
+              Return to Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const brideName = event.brideName || 'Bride';
   const groomName = event.groomName || 'Groom';
   const coupleTitle = `${brideName} & ${groomName}`;
@@ -411,15 +521,11 @@ function PublicWeddingCelebrationContent({
   const currentQuota = guestAttendanceType === 'COUPLE' ? 2 : 1;
   const currentTable = invitation?.tableNumber || (currentQuota === 2 ? 'Table 1: VIP Couples' : 'Table 4: Individual VIP');
 
-  const qrPayload = JSON.stringify({
-    code: activeInviteCode,
-    guest: rsvpGuestName,
-    quota: currentQuota,
-    event: event.slug,
-  });
+  const appBaseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002');
+  const invitationPageUrl = `${appBaseUrl}/event/${event.slug}?code=${activeInviteCode}`;
 
   const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
-    qrPayload
+    invitationPageUrl
   )}`;
 
   // Standardized Professional 800x1200 Digital Pass Card Generator
@@ -537,10 +643,10 @@ function PublicWeddingCelebrationContent({
           </Link>
 
           <div className="flex items-center gap-3 shrink-0">
-            {event?.youtubeVideoId || event?.backgroundMusicUrl?.includes('youtube') || event?.backgroundMusicUrl?.includes('youtu.be') ? (
+            {(!event?.backgroundAudioUrl && !(event as any)?.background_audio_url) && (event?.youtubeVideoId || event?.backgroundMusicUrl?.includes('youtube') || event?.backgroundMusicUrl?.includes('youtu.be')) ? (
               <iframe
                 id="youtube-audio-player"
-                src={`https://www.youtube.com/embed/${event?.youtubeVideoId || 'oVs7dGNBOp8'}?enablejsapi=1&autoplay=${isPlayingAudio ? 1 : 0}&loop=1&playlist=${event?.youtubeVideoId || 'oVs7dGNBOp8'}`}
+                src={`https://www.youtube.com/embed/${event?.youtubeVideoId}?enablejsapi=1&autoplay=${isPlayingAudio ? 1 : 0}&loop=1&playlist=${event?.youtubeVideoId}`}
                 className="hidden"
                 allow="autoplay"
               />
@@ -548,8 +654,12 @@ function PublicWeddingCelebrationContent({
 
             <audio
               ref={audioRef}
+              autoPlay
               loop
-              src={event?.backgroundAudioUrl || event?.backgroundMusicUrl || '/audio/leykunu_mezmur.mp3'}
+              playsInline
+              src={currentAudioSrc}
+              onPlay={() => setIsPlayingAudio(true)}
+              onPause={() => setIsPlayingAudio(false)}
             />
 
             <button
@@ -796,7 +906,7 @@ function PublicWeddingCelebrationContent({
           </div>
 
           <Link
-            href={`/event/${slug}${queryString}`}
+            href={`/event/${slug}/feed?tab=LIVE${rawQuery ? `&${rawQuery}` : ''}`}
             className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-800 text-white font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 border border-rose-400/40 cursor-pointer hover:scale-105"
           >
             <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
@@ -823,7 +933,7 @@ function PublicWeddingCelebrationContent({
                 : 'bg-gold-500 hover:bg-gold-600 text-black shadow-gold border-gold-400'
             }`}
           >
-            {isRsvpLocked ? '🔒 RSVP Locked (Within 2 Days)' : hasAnsweredRsvp ? 'Update RSVP' : 'Submit RSVP'}
+            {isRsvpLocked ? '🔒 RSVP Locked (Within 3 Days)' : hasAnsweredRsvp ? 'Update RSVP' : 'Submit RSVP'}
           </button>
         </div>
       </section>
@@ -1246,10 +1356,10 @@ function PublicWeddingCelebrationContent({
                   Wedding Attendance Confirmation
                 </span>
                 <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900">
-                  {rsvpGuestName || 'Dear Guest & Family'}
+                  {rsvpGuestName || invitation?.guestName || 'Honored Guest & Family'}
                 </h3>
                 <p className="text-gold-700 text-xs mt-1 font-serif italic font-medium">
-                  {coupleTitle} cordially invite you to celebrate our union!
+                  {coupleTitle} cordially invite {rsvpGuestName || invitation?.guestName || 'you'} to celebrate our union!
                 </p>
               </div>
 

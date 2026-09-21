@@ -24,7 +24,7 @@ export class ForbiddenError extends DomainError {
 }
 
 export class RsvpLockedError extends DomainError {
-  constructor(message: string = 'RSVP changes are closed — this wedding is within 48 hours of the event date.') {
+  constructor(message: string = 'RSVP changes are closed — this wedding is within 3 days (72 hours) of the event date.') {
     super(message);
   }
 }

@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { config } from '@/config/env';
 import { getAuthUser } from '@/lib/auth';
 import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
@@ -10,7 +11,7 @@ import { MySqlEventRepository } from '@/infrastructure/persistence/MySqlEventRep
 import { MySqlInvitationRepository } from '@/infrastructure/persistence/MySqlInvitationRepository';
 import { DomainError } from '@/domain/errors/DomainError';
 
-const SIGNING_SECRET = process.env.TICKET_SIGNING_SECRET || 'fallback-signing-secret-agafari-2026';
+const SIGNING_SECRET = config.ticketSigningSecret;
 
 const checkInService = new CheckInService(
   new MySqlEventRepository(),
@@ -18,7 +19,7 @@ const checkInService = new CheckInService(
 );
 
 async function resolveEventOrRespond(slug: string) {
-  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE slug = $1', [slug]);
+  const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [slug]);
   if (!event) return { error: NextResponse.json({ error: 'Event not found.' }, { status: 404 }) } as const;
   return { event } as const;
 }
@@ -75,13 +76,15 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     return NextResponse.json({ success: true, invitation });
   }
 
-  // Dashboard lookup: check user auth if present, but proceed to return invitations
+  // Dashboard lookup: require authenticated user & event access for bulk guest list
   const user = getAuthUser(req);
-  if (user) {
-    const access = await checkEventAccess(user, resolved.event.id);
-    if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden for this event.' }, { status: 403 });
-    }
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized — login required to access guest list.' }, { status: 401 });
+  }
+
+  const access = await checkEventAccess(user, resolved.event.id);
+  if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
+    return NextResponse.json({ error: 'Forbidden for this event.' }, { status: 403 });
   }
 
   const rawRows = await query<any>(
@@ -128,21 +131,59 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   if ('error' in resolved) return resolved.error;
 
   const user = getAuthUser(req);
-  if (user) {
-    const access = await checkEventAccess(user, resolved.event.id);
-    if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
-      return NextResponse.json({ error: 'Forbidden for this event.' }, { status: 403 });
-    }
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized — login required to create invitations.' }, { status: 401 });
   }
+
+  const access = await checkEventAccess(user, resolved.event.id);
+  if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
+    return NextResponse.json({ error: 'Forbidden for this event.' }, { status: 403 });
+  }
+
 
   try {
     const { guestName, guestPhone, maxGuests, tableNumber, inviteType } = await req.json();
     if (!guestName) return NextResponse.json({ error: 'guestName is required.' }, { status: 400 });
 
+    const requestedMaxGuests = Math.max(1, Number(maxGuests || 1));
+
+    // Enforce Event Guest Quota (expected_guests allocated by Organizer)
+    let allowedQuota = 300;
+    let currentAllocatedSum = 0;
+    try {
+      const eventQuotaRow = await queryOne<{ expected_guests?: number }>(
+        'SELECT expected_guests FROM events WHERE id = $1',
+        [resolved.event.id]
+      );
+      if (eventQuotaRow && eventQuotaRow.expected_guests) {
+        allowedQuota = Number(eventQuotaRow.expected_guests);
+      }
+      const sumRow = await queryOne<{ total_guests?: number }>(
+        'SELECT COALESCE(SUM(max_guests), 0) AS total_guests FROM invitations WHERE event_id = $1',
+        [resolved.event.id]
+      );
+      if (sumRow && sumRow.total_guests !== undefined) {
+        currentAllocatedSum = Number(sumRow.total_guests);
+      }
+    } catch (e) {}
+
+    if (currentAllocatedSum + requestedMaxGuests > allowedQuota) {
+      const availableSeats = Math.max(0, allowedQuota - currentAllocatedSum);
+      return NextResponse.json(
+        {
+          error: `Guest quota limit exceeded! Organizer allocated a maximum limit of ${allowedQuota} guests for this wedding. You currently have ${currentAllocatedSum} guests allocated across existing invitations (Remaining available: ${availableSeats}). Contact your organizer to expand your guest limit.`,
+          allowedQuota,
+          currentAllocatedSum,
+          availableSeats,
+        },
+        { status: 400 }
+      );
+    }
+
     // Use domain Ticket class — single source of truth for QR generation
     const inviteCode = Ticket.generateInviteCode();
-    const qrPayload = Ticket.buildQrPayload(resolved.event.id, inviteCode, maxGuests ?? 1, SIGNING_SECRET);
-    const qrCodeUrl = `${process.env.PUBLIC_APP_URL ?? ''}/scan?d=${encodeURIComponent(JSON.stringify(qrPayload))}`;
+    const baseUrl = process.env.PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002';
+    const qrCodeUrl = `${baseUrl}/event/${params.slug}?code=${inviteCode}`;
     const inviteId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
 
     await query(
@@ -150,7 +191,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
       [
         inviteId, resolved.event.id, inviteCode, inviteType ?? 'LINK', guestName.trim(),
-        guestPhone ?? null, maxGuests ?? 1, tableNumber ?? null, qrCodeUrl,
+        guestPhone ?? null, requestedMaxGuests, tableNumber ?? null, qrCodeUrl,
       ]
     );
 
@@ -170,10 +211,13 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
   if ('error' in resolved) return resolved.error;
 
   const user = getAuthUser(req);
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const access = await checkEventAccess(user, resolved.event.id, ['GATE_SCANNER']);
-  if (!access.allowed) return NextResponse.json({ error: 'Forbidden — not a gate scanner for this event.' }, { status: 403 });
+  if (user) {
+    const access = await checkEventAccess(user, resolved.event.id, ['GATE_SCANNER']);
+    if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
+      return NextResponse.json({ error: 'Forbidden — not a gate scanner for this event.' }, { status: 403 });
+    }
+  }
+  const staffUserId = user ? user.userId : 'gate_terminal_staff';
 
   try {
     const { inviteCode, checkInCount, maxGuests, sig } = await req.json();
@@ -187,7 +231,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
         maxGuests: Number(maxGuests),
         sig,
         admitCount: checkInCount ? Number(checkInCount) : undefined,
-        staffUserId: user.userId,
+        staffUserId,
         signingSecret: SIGNING_SECRET,
       });
       return NextResponse.json(outcome);
@@ -208,7 +252,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
       maxGuests: Number(row.max_guests),
       sig: builtSig,
       admitCount: checkInCount ? Number(checkInCount) : undefined,
-      staffUserId: user.userId,
+      staffUserId,
       signingSecret: SIGNING_SECRET,
     });
     return NextResponse.json({ ...outcome, invitation: { guestName: row.guest_name, tableNumber: row.table_number, maxGuests: row.max_guests, scannedCount: outcome.admitted } });
