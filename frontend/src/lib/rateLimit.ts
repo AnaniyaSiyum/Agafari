@@ -73,8 +73,9 @@ export async function verifyRateLimit(
 
   if (upstashUrl && upstashToken) {
     try {
-      const { Ratelimit } = require('@upstash/ratelimit');
-      const { Redis } = require('@upstash/redis');
+      const req = eval('require');
+      const { Ratelimit } = req('@upstash/ratelimit');
+      const { Redis } = req('@upstash/redis');
 
       const redis = new Redis({ url: upstashUrl, token: upstashToken });
       const ratelimit = new Ratelimit({

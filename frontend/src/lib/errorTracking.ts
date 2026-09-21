@@ -56,7 +56,7 @@ export function captureException(error: unknown, context?: ErrorContext): void {
   if (process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN) {
     try {
       // Dynamic require of @sentry/nextjs if installed in runtime
-      const sentry = require('@sentry/nextjs');
+      const sentry = eval('require')('@sentry/nextjs');
       sentry.withScope((scope: any) => {
         if (sanitizedCtx.eventId) scope.setTag('event_id', sanitizedCtx.eventId);
         if (sanitizedCtx.route) scope.setTag('route', sanitizedCtx.route);

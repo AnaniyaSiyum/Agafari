@@ -58,8 +58,6 @@ function formatEvent(e: any) {
     organizer_name: organizerName,
     isIndividual: Boolean(isIndividual),
     expectedGuests: Number(e.expected_guests || e.expectedGuests || 300),
-    expected_guests: Number(e.expected_guests || e.expectedGuests || 300),
-    coupleCredentials: e.coupleCredentials || e.couple_credentials || null,
     couple_credentials: e.coupleCredentials || e.couple_credentials || null,
     stats: {
       totalInvites: Number(e.total_invites || 0),

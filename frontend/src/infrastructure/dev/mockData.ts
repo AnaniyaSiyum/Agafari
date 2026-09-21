@@ -18,10 +18,15 @@ export interface EventData {
   secondEventDate?: string; // e.g. Melse / Reception Date
   venueName: string;
   venueAddress: string;
-  venueMapUrl: string;
-  dressCode: string;
-  welcomeMessage: string;
-  coverImageUrl: string;
+  venueMapUrl?: string;
+  dressCode?: string;
+  welcomeMessage?: string;
+  coverImageUrl?: string;
+  backgroundAudioUrl?: string;
+  couplePhotoUrl?: string;
+  loveStory?: string;
+  programs?: any[];
+  additionalLocations?: any[];
   status: 'DRAFT' | 'COMING_SOON' | 'LIVE' | 'COMPLETED' | 'ARCHIVED';
   adminApprovalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
   coupleCredentials?: {
