@@ -245,38 +245,6 @@ export default function HomePage() {
           <div className="absolute top-1/3 right-10 w-72 h-72 bg-amber-500/15 rounded-full blur-[90px] z-0" />
         </div>
 
-        {/* Floating Glassmorphic Badges around Hero (Desktop Only) */}
-        <div className="hidden lg:block absolute inset-0 max-w-6xl mx-auto pointer-events-none z-30">
-          {/* Top Left Badge */}
-          <motion.div
-            animate={{ y: [-8, 8, -8] }}
-            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-28 left-4 px-4 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto"
-          >
-            <Sparkles className="w-4 h-4 text-gold-400 animate-pulse" />
-            <span>✨ 250+ Couples Celebrated</span>
-          </motion.div>
-
-          {/* Top Right Badge */}
-          <motion.div
-            animate={{ y: [8, -8, 8] }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-            className="absolute top-32 right-4 px-4 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto"
-          >
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>🛡️ 100% Gate Anti-Passback</span>
-          </motion.div>
-
-          {/* Bottom Right Badge */}
-          <motion.div
-            animate={{ y: [-6, 6, -6] }}
-            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-            className="absolute bottom-40 right-8 px-4 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto"
-          >
-            <Video className="w-4 h-4 text-rose-400" />
-            <span>⚡ Instant Telegram Sync</span>
-          </motion.div>
-        </div>
 
         <div className="relative z-20 w-full max-w-5xl mx-auto flex flex-col items-center">
           <motion.div
@@ -349,24 +317,6 @@ export default function HomePage() {
             {/* Glowing Ambient Golden Glow behind Phone */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[520px] bg-gradient-to-r from-amber-400/25 via-gold-500/35 to-amber-500/20 rounded-full blur-[80px] pointer-events-none" />
 
-            {/* Floating Glass Badges */}
-            <motion.div
-              animate={{ y: [-5, 5, -5] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-4 -left-6 sm:-left-12 px-3.5 py-1.5 rounded-2xl bg-black/90 backdrop-blur-md border border-emerald-500/40 text-emerald-400 text-[10px] font-bold shadow-2xl flex items-center gap-1.5 z-30 pointer-events-none"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>100% Anti-Passback</span>
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [5, -5, 5] }}
-              transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
-              className="absolute -bottom-4 -right-6 sm:-right-12 px-3.5 py-1.5 rounded-2xl bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-300 text-[10px] font-bold shadow-2xl flex items-center gap-1.5 z-30 pointer-events-none"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-gold-400" />
-              <span>Real-time Gate Verification</span>
-            </motion.div>
 
             {/* iPhone Hardware Shell */}
             <div className="w-[300px] sm:w-[340px] rounded-[48px] bg-slate-950 p-3 shadow-[0_30px_70px_rgba(0,0,0,0.6),0_0_30px_rgba(212,175,55,0.25)] border-[4px] border-slate-800 relative z-20 overflow-hidden text-left">
