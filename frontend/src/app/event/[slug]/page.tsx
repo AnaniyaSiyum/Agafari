@@ -735,112 +735,120 @@ function PublicWeddingCelebrationContent({
 
   return (
     <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
-      {/* 1. FIXED/RIGGED 100% HEIGHT COVER PHOTO BACKGROUND */}
+      {/* Fixed/Rigged Outer Background for Desktop */}
       <div className="fixed inset-0 z-0 w-full h-full pointer-events-none overflow-hidden">
         <img
           src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
           alt={coupleTitle}
-          className="w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110"
+          className="w-full h-full object-cover object-center filter brightness-95 contrast-105 saturate-110"
         />
-        {/* Dark Contrast Gradient Overlay for Glassmorphism Text Readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-black/40 to-stone-950/90" />
+        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
       </div>
 
-      {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
-      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+      {/* Main Centered Frame (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
+      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] bg-stone-950/90">
 
-        {/* Top Header Bar */}
-        <nav className="relative z-20 flex items-center justify-between w-full px-4 sm:px-6 py-4 bg-stone-950/50 backdrop-blur-xl border-b border-gold-500/30">
-          <Link href="/" className="flex items-center gap-3 shrink-0">
-            <img
-              src="/branding/artboard-15.png"
-              alt="Agafari Logo"
-              className="h-10 sm:h-12 w-auto object-contain filter drop-shadow-md"
-            />
-          </Link>
+        {/* ========================================================================= */}
+        {/* 1. 100% HEIGHT HERO BANNER WITH COUPLE PHOTO & OVERLAID NAME AT BOTTOM */}
+        {/* ========================================================================= */}
+        <section className="relative w-full min-h-screen h-screen flex flex-col justify-between p-4 sm:p-6 overflow-hidden shadow-2xl">
+          {/* Dynamic 100% Height Cover Photo */}
+          <img
+            src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
+            alt={coupleTitle}
+            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
+          />
+          {/* Subtle Contrast Gradient Overlay for Text Readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-stone-950/95 z-0 pointer-events-none" />
 
-          <div className="flex items-center gap-3 shrink-0">
-            <audio
-              ref={audioRef}
-              autoPlay
-              loop
-              playsInline
-              preload="auto"
-              src={currentAudioSrc}
-              onPlay={() => setIsPlayingAudio(true)}
-              onPause={() => setIsPlayingAudio(false)}
-              onError={() => {
-                console.warn('Audio playback error, falling back to default MP3');
-                if (currentAudioSrc !== '/audio/leykunu_mezmur.mp3') {
-                  setCurrentAudioSrc('/audio/leykunu_mezmur.mp3');
-                }
-              }}
-            />
+          {/* Top Header Bar */}
+          <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
+            <Link href="/" className="flex items-center gap-3 shrink-0">
+              <img
+                src="/branding/artboard-15.png"
+                alt="Agafari Logo"
+                className="h-10 sm:h-12 w-auto object-contain filter drop-shadow-md"
+              />
+            </Link>
 
-            <button
-              onClick={toggleAudio}
-              className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-extrabold transition-all cursor-pointer shadow-md border ${isPlayingAudio
-                ? 'bg-gold-500 text-black shadow-gold scale-105 border-gold-300'
-                : 'bg-black/80 text-gold-400 border-gold-500/40 hover:scale-105'
-                }`}
-              title={isPlayingAudio ? 'Mute Background Audio' : 'Play Background Audio'}
-            >
-              {isPlayingAudio ? (
-                <>
-                  <Volume2 className="w-4 h-4 text-black animate-pulse" />
-                  <span>🔊 Music On</span>
-                </>
-              ) : (
-                <>
-                  <VolumeX className="w-4 h-4 text-gold-400" />
-                  <span>🔇 Play Music</span>
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-3 shrink-0">
+              <audio
+                ref={audioRef}
+                autoPlay
+                loop
+                playsInline
+                preload="auto"
+                src={currentAudioSrc}
+                onPlay={() => setIsPlayingAudio(true)}
+                onPause={() => setIsPlayingAudio(false)}
+                onError={() => {
+                  console.warn('Audio playback error, falling back to default MP3');
+                  if (currentAudioSrc !== '/audio/leykunu_mezmur.mp3') {
+                    setCurrentAudioSrc('/audio/leykunu_mezmur.mp3');
+                  }
+                }}
+              />
 
-            <button
-              onClick={() => setCardModalOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black text-xs font-extrabold shadow-gold transition-all cursor-pointer active:scale-95 hover:scale-105"
-              title="Download Official Invitation Card Pass"
-            >
-              <Download className="w-3.5 h-3.5 text-black" />
-              <span>Card Pass</span>
-            </button>
+              <button
+                onClick={toggleAudio}
+                className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-extrabold transition-all cursor-pointer shadow-md border ${isPlayingAudio
+                  ? 'bg-gold-500 text-black shadow-gold scale-105 border-gold-300'
+                  : 'bg-black/80 text-gold-400 border-gold-500/40 hover:scale-105'
+                  }`}
+                title={isPlayingAudio ? 'Mute Background Audio' : 'Play Background Audio'}
+              >
+                {isPlayingAudio ? (
+                  <>
+                    <Volume2 className="w-4 h-4 text-black animate-pulse" />
+                    <span>🔊 Music On</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="w-4 h-4 text-gold-400" />
+                    <span>🔇 Play Music</span>
+                  </>
+                )}
+              </button>
 
-            <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md text-gold-400 text-xs font-bold border border-gold-500/40 shadow-lg">
-              <Crown className="w-4 h-4 text-gold-400" />
-              <span>Invitation for <strong>{rsvpGuestName || 'Dear Guest'}</strong></span>
+              <button
+                onClick={() => setCardModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black text-xs font-extrabold shadow-gold transition-all cursor-pointer active:scale-95 hover:scale-105"
+                title="Download Official Invitation Card Pass"
+              >
+                <Download className="w-3.5 h-3.5 text-black" />
+                <span>Card Pass</span>
+              </button>
+
+              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md text-gold-400 text-xs font-bold border border-gold-500/40 shadow-lg">
+                <Crown className="w-4 h-4 text-gold-400" />
+                <span>Invitation for <strong>{rsvpGuestName || 'Dear Guest'}</strong></span>
+              </div>
+
+              <LanguageSwitcher />
             </div>
+          </nav>
 
-            <LanguageSwitcher />
-          </div>
-        </nav>
-
-        {/* 3. HERO GLASSMORPHISM SAVE THE DATE CARD */}
-        <section className="relative w-full py-12 sm:py-16 px-4 sm:px-6 flex flex-col items-center justify-center text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5 }}
-            className="w-full max-w-2xl bg-stone-950/60 backdrop-blur-xl border-2 border-gold-500/40 rounded-3xl p-6 sm:p-10 shadow-[0_16px_40px_rgba(0,0,0,0.6)] space-y-4"
-          >
-            <h2 className="font-serif text-xs sm:text-base font-bold text-gold-400 tracking-[0.3em] uppercase drop-shadow-md">
+          {/* COUPLE NAME & DATE OVERLAID AT THE BOTTOM PART OF THE PHOTO */}
+          <div className="relative z-20 text-center max-w-3xl mx-auto mt-auto pb-10 sm:pb-14 space-y-2">
+            <h2 className="font-serif text-xs sm:text-base font-bold text-gold-400 tracking-[0.3em] uppercase drop-shadow-lg">
               SAVE THE DATE
             </h2>
 
-            <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-2xl tracking-wide py-1">
+            <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)] tracking-wide py-1">
               {coupleTitle}
             </h1>
 
-            <div className="space-y-1 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow">
+            <div className="space-y-0.5 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow-md">
               <p className="text-gold-300 font-serif">{formattedDateString}</p>
-              <p className="text-[11px] sm:text-xs text-white/90 font-bold">AT {venueTitle.toUpperCase()}</p>
+              <p className="text-[11px] sm:text-xs text-white/95 font-bold">AT {venueTitle.toUpperCase()}</p>
             </div>
-          </motion.div>
+          </div>
         </section>
 
-        {/* 4. MAIN INVITATION DETAILS SECTIONS */}
-        <section className="relative z-10 px-4 sm:px-6 py-4 max-w-4xl mx-auto space-y-10">
+        {/* ========================================================================= */}
+        {/* 2. GLASSMORPHISM DESIGN FOR ALL OTHER CONTENTS BELOW THE NAME */}
+        {/* ========================================================================= */}
+        <section className="relative z-10 px-4 sm:px-6 py-10 max-w-4xl mx-auto space-y-10">
 
         {/* LIVE BROADCAST BANNER & PLAYER EMBED */}
         {(event.youtubeVideoId && event.status !== 'ENDED') && (
