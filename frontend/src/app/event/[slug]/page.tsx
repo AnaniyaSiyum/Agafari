@@ -740,9 +740,10 @@ function PublicWeddingCelebrationContent({
         <img
           src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
           alt={coupleTitle}
-          className="w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110"
+          className="w-full h-full object-cover object-top sm:object-center filter brightness-105 contrast-105 saturate-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-stone-950/80" />
+        {/* Subtle Gradient Overlay: Top dark for header readability, middle transparent for photo, bottom for smooth glass transition */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent via-55% to-stone-950/90" />
       </div>
 
       {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
@@ -751,15 +752,7 @@ function PublicWeddingCelebrationContent({
         {/* ========================================================================= */}
         {/* 1. 100% HEIGHT HERO BANNER WITH COVER PHOTO FULLY DISPLAYED */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-screen h-[100dvh] flex flex-col justify-between p-4 sm:p-6 overflow-hidden shadow-2xl">
-          {/* Dynamic 100% Height Cover Photo */}
-          <img
-            src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
-            alt={coupleTitle}
-            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
-          />
-          {/* Subtle Contrast Gradient Overlay for Text Readability without Blackout */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50 z-0 pointer-events-none" />
+        <section className="relative w-full min-h-screen h-[100dvh] flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
 
           {/* Top Header Bar */}
           <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
