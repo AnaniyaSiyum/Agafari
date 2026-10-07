@@ -383,52 +383,63 @@ export default function HomePage() {
                 return (
                   <div
                     key={`${feat.id}-${idx}`}
-                    className="w-[280px] sm:w-[310px] h-[550px] sm:h-[580px] shrink-0 relative group cursor-pointer transition-all duration-500 hover:-translate-y-3 hover:scale-105 hover:rotate-1"
+                    className="w-[290px] sm:w-[315px] h-[560px] sm:h-[590px] shrink-0 relative group cursor-pointer transition-all duration-500 hover:-translate-y-3 hover:scale-105 hover:rotate-1"
                   >
-                    {/* 3D Realistic Smartphone Body */}
-                    <div className="w-full h-full rounded-[48px] bg-slate-950 p-2.5 relative flex flex-col justify-between border-[4px] border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(212,175,55,0.25),inset_0_1px_2px_rgba(255,255,255,0.3)] group-hover:border-gold-500/70 group-hover:shadow-[0_35px_70px_rgba(0,0,0,0.98),0_0_50px_rgba(212,175,55,0.45)] transition-all duration-500 overflow-hidden">
+                    {/* iPhone 15 3D Titanium Shell */}
+                    <div className="w-full h-full rounded-[50px] bg-slate-950 p-2.5 relative flex flex-col justify-between border-[4px] border-slate-700/80 shadow-[0_25px_65px_rgba(0,0,0,0.95),0_0_35px_rgba(212,175,55,0.3)] group-hover:border-gold-500/80 group-hover:shadow-[0_35px_75px_rgba(0,0,0,0.98),0_0_55px_rgba(212,175,55,0.5)] transition-all duration-500 overflow-hidden">
                       
-                      {/* 3D Hardware Side Buttons */}
+                      {/* iPhone 15 Hardware Side Buttons */}
                       <div className="absolute -right-[6px] top-24 w-[5px] h-12 bg-slate-700/90 rounded-r border-r border-slate-500 shadow-md z-40" />
                       <div className="absolute -left-[6px] top-20 w-[5px] h-10 bg-slate-700/90 rounded-l border-l border-slate-500 shadow-md z-40" />
                       <div className="absolute -left-[6px] top-34 w-[5px] h-10 bg-slate-700/90 rounded-l border-l border-slate-500 shadow-md z-40" />
 
-                      {/* Dynamic Island Notch */}
-                      <div className="w-22 h-3.5 bg-black rounded-full mx-auto mb-1.5 flex items-center justify-between px-2.5 shadow-inner border border-slate-900/90 z-30 shrink-0">
-                        <div className="w-2 h-2 rounded-full bg-slate-900 border border-slate-800" />
-                        <div className="w-1.5 h-1.5 rounded-full bg-blue-900/90 shadow-sm" />
+                      {/* iPhone 15 Dynamic Island Notch */}
+                      <div className="w-24 h-4 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-3 shadow-inner border border-slate-900/90 z-50 shrink-0">
+                        <div className="w-2.5 h-2.5 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center">
+                          <div className="w-1 h-1 rounded-full bg-blue-900/90" />
+                        </div>
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500/90 animate-pulse" />
                       </div>
 
                       {/* Screen Interface */}
                       {feat.id === 'f1' ? (
-                        <div className="bg-[#FFFDF9] rounded-[38px] overflow-hidden border border-amber-300/80 text-gray-900 font-sans p-3.5 relative text-xs flex flex-col justify-between h-full shadow-inner z-10">
+                        <div className="bg-[#FFFDF9] rounded-[40px] overflow-hidden border border-amber-300/80 text-gray-900 font-sans p-3 relative text-xs flex flex-col justify-between h-full shadow-inner z-10">
+                          {/* iOS Status Bar */}
+                          <div className="flex items-center justify-between px-2 pt-0.5 pb-1 font-mono text-[8.5px] font-extrabold text-amber-950 border-b border-amber-200/50 z-40">
+                            <span className="font-sans font-extrabold text-[9px]">9:41</span>
+                            <div className="flex items-center gap-1.5 text-[8px]">
+                              <span className="font-mono font-extrabold">5G</span>
+                              <span className="w-3 h-1.5 rounded-xs border border-amber-900 p-0.5 flex items-center"><span className="w-full h-full bg-emerald-600 rounded-xs" /></span>
+                            </div>
+                          </div>
+
                           {/* Top Bar with Agafari Logo & Audio Button */}
-                          <div className="flex items-center justify-between border-b border-amber-200 pb-2">
+                          <div className="flex items-center justify-between border-b border-amber-200 py-1">
                             <div className="flex items-center gap-1.5">
                               <img
                                 src="/branding/artboard-15.png"
                                 alt="Agafari Logo"
-                                className="h-5 w-auto object-contain filter drop-shadow-sm"
+                                className="h-4.5 w-auto object-contain filter drop-shadow-sm"
                               />
                             </div>
-                            <div className="flex items-center gap-1 bg-amber-100 border border-gold-400 px-2 py-0.5 rounded-full text-[9px] text-amber-900 font-bold shadow-sm">
+                            <div className="flex items-center gap-1 bg-amber-100 border border-gold-400 px-2 py-0.5 rounded-full text-[8.5px] text-amber-900 font-bold shadow-sm">
                               <Music className="w-2.5 h-2.5 text-amber-600 animate-spin" />
                               <span className="font-mono">AUDIO ON</span>
                             </div>
                           </div>
 
                           {/* Wedding Couple Header Monogram */}
-                          <div className="text-center py-1">
+                          <div className="text-center py-0.5">
                             <div className="text-base text-amber-900 font-serif font-extrabold tracking-wider uppercase drop-shadow-sm">
                               Sara & Dawit
                             </div>
-                            <div className="text-[8.5px] text-amber-800 font-mono tracking-widest uppercase mt-0.5 font-semibold">
+                            <div className="text-[8px] text-amber-800 font-mono tracking-widest uppercase mt-0.5 font-semibold">
                               MARCH 15, 2026 • ADDIS ABABA
                             </div>
                           </div>
 
                           {/* Real Couple Invitation Photo Banner */}
-                          <div className="relative my-1 rounded-xl overflow-hidden border-2 border-gold-400 shadow-md h-38">
+                          <div className="relative my-0.5 rounded-xl overflow-hidden border-2 border-gold-400 shadow-md h-36">
                             <img
                               src="/images/feature_countdown.png"
                               alt="Sara & Dawit Invitation"
@@ -451,38 +462,50 @@ export default function HomePage() {
                               WEDDING COUNTDOWN
                             </div>
                             <div className="grid grid-cols-4 gap-1.5 text-xs font-extrabold">
-                              <div className="bg-white rounded-xl p-1.5 border border-amber-300 text-amber-950 shadow-sm">
-                                <span className="block text-sm font-mono font-bold text-amber-950">076</span>
-                                <span className="text-[6px] text-amber-800 block tracking-wider font-semibold">DAYS</span>
+                              <div className="bg-white rounded-xl p-1 border border-amber-300 text-amber-950 shadow-sm">
+                                <span className="block text-xs sm:text-sm font-mono font-bold text-amber-950">076</span>
+                                <span className="text-[5.5px] text-amber-800 block tracking-wider font-semibold">DAYS</span>
                               </div>
-                              <div className="bg-white rounded-xl p-1.5 border border-amber-300 text-amber-950 shadow-sm">
-                                <span className="block text-sm font-mono font-bold text-amber-950">14</span>
-                                <span className="text-[6px] text-amber-800 block tracking-wider font-semibold">HRS</span>
+                              <div className="bg-white rounded-xl p-1 border border-amber-300 text-amber-950 shadow-sm">
+                                <span className="block text-xs sm:text-sm font-mono font-bold text-amber-950">14</span>
+                                <span className="text-[5.5px] text-amber-800 block tracking-wider font-semibold">HRS</span>
                               </div>
-                              <div className="bg-white rounded-xl p-1.5 border border-amber-300 text-amber-950 shadow-sm">
-                                <span className="block text-sm font-mono font-bold text-amber-950">38</span>
-                                <span className="text-[6px] text-amber-800 block tracking-wider font-semibold">MIN</span>
+                              <div className="bg-white rounded-xl p-1 border border-amber-300 text-amber-950 shadow-sm">
+                                <span className="block text-xs sm:text-sm font-mono font-bold text-amber-950">38</span>
+                                <span className="text-[5.5px] text-amber-800 block tracking-wider font-semibold">MIN</span>
                               </div>
-                              <div className="bg-white rounded-xl p-1.5 border border-amber-300 text-amber-950 shadow-sm">
-                                <span className="block text-sm font-mono font-bold text-amber-950">52</span>
-                                <span className="text-[6px] text-amber-800 block tracking-wider font-semibold">SEC</span>
+                              <div className="bg-white rounded-xl p-1 border border-amber-300 text-amber-950 shadow-sm">
+                                <span className="block text-xs sm:text-sm font-mono font-bold text-amber-950">52</span>
+                                <span className="text-[5.5px] text-amber-800 block tracking-wider font-semibold">SEC</span>
                               </div>
                             </div>
                           </div>
 
                           {/* Wish Wall Snippet */}
-                          <div className="bg-amber-100/90 p-2 rounded-xl border border-amber-300 text-[8.5px] text-amber-950 font-medium flex items-center gap-1.5 shadow-sm">
-                            <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 shrink-0" />
+                          <div className="bg-amber-100/90 p-1.5 rounded-xl border border-amber-300 text-[8px] text-amber-950 font-medium flex items-center gap-1.5 shadow-sm">
+                            <Heart className="w-3 h-3 text-rose-500 fill-rose-500 shrink-0" />
                             <span className="truncate italic">"Wishing Sara & Dawit endless love! 💍✨"</span>
                           </div>
+
+                          {/* iOS Home Indicator */}
+                          <div className="w-24 h-1 bg-amber-900/40 rounded-full mx-auto mt-1 mb-0.5 z-40 shrink-0 pointer-events-none" />
                         </div>
                       ) : feat.id === 'f2' ? (
-                        <div className="bg-[#FFFDF9] rounded-[38px] overflow-hidden border border-amber-300/80 text-gray-900 font-sans p-3.5 relative text-xs flex flex-col justify-between h-full shadow-inner z-10">
+                        <div className="bg-[#FFFDF9] rounded-[40px] overflow-hidden border border-amber-300/80 text-gray-900 font-sans p-3 relative text-xs flex flex-col justify-between h-full shadow-inner z-10">
+                          {/* iOS Status Bar */}
+                          <div className="flex items-center justify-between px-2 pt-0.5 pb-1 font-mono text-[8.5px] font-extrabold text-amber-950 border-b border-amber-200/50 z-40">
+                            <span className="font-sans font-extrabold text-[9px]">9:41</span>
+                            <div className="flex items-center gap-1.5 text-[8px]">
+                              <span className="font-mono font-extrabold">5G</span>
+                              <span className="w-3 h-1.5 rounded-xs border border-amber-900 p-0.5 flex items-center"><span className="w-full h-full bg-emerald-600 rounded-xs" /></span>
+                            </div>
+                          </div>
+
                           {/* Top Bar */}
-                          <div className="flex items-center justify-between font-mono text-amber-900 border-b border-amber-200 pb-1.5">
+                          <div className="flex items-center justify-between font-mono text-amber-900 border-b border-amber-200 py-1">
                             <div className="flex items-center gap-1.5">
                               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                              <span className="text-amber-900 font-bold text-[9.5px]">GATE SCANNER</span>
+                              <span className="text-amber-900 font-bold text-[9px]">GATE SCANNER</span>
                             </div>
                             <span className="text-[7.5px] text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300 font-bold">
                               LIVE • s-and-d-2026
@@ -490,7 +513,7 @@ export default function HomePage() {
                           </div>
 
                           {/* Camera Viewfinder Box */}
-                          <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-amber-400 bg-black p-2 flex flex-col justify-between my-1 shadow-md">
+                          <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-amber-400 bg-black p-2 flex flex-col justify-between my-0.5 shadow-md">
                             <div className="absolute inset-0 z-0">
                               <img
                                 src="/images/feature_qr_pass.png"
@@ -527,30 +550,42 @@ export default function HomePage() {
                           </div>
 
                           {/* Valid Pass Card */}
-                          <div className="p-2.5 rounded-2xl bg-emerald-50 border-2 border-emerald-400/80 text-emerald-950 text-[8.5px] space-y-1 shadow-sm">
+                          <div className="p-2 rounded-2xl bg-emerald-50 border-2 border-emerald-400/80 text-emerald-950 text-[8px] space-y-0.5 shadow-sm">
                             <div className="flex items-center gap-1.5">
                               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                              <span className="font-serif font-extrabold text-emerald-950 text-[9.5px]">✓ REAL & VALID PASS</span>
+                              <span className="font-serif font-extrabold text-emerald-950 text-[9px]">✓ REAL & VALID PASS</span>
                             </div>
-                            <div className="flex justify-between text-emerald-900 font-mono">
+                            <div className="flex justify-between text-emerald-900 font-mono text-[7.5px]">
                               <span>Guest:</span>
                               <strong className="text-emerald-950 font-sans font-bold">Abebe Kebede & Family</strong>
                             </div>
-                            <div className="flex justify-between text-emerald-900 font-mono">
+                            <div className="flex justify-between text-emerald-900 font-mono text-[7.5px]">
                               <span>Quota:</span>
                               <strong className="text-emerald-700 font-bold">2 Guests Allowed</strong>
                             </div>
-                            <div className="flex justify-between text-emerald-900 font-mono">
+                            <div className="flex justify-between text-emerald-900 font-mono text-[7.5px]">
                               <span>Table:</span>
                               <strong className="text-amber-900 font-bold">VIP Table #4</strong>
                             </div>
-                            <div className="w-full py-1.5 rounded-xl bg-emerald-600 text-white font-extrabold text-[8.5px] text-center uppercase tracking-wider shadow">
+                            <div className="w-full py-1 rounded-xl bg-emerald-600 text-white font-extrabold text-[8px] text-center uppercase tracking-wider shadow mt-0.5">
                               Admit Guest & Open Gate ➔
                             </div>
                           </div>
+
+                          {/* iOS Home Indicator */}
+                          <div className="w-24 h-1 bg-amber-900/40 rounded-full mx-auto mt-1 mb-0.5 z-40 shrink-0 pointer-events-none" />
                         </div>
                       ) : (
-                        <div className="bg-black rounded-[38px] overflow-hidden border border-amber-300/80 text-white font-sans relative text-xs h-full flex flex-col justify-between p-3.5 z-10">
+                        <div className="bg-black rounded-[40px] overflow-hidden border border-amber-300/80 text-white font-sans relative text-xs h-full flex flex-col justify-between p-3 z-10">
+                          {/* iOS Status Bar */}
+                          <div className="flex items-center justify-between px-2 pt-0.5 pb-1 font-mono text-[8.5px] font-extrabold text-white z-40 relative">
+                            <span className="font-sans font-extrabold text-[9px]">9:41</span>
+                            <div className="flex items-center gap-1.5 text-[8px]">
+                              <span className="font-mono font-extrabold">5G</span>
+                              <span className="w-3 h-1.5 rounded-xs border border-white p-0.5 flex items-center"><span className="w-full h-full bg-emerald-500 rounded-xs" /></span>
+                            </div>
+                          </div>
+
                           {/* Full-Bleed Live Wedding Stream Background (No nested phone graphic) */}
                           <div className="absolute inset-0 z-0">
                             <img
@@ -601,7 +636,7 @@ export default function HomePage() {
                           </div>
 
                           {/* Live Floating Comment Bubbles */}
-                          <div className="relative z-10 text-left space-y-1.5 my-auto max-w-[170px] pointer-events-none">
+                          <div className="relative z-10 text-left space-y-1 my-auto max-w-[170px] pointer-events-none">
                             <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-xl border border-white/20 text-[7.5px] text-white flex items-center gap-1 shadow">
                               <span className="font-bold text-amber-300">@Bethlehem:</span>
                               <span className="truncate">Beautiful couple! ❤️✨</span>
@@ -613,7 +648,7 @@ export default function HomePage() {
                           </div>
 
                           {/* Bottom User Info & Audio Bar */}
-                          <div className="relative z-10 text-left space-y-1.5 pr-12">
+                          <div className="relative z-10 text-left space-y-1 pr-12">
                             <div className="flex items-center gap-1.5">
                               <div className="w-5 h-5 rounded-full bg-gold-500 border border-white flex items-center justify-center text-black font-extrabold text-[7.5px] shadow">
                                 S
@@ -630,17 +665,20 @@ export default function HomePage() {
                               <span className="truncate font-mono">Original Audio - Ethiopian Wedding Medley</span>
                             </div>
                           </div>
+
+                          {/* iOS Home Indicator */}
+                          <div className="w-24 h-1 bg-white/60 rounded-full mx-auto mt-1 mb-0.5 z-40 shrink-0 pointer-events-none relative" />
                         </div>
                       )}
 
                       {/* Floating Top Badge Pill Overlay */}
-                      <div className="absolute top-6 left-6 z-30 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md border border-gold-500/50 text-gold-300 text-[9.5px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 shadow-2xl">
+                      <div className="absolute top-7 left-6 z-30 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md border border-gold-500/50 text-gold-300 text-[9.5px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 shadow-2xl">
                         <IconComp className="w-3.5 h-3.5 text-gold-400" />
                         {feat.badge}
                       </div>
 
                       {/* Floating Bottom Transparent Action Bar Overlay */}
-                      <div className="absolute bottom-6 left-6 right-6 z-30 p-3 rounded-2xl bg-black/85 backdrop-blur-xl border border-gold-500/40 shadow-2xl flex items-center justify-between group-hover:border-gold-300 transition-all">
+                      <div className="absolute bottom-7 left-6 right-6 z-30 p-2.5 rounded-2xl bg-black/85 backdrop-blur-xl border border-gold-500/40 shadow-2xl flex items-center justify-between group-hover:border-gold-300 transition-all">
                         <div className="text-left pr-2">
                           <h3 className="font-serif text-xs font-bold text-white tracking-wide truncate max-w-[150px] sm:max-w-[170px]">
                             {feat.title}
