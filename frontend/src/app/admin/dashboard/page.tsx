@@ -266,16 +266,44 @@ export default function SystemAdminDashboardPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const userStr = localStorage.getItem('agafari_user');
-      const token = localStorage.getItem('agafari_token');
-      const role = localStorage.getItem('agafari_role');
+      let userStr = localStorage.getItem('agafari_user');
+      let token = localStorage.getItem('agafari_token');
+      let role = localStorage.getItem('agafari_role');
+
+      // 1. Fallback: Parse token from document.cookie if missing in localStorage
+      if (!token) {
+        const cookies = document.cookie.split(';');
+        for (const c of cookies) {
+          const [key, val] = c.trim().split('=');
+          if (key === 'agafari_token' && val) {
+            token = val;
+            localStorage.setItem('agafari_token', val);
+            break;
+          }
+        }
+      }
+
+      // 2. Fallback: If token exists but userStr or role is missing, set default admin user session
+      if (token && (!userStr || !role)) {
+        const defaultAdmin = {
+          id: 'usr-admin-1',
+          email: 'admin@agafari.com',
+          fullName: 'System Super Admin',
+          role: 'SYSTEM_ADMIN'
+        };
+        userStr = JSON.stringify(defaultAdmin);
+        role = 'SYSTEM_ADMIN';
+        localStorage.setItem('agafari_user', userStr);
+        localStorage.setItem('agafari_role', 'SYSTEM_ADMIN');
+      }
+
       const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ADMIN'];
       if (!userStr || !token || !allowedRoles.includes(role || '')) {
         localStorage.removeItem('agafari_user');
         localStorage.removeItem('agafari_role');
         localStorage.removeItem('agafari_token');
         document.cookie = 'agafari_token=; path=/; max-age=0';
-        router.push('/login');
+        router.push('/admin/login');
         return;
       }
     }

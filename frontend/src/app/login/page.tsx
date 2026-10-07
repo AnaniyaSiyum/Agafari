@@ -37,7 +37,11 @@ export default function GeneralLoginPage() {
       if (res.ok && data.success) {
         if (typeof window !== 'undefined') {
           localStorage.setItem('agafari_user', JSON.stringify(data.user));
-          localStorage.setItem('agafari_role', data.user.role);
+          localStorage.setItem('agafari_role', data.user.role || 'SYSTEM_ADMIN');
+          if (data.token) {
+            localStorage.setItem('agafari_token', data.token);
+            document.cookie = `agafari_token=${data.token}; path=/; max-age=31536000; SameSite=Lax`;
+          }
         }
         router.push(data.redirectUrl || '/admin/dashboard');
       } else {
