@@ -307,139 +307,7 @@ export default function HomePage() {
               </motion.a>
             </div>
           </motion.div>
-          {/* Realistic Phone Screen showcasing Gate QR Scanner Page */}
-          <motion.div
-            initial={{ opacity: 0, y: 35 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="mt-12 w-full max-w-sm sm:max-w-md mx-auto relative z-20 flex flex-col items-center"
-          >
-            {/* Glowing Ambient Golden Glow behind Phone */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[520px] bg-gradient-to-r from-amber-400/25 via-gold-500/35 to-amber-500/20 rounded-full blur-[80px] pointer-events-none" />
 
-
-            {/* iPhone Hardware Shell */}
-            <div className="w-[300px] sm:w-[340px] rounded-[48px] bg-slate-950 p-3 shadow-[0_30px_70px_rgba(0,0,0,0.6),0_0_30px_rgba(212,175,55,0.25)] border-[4px] border-slate-800 relative z-20 overflow-hidden text-left">
-              
-              {/* Dynamic Island Notch */}
-              <div className="w-28 h-4 bg-black rounded-full mx-auto mb-2 flex items-center justify-between px-2.5 relative z-30">
-                <div className="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800" />
-                <div className="w-2 h-2 rounded-full bg-blue-900/80" />
-              </div>
-
-              {/* Screen Display Container */}
-              <div className="bg-slate-950 rounded-[38px] overflow-hidden border border-gold-500/30 text-white font-sans flex flex-col justify-between min-h-[580px] sm:min-h-[620px] p-3.5 relative">
-                
-                {/* Phone Top Status Bar */}
-                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono border-b border-gold-500/20 pb-2.5 mb-3">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-gold-400 font-bold tracking-wider">GATE SCANNER</span>
-                  </div>
-                  <span className="text-[9px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-800">
-                    LIVE • s-and-d-2026
-                  </span>
-                </div>
-
-                {/* Main Viewfinder Box */}
-                <div className="relative w-full aspect-square rounded-2xl overflow-hidden border-2 border-gold-500/40 bg-black shadow-inner flex flex-col justify-between p-3 my-1">
-                  
-                  {/* Background Camera Image simulation */}
-                  <div className="absolute inset-0 z-0">
-                    <img
-                      src="/images/feature_qr_pass.png"
-                      alt="Camera QR Scan target"
-                      className="w-full h-full object-cover filter brightness-[0.4] blur-[1px]"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
-                  </div>
-
-                  {/* Top Viewfinder Label */}
-                  <div className="relative z-10 flex items-center justify-between">
-                    <span className="px-2.5 py-0.5 rounded-full bg-black/80 border border-gold-500/40 text-[9px] text-gold-300 font-bold flex items-center gap-1">
-                      <Camera className="w-3 h-3 text-gold-400" /> Camera Active
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-500/40 text-[8px] text-emerald-400 font-bold uppercase tracking-wider">
-                      Gate Ready
-                    </span>
-                  </div>
-
-                  {/* Target Scanner Box Overlay with Corner Brackets */}
-                  <div className="relative z-10 w-44 h-44 mx-auto my-auto rounded-xl border-2 border-gold-400/80 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-gold-400 rounded-tl" />
-                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-gold-400 rounded-tr" />
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-gold-400 rounded-bl" />
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-gold-400 rounded-br" />
-
-                    {/* Laser Beam Animation */}
-                    <motion.div
-                      animate={{ y: [-70, 70, -70] }}
-                      transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-                      className="absolute left-1 right-1 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_12px_#f59e0b] z-20 pointer-events-none"
-                    />
-
-                    {/* QR Code graphic inside scanner */}
-                    <div className="w-28 h-28 bg-white/95 p-1.5 rounded-lg shadow-md flex items-center justify-center">
-                      <img
-                        src="/images/feature_qr_pass.png"
-                        alt="QR Pass"
-                        className="w-full h-full object-cover rounded"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Bottom Viewfinder Instruction */}
-                  <div className="relative z-10 text-center bg-black/85 backdrop-blur-md py-1.5 px-3 rounded-lg border border-gold-500/30">
-                    <p className="text-[9px] text-gold-300 font-medium flex items-center justify-center gap-1">
-                      <Zap className="w-3 h-3 text-gold-400 animate-pulse" />
-                      <span>Point camera at guest QR pass</span>
-                    </p>
-                  </div>
-                </div>
-
-                {/* Scan Result Card Preview inside Phone */}
-                <div className="mt-2 p-3 rounded-2xl bg-gradient-to-b from-slate-900 to-black border border-emerald-500/50 shadow-lg text-left relative overflow-hidden">
-                  <div className="flex items-start gap-2 mb-2">
-                    <div className="p-1 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shrink-0">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    </div>
-                    <div>
-                      <span className="text-[8px] font-mono text-emerald-400 font-bold tracking-wider uppercase block">
-                        CODE: INV-SD2026-001
-                      </span>
-                      <h4 className="font-serif font-bold text-xs text-white">
-                        ✓ REAL & VALID PASS
-                      </h4>
-                    </div>
-                  </div>
-
-                  <div className="bg-slate-950 p-2.5 rounded-xl border border-gold-500/20 text-[10px] space-y-1 text-slate-300 font-mono mb-2">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Guest:</span>
-                      <strong className="text-white">Abebe Kebede & Family</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Quota:</span>
-                      <strong className="text-emerald-400">2 Guests Allowed</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">Table:</span>
-                      <strong className="text-gold-300">VIP Table #4</strong>
-                    </div>
-                  </div>
-
-                  <div className="w-full py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-[10px] flex items-center justify-center gap-1.5 shadow-md">
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Admit Guest & Open Gate ➔</span>
-                  </div>
-                </div>
-
-                {/* Phone Bottom Home Indicator */}
-                <div className="w-24 h-1 bg-slate-700 rounded-full mx-auto mt-2 opacity-60" />
-
-              </div>
-            </div>
-          </motion.div>
 
 
           {/* Feature Badges Strip */}
@@ -516,17 +384,109 @@ export default function HomePage() {
                     className="w-[310px] sm:w-[350px] rounded-3xl overflow-hidden border border-gold-500/30 hover:border-gold-500 hover:shadow-gold transition-all duration-300 group flex flex-col justify-between shrink-0 bg-white text-gray-900 shadow-md"
                   >
                     <div>
-                      <div className="h-52 bg-gray-100 relative overflow-hidden">
-                        <img
-                          src={feat.imageUrl}
-                          alt={feat.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
-                        />
-                        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                          <IconComp className="w-3.5 h-3.5 text-gold-400" />
-                          {feat.badge}
+                      {feat.id === 'f2' ? (
+                        <div className="h-64 sm:h-72 bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
+                          {/* Realistic Mini Phone Shell */}
+                          <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
+                            {/* Notch */}
+                            <div className="w-16 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                              <div className="w-1 h-1 rounded-full bg-blue-900/80" />
+                            </div>
+
+                            {/* Screen */}
+                            <div className="bg-slate-950 rounded-[20px] overflow-hidden border border-gold-500/30 text-white font-sans p-2 relative text-[8px]">
+                              {/* Top Bar */}
+                              <div className="flex items-center justify-between font-mono text-slate-400 border-b border-gold-500/20 pb-1 mb-1.5">
+                                <div className="flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                  <span className="text-gold-400 font-bold text-[7px]">GATE SCANNER</span>
+                                </div>
+                                <span className="text-[6px] text-slate-400 bg-slate-900 px-1 py-0.5 rounded">
+                                  LIVE • s-and-d-2026
+                                </span>
+                              </div>
+
+                              {/* Camera Viewfinder Box */}
+                              <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-gold-500/40 bg-black p-1.5 flex flex-col justify-between mb-1.5">
+                                <div className="absolute inset-0 z-0">
+                                  <img
+                                    src="/images/feature_qr_pass.png"
+                                    alt="Camera QR Scan target"
+                                    className="w-full h-full object-cover filter brightness-[0.4] blur-[1px]"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
+                                </div>
+
+                                <div className="relative z-10 flex items-center justify-between">
+                                  <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-[6px] text-gold-300 font-bold flex items-center gap-0.5">
+                                    <Camera className="w-2 h-2 text-gold-400" /> Camera Active
+                                  </span>
+                                  <span className="px-1 py-0.5 rounded-full bg-emerald-950/90 text-[6px] text-emerald-400 font-bold">
+                                    GATE READY
+                                  </span>
+                                </div>
+
+                                {/* Target Box & Laser Beam */}
+                                <div className="relative z-10 w-24 h-24 mx-auto my-auto rounded-lg border border-gold-400/80 flex items-center justify-center bg-black/30">
+                                  <motion.div
+                                    animate={{ y: [-35, 35, -35] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className="absolute left-0.5 right-0.5 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_8px_#f59e0b] z-20 pointer-events-none"
+                                  />
+                                  <div className="w-14 h-14 bg-white/95 p-1 rounded shadow flex items-center justify-center">
+                                    <img src="/images/feature_qr_pass.png" alt="QR Pass" className="w-full h-full object-cover rounded" />
+                                  </div>
+                                </div>
+
+                                <div className="relative z-10 text-center bg-black/85 py-0.5 px-1.5 rounded text-[7px] text-gold-300">
+                                  Point camera at guest QR pass
+                                </div>
+                              </div>
+
+                              {/* Valid Pass Card */}
+                              <div className="p-1.5 rounded-xl bg-slate-900 border border-emerald-500/40 text-[7px] space-y-1">
+                                <div className="flex items-center gap-1">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
+                                  <span className="font-serif font-bold text-white text-[8px]">✓ REAL & VALID PASS</span>
+                                </div>
+                                <div className="flex justify-between text-slate-300 font-mono text-[7px]">
+                                  <span>Guest:</span>
+                                  <strong className="text-white">Abebe Kebede & Family</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-300 font-mono text-[7px]">
+                                  <span>Quota:</span>
+                                  <strong className="text-emerald-400">2 Guests Allowed</strong>
+                                </div>
+                                <div className="flex justify-between text-slate-300 font-mono text-[7px]">
+                                  <span>Table:</span>
+                                  <strong className="text-gold-300">VIP Table #4</strong>
+                                </div>
+                                <div className="w-full py-1 rounded bg-emerald-500 text-black font-extrabold text-[7px] text-center">
+                                  Admit Guest & Open Gate ➔
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md z-20">
+                            <IconComp className="w-3.5 h-3.5 text-gold-400" />
+                            {feat.badge}
+                          </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="h-52 bg-gray-100 relative overflow-hidden">
+                          <img
+                            src={feat.imageUrl}
+                            alt={feat.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
+                          />
+                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                            <IconComp className="w-3.5 h-3.5 text-gold-400" />
+                            {feat.badge}
+                          </div>
+                        </div>
+                      )}
 
                       <div className="p-6 text-left bg-white">
                         <h3 className="font-serif text-xl font-bold text-gray-900 mb-2">
