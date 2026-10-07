@@ -740,9 +740,9 @@ function PublicWeddingCelebrationContent({
         <img
           src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
           alt={coupleTitle}
-          className="w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110"
+          className="w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-stone-950/50 to-stone-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-stone-950/80" />
       </div>
 
       {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
@@ -756,10 +756,10 @@ function PublicWeddingCelebrationContent({
           <img
             src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
             alt={coupleTitle}
-            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110 z-0 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
           />
-          {/* Subtle Contrast Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/75 z-0 pointer-events-none" />
+          {/* Subtle Contrast Gradient Overlay for Text Readability without Blackout */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/50 z-0 pointer-events-none" />
 
           {/* Top Header Bar */}
           <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
