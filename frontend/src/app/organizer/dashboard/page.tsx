@@ -178,6 +178,19 @@ export default function OrganizerDashboardPage() {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('agafari_user');
+      const token = localStorage.getItem('agafari_token');
+      const role = localStorage.getItem('agafari_role');
+      if (!userStr || !token || (role !== 'EVENT_ORGANIZER' && role !== 'SYSTEM_ADMIN')) {
+        localStorage.removeItem('agafari_user');
+        localStorage.removeItem('agafari_role');
+        localStorage.removeItem('agafari_token');
+        document.cookie = 'agafari_token=; path=/; max-age=0';
+        router.push('/organizer/login');
+        return;
+      }
+    }
     async function loadOrganizerData() {
       setLoading(true);
       setErrorMsg(null);
@@ -186,22 +199,26 @@ export default function OrganizerDashboardPage() {
         const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
         const orgId = urlParams?.get('id') || urlParams?.get('organizerId');
 
-        if (!orgId) {
-          setErrorMsg('Missing required Organizer ID parameter in URL. Example format: ?id=[organizer_id]');
-          setLoading(false);
-          return;
-        }
+        const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
+        const userObj = userStr ? JSON.parse(userStr) : null;
+        const effectiveOrgId = orgId || userObj?.userId || 'org-certified';
 
         // Derive the organizer URL slug used in /{organizerSlug}/{eventSlug} deep links
-        const derivedSlug = orgId.startsWith('org-') ? orgId : `org-${orgId}`;
+        const derivedSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
         setOrganizerUrlSlug(derivedSlug);
 
-        const eventsApiUrl = `/api/organizer/events?id=${encodeURIComponent(orgId)}`;
-        const mediaApiUrl = `/api/organizer/media?id=${encodeURIComponent(orgId)}`;
+        const eventsApiUrl = `/api/organizer/events?id=${encodeURIComponent(effectiveOrgId)}`;
+        const mediaApiUrl = `/api/organizer/media?id=${encodeURIComponent(effectiveOrgId)}`;
+
+        const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (typeof window !== 'undefined') {
+          const storedToken = localStorage.getItem('agafari_token');
+          if (storedToken) reqHeaders['Authorization'] = `Bearer ${storedToken}`;
+        }
 
         const [eventsRes, mediaRes] = await Promise.all([
-          fetch(eventsApiUrl),
-          fetch(mediaApiUrl),
+          fetch(eventsApiUrl, { headers: reqHeaders }),
+          fetch(mediaApiUrl, { headers: reqHeaders }),
         ]);
 
         if (eventsRes.status === 404) {
@@ -242,7 +259,16 @@ export default function OrganizerDashboardPage() {
     }
 
     loadOrganizerData();
-  }, []);
+  }, [router]);
+
+  const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('agafari_user');
+      localStorage.removeItem('agafari_role');
+      document.cookie = 'agafari_token=; path=/; max-age=0';
+    }
+    router.push('/organizer/login');
+  };
 
   // Pillar 1 Handler: Request Admin Approval & Provision Couple Credentials
   const handleRequestCoupleCredentials = async (e: React.FormEvent) => {
@@ -541,13 +567,14 @@ export default function OrganizerDashboardPage() {
 
         {/* Footer */}
         <div className="p-4 border-t border-white/10 space-y-2">
-          <Link
-            href="/organizer/login"
-            className="w-full py-2.5 px-3 rounded-xl hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full py-2.5 px-3 rounded-xl hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>{t('nav.signOut')}</span>
-          </Link>
+            <span>{t('nav.signOut', 'Sign Out')}</span>
+          </button>
         </div>
       </aside>
 

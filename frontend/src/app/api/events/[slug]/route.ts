@@ -114,7 +114,8 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
         dressCode: event.dress_code || 'Formal Black Tie & Habesha Kemis',
         welcomeMessage: event.welcome_message || 'We are overjoyed to welcome you to our special day!',
         coverImageUrl: event.cover_image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200',
-        backgroundAudioUrl: customization.backgroundAudioUrl || '',
+        backgroundAudioUrl: customization.backgroundAudioUrl || (event as any).background_audio_url || (event as any).backgroundAudioUrl || '',
+        background_audio_url: customization.backgroundAudioUrl || (event as any).background_audio_url || (event as any).backgroundAudioUrl || '',
         couplePhotoUrl: customization.couplePhotoUrl || event.cover_image_url || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800',
         status: event.status || 'COMING_SOON',
         adminApprovalStatus: (event as any).admin_approval_status || 'PENDING',
@@ -239,8 +240,9 @@ async function handleUpdate(req: NextRequest, slug: string) {
         const currentCustomization = parseCustomization(existing.template_customization_json);
         const updatedCustomization = {
           ...currentCustomization,
+          coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : currentCustomization.coverImageUrl,
+          couplePhotoUrl: couplePhotoUrl !== undefined ? couplePhotoUrl : (coverImageUrl !== undefined ? coverImageUrl : currentCustomization.couplePhotoUrl),
           backgroundAudioUrl: backgroundAudioUrl !== undefined ? backgroundAudioUrl : currentCustomization.backgroundAudioUrl,
-          couplePhotoUrl: couplePhotoUrl !== undefined ? couplePhotoUrl : currentCustomization.couplePhotoUrl,
           loveStory: loveStory !== undefined ? loveStory : currentCustomization.loveStory,
           programs: programs !== undefined ? programs : currentCustomization.programs,
           additionalLocations: additionalLocations !== undefined ? additionalLocations : currentCustomization.additionalLocations
@@ -358,8 +360,9 @@ async function handleUpdate(req: NextRequest, slug: string) {
     const existingCustomization = parseCustomization((mockEvt as any).template_customization_json);
     (mockEvt as any).template_customization_json = JSON.stringify({
       ...existingCustomization,
+      coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : existingCustomization.coverImageUrl,
+      couplePhotoUrl: couplePhotoUrl !== undefined ? couplePhotoUrl : (coverImageUrl !== undefined ? coverImageUrl : existingCustomization.couplePhotoUrl),
       backgroundAudioUrl: backgroundAudioUrl !== undefined ? backgroundAudioUrl : existingCustomization.backgroundAudioUrl,
-      couplePhotoUrl: couplePhotoUrl !== undefined ? couplePhotoUrl : existingCustomization.couplePhotoUrl,
       loveStory: loveStory !== undefined ? loveStory : existingCustomization.loveStory,
       programs: programs !== undefined ? programs : existingCustomization.programs,
       additionalLocations: additionalLocations !== undefined ? additionalLocations : existingCustomization.additionalLocations

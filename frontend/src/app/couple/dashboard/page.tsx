@@ -2,34 +2,41 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Users, 
-  QrCode, 
-  Film, 
-  Download, 
-  Copy, 
-  Check, 
-  Plus, 
-  Search, 
-  Share2, 
-  LogOut, 
-  Eye, 
-  Calendar, 
-  MapPin, 
-  Sparkles, 
-  ShieldCheck, 
-  CheckCircle2, 
-  Clock, 
-  XCircle, 
-  Printer, 
-  Crown, 
-  Menu, 
-  X, 
-  Video, 
-  Image as ImageIcon 
+import {
+  Users,
+  QrCode,
+  Film,
+  Download,
+  Copy,
+  Check,
+  Plus,
+  Search,
+  Share2,
+  LogOut,
+  Eye,
+  Calendar,
+  MapPin,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
+  XCircle,
+  Printer,
+  Crown,
+  Menu,
+  X,
+  Video,
+  Image as ImageIcon,
+  Music,
+  Radio,
+  Volume2,
+  Lock
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
+
+import InvitationCardModal from '@/components/InvitationCardModal';
 
 interface EventData {
   id: string;
@@ -45,6 +52,7 @@ interface EventData {
   dressCode?: string;
   welcomeMessage?: string;
   coverImageUrl?: string;
+  couplePhotoUrl?: string;
   status: string;
 }
 
@@ -53,7 +61,7 @@ interface MediaAssetData {
   eventId: string;
   uploaderName: string;
   mediaType: 'VIDEO' | 'IMAGE';
-  category?: 'BTS' | 'WISHES' | 'LIVE';
+  category?: 'BTS' | 'WISHES' | 'LIVE' | 'MEZMUR';
   cdnUrl: string;
   thumbnailUrl?: string;
   caption: string;
@@ -78,6 +86,7 @@ interface InvitationRecord {
 
 export default function CoupleDashboardPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   const [event, setEvent] = useState<EventData | null>(null);
   const [mediaAssets, setMediaAssets] = useState<MediaAssetData[]>([]);
   const [invitations, setInvitations] = useState<InvitationRecord[]>([]);
@@ -86,9 +95,33 @@ export default function CoupleDashboardPage() {
   // Permitted total quota allocated by Organizer/Admin
   const [permittedTotalQuota, setPermittedTotalQuota] = useState(150);
 
-  // Active Navigation Tab: 'GUESTS' | 'MEDIA'
-  const [activeTab, setActiveTab] = useState<'GUESTS' | 'MEDIA'>('GUESTS');
+  // Active Navigation Tab: 'SETUP' | 'GUESTS' | 'MEDIA'
+  const [activeTab, setActiveTab] = useState<'SETUP' | 'GUESTS' | 'MEDIA'>('GUESTS');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+
+  // Background Audio State
+  const [backgroundAudioUrl, setBackgroundAudioUrl] = useState('');
+  const [savingAudio, setSavingAudio] = useState(false);
+  const [audioSuccessMsg, setAudioSuccessMsg] = useState('');
+
+  // Cover Image & Couple Photo Upload State (Fix for image upload disappearing on save)
+  const [coverImageUrl, setCoverImageUrl] = useState('');
+  const [savingCoverImage, setSavingCoverImage] = useState(false);
+  const [coverSuccessMsg, setCoverSuccessMsg] = useState('');
+
+  // Card Design Template & Theme Palette State
+  const [cardTemplate, setCardTemplate] = useState<'CLASSIC_HORIZONTAL' | 'ELEGANT_VERTICAL'>('ELEGANT_VERTICAL');
+  const [cardTheme, setCardTheme] = useState<'ROYAL_GOLD' | 'CHAMPAGNE_IVORY' | 'ROSE_GOLD' | 'EMERALD_GOLD'>('CHAMPAGNE_IVORY');
+  const [cardModalOpen, setCardModalOpen] = useState(false);
+
+  // Guest RSVP Filter Tab ('ALL' | 'ATTENDING' | 'DECLINED' | 'PENDING')
+  const [guestFilterTab, setGuestFilterTab] = useState<'ALL' | 'ATTENDING' | 'DECLINED' | 'PENDING'>('ALL');
+
+  // Music & Mezmur Recommendations submitted by guests
+  const [musicRecommendations, setMusicRecommendations] = useState<{ id: string; guestName: string; title: string; artist: string; category?: string }[]>([
+    { id: 'rec-1', guestName: 'Abebe Bikila', title: 'Egziabhair Semayen', artist: 'Singer Solomon', category: 'MEZMUR' },
+    { id: 'rec-2', guestName: 'Tigist Haile', title: 'Yene Geta', artist: 'Grace Choir', category: 'MEZMUR' },
+  ]);
 
   // Guest Submission Form State
   const [guestName, setGuestName] = useState('');
@@ -107,69 +140,162 @@ export default function CoupleDashboardPage() {
   const [copiedCode, setCopiedCode] = useState('');
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('agafari_user');
+      const token = localStorage.getItem('agafari_token');
+      const role = localStorage.getItem('agafari_role');
+      if (!userStr || !token || (role !== 'BRIDE_GROOM' && role !== 'EVENT_ORGANIZER' && role !== 'SYSTEM_ADMIN')) {
+        localStorage.removeItem('agafari_user');
+        localStorage.removeItem('agafari_role');
+        localStorage.removeItem('agafari_token');
+        document.cookie = 'agafari_token=; path=/; max-age=0';
+        router.push('/couple/login');
+        return;
+      }
+    }
     async function loadCoupleDashboardData() {
       try {
         let coupleEventSlug: string | null = null;
         let orgId = 'org-default';
-        const eventsRes = await fetch('/api/organizer/events');
-        if (eventsRes.ok) {
-          const eventsData = await eventsRes.json();
-          if (eventsData.events && eventsData.events.length > 0) {
-            coupleEventSlug = eventsData.events[0].slug;
-            if (eventsData.events[0].organizer_id || eventsData.events[0].organizerId) {
-              orgId = eventsData.events[0].organizer_id || eventsData.events[0].organizerId;
-            }
-          }
-        }
 
+        // 1. Resolve explicit URL parameter (?slug=... or ?event=... or ?id=...)
+        const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+        const querySlug = urlParams?.get('slug') || urlParams?.get('event') || urlParams?.get('id');
+
+        // 2. Resolve logged-in couple user object from localStorage
+        const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
+        let userObj: any = null;
+        if (userStr) {
+          try {
+            userObj = JSON.parse(userStr);
+          } catch (e) { }
+        }
+        const userSlug = userObj?.eventSlug || userObj?.slug || userObj?.eventId || userObj?.event_slug || userObj?.event_id;
+        const storedCoupleSlug = typeof window !== 'undefined' ? localStorage.getItem('agafari_couple_slug') : null;
+
+        coupleEventSlug = querySlug || userSlug || storedCoupleSlug || null;
+
+        // Strict Security: If no explicit wedding event slug is authorized for this user, do NOT load random data
         if (!coupleEventSlug) {
-          const pubRes = await fetch('/api/admin/events');
-          if (pubRes.ok) {
-            const pubData = await pubRes.json();
-            if (pubData.events && pubData.events.length > 0) {
-              coupleEventSlug = pubData.events[0].slug;
-              if (pubData.events[0].organizer_id || pubData.events[0].organizerId) {
-                orgId = pubData.events[0].organizer_id || pubData.events[0].organizerId;
+          setEvent(null);
+          setLoading(false);
+          return;
+        }
+
+        if (typeof window !== 'undefined' && coupleEventSlug) {
+          localStorage.setItem('agafari_couple_slug', coupleEventSlug);
+        }
+
+        const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (typeof window !== 'undefined') {
+          const storedToken = localStorage.getItem('agafari_token');
+          if (storedToken) reqHeaders['Authorization'] = `Bearer ${storedToken}`;
+        }
+
+        const [eventRes, mediaRes, invitesRes, quotaRes, musicRes] = await Promise.all([
+          fetch(`/api/events/${coupleEventSlug}`, { headers: reqHeaders }),
+          fetch(`/api/events/${coupleEventSlug}/media`, { headers: reqHeaders }),
+          fetch(`/api/events/${coupleEventSlug}/invitations`, { headers: reqHeaders }),
+          fetch(`/api/events/${coupleEventSlug}/quota`, { headers: reqHeaders }),
+          fetch(`/api/events/${coupleEventSlug}/music`, { headers: reqHeaders }),
+        ]);
+
+        if (eventRes.ok) {
+          const data = await eventRes.json();
+          setEvent(data.event);
+          if (data.event) {
+            const cachedAudio = typeof window !== 'undefined' ? localStorage.getItem(`agafari_bg_audio_${coupleEventSlug}`) : null;
+            const serverAudio = data.event.backgroundAudioUrl || data.event.background_audio_url || data.event.customization?.backgroundAudioUrl || '';
+            setBackgroundAudioUrl(serverAudio || cachedAudio || '');
+            const serverCover = data.event.coverImageUrl || data.event.couplePhotoUrl || data.event.customization?.coverImageUrl || '';
+            setCoverImageUrl(serverCover || '');
+            if (data.event.cardTemplate || data.event.card_template) {
+              setCardTemplate(data.event.cardTemplate || data.event.card_template);
+            }
+            if (data.event.cardTheme || data.event.card_theme) {
+              setCardTheme(data.event.cardTheme || data.event.card_theme);
+            }
+          }
+        }
+
+        if (invitesRes.ok) {
+          const data = await invitesRes.json();
+          setInvitations(data.invitations || []);
+        }
+
+        if (quotaRes.ok) {
+          const data = await quotaRes.json();
+          if (data.totalAllocatedQuota) {
+            setPermittedTotalQuota(data.totalAllocatedQuota);
+          }
+        }
+
+        const extractedMusic: { id: string; guestName: string; title: string; artist: string; category?: string }[] = [];
+
+        if (musicRes.ok) {
+          const mData = await musicRes.json();
+          const recs = mData.recommendations || mData.items || [];
+          recs.forEach((r: any) => {
+            extractedMusic.push({
+              id: r.id,
+              guestName: r.guestName || r.guest_name || 'Honored Guest',
+              title: r.title || 'Untitled Song',
+              artist: r.artist || '',
+              category: r.category || 'MEZMUR',
+            });
+          });
+        }
+
+        if (mediaRes.ok) {
+          const data = await mediaRes.json();
+          const rawItems = data.mediaAssets || data.items || [];
+          const galleryItems: any[] = [];
+
+          rawItems.forEach((m: any) => {
+            const isMezmur =
+              m.category === 'MEZMUR' ||
+              m.category === 'MUSIC' ||
+              m.media_type === 'MEZMUR' ||
+              m.mediaType === 'MEZMUR' ||
+              (typeof m.caption === 'string' && m.caption.trim().startsWith('{') && (m.caption.includes('"title"') || m.caption.includes('"artist"')));
+
+            if (isMezmur) {
+              let title = 'Untitled Song';
+              let artist = '';
+              try {
+                if (m.caption && m.caption.trim().startsWith('{')) {
+                  const parsed = JSON.parse(m.caption);
+                  title = parsed.title || title;
+                  artist = parsed.artist || '';
+                } else if (m.caption && m.caption.includes('|')) {
+                  const parts = m.caption.split('|');
+                  title = parts[0].trim();
+                  artist = parts[1]?.trim() || '';
+                } else if (m.caption) {
+                  title = m.caption;
+                }
+              } catch (e) {
+                title = m.caption || 'Untitled Song';
               }
+
+              if (!extractedMusic.some((x) => x.id === m.id)) {
+                extractedMusic.push({
+                  id: m.id,
+                  guestName: m.uploader_name || m.uploaderName || 'Honored Guest',
+                  title: title || 'Untitled Song',
+                  artist: artist || '',
+                  category: 'MEZMUR',
+                });
+              }
+            } else {
+              galleryItems.push(m);
             }
-          }
+          });
+
+          setMediaAssets(galleryItems);
         }
 
-        if (coupleEventSlug) {
-          const targetUrl = `/${orgId}/${coupleEventSlug}/couple`;
-          if (typeof window !== 'undefined' && window.location.pathname === '/couple/dashboard') {
-            window.location.replace(targetUrl);
-            return;
-          }
-          const [eventRes, mediaRes, invitesRes, quotaRes] = await Promise.all([
-            fetch(`/api/events/${coupleEventSlug}`),
-            fetch(`/api/events/${coupleEventSlug}/media`),
-            fetch(`/api/events/${coupleEventSlug}/invitations`),
-            fetch(`/api/events/${coupleEventSlug}/quota`),
-          ]);
-
-          if (eventRes.ok) {
-            const data = await eventRes.json();
-            setEvent(data.event);
-          }
-
-          if (mediaRes.ok) {
-            const data = await mediaRes.json();
-            setMediaAssets(data.mediaAssets || []);
-          }
-
-          if (invitesRes.ok) {
-            const data = await invitesRes.json();
-            setInvitations(data.invitations || []);
-          }
-
-          if (quotaRes.ok) {
-            const data = await quotaRes.json();
-            if (data.totalAllocatedQuota) {
-              setPermittedTotalQuota(data.totalAllocatedQuota);
-            }
-          }
-        }
+        setMusicRecommendations(extractedMusic);
       } catch (err) {
         console.error('Failed to load couple dashboard data:', err);
       } finally {
@@ -178,10 +304,64 @@ export default function CoupleDashboardPage() {
     }
 
     loadCoupleDashboardData();
-  }, []);
+  }, [router]);
+
+  const handleImageFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 15 * 1024 * 1024) {
+        alert('Image file size must be less than 15MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const imgData = evt.target?.result as string;
+        if (imgData) {
+          setCoverImageUrl(imgData);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveCoverImage = async () => {
+    if (!event?.slug) return;
+    setSavingCoverImage(true);
+    setCoverSuccessMsg('');
+    try {
+      const res = await fetch(`/api/events/${event.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverImageUrl, couplePhotoUrl: coverImageUrl, cardTemplate, cardTheme }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.event) {
+          setEvent(data.event);
+        } else {
+          setEvent((prev) => prev ? { ...prev, coverImageUrl } : null);
+        }
+        setCoverSuccessMsg('✓ Invitation cover photo & card design settings saved successfully!');
+        setTimeout(() => setCoverSuccessMsg(''), 5000);
+      }
+    } catch (err) {
+      console.error('Failed to save cover image:', err);
+    } finally {
+      setSavingCoverImage(false);
+    }
+  };
+
+  const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('agafari_user');
+      localStorage.removeItem('agafari_role');
+      document.cookie = 'agafari_token=; path=/; max-age=0';
+    }
+    router.push('/couple/login');
+  };
 
   // Calculate current quota usage
-  const currentTotalGuestsSubmitted = invitations.reduce((sum, inv) => sum + (inv.maxGuests || 1), 0);
+  const currentTotalGuestsSubmitted = (invitations || []).reduce((sum, inv) => sum + (inv?.maxGuests || 1), 0);
   const remainingPermittedSeats = Math.max(0, permittedTotalQuota - currentTotalGuestsSubmitted);
 
   // Submit Guest Data to Organizer / System Admin
@@ -203,9 +383,20 @@ export default function CoupleDashboardPage() {
     setSubmittingGuest(true);
     try {
       const slug = event?.slug || 'sara-and-dawit-2026';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'x-dev-role': 'BRIDE_GROOM',
+      };
+      if (typeof window !== 'undefined') {
+        const storedToken = localStorage.getItem('agafari_token');
+        if (storedToken) {
+          headers['Authorization'] = `Bearer ${storedToken}`;
+        }
+      }
+
       const res = await fetch(`/api/events/${slug}/invitations`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           guestName: guestName.trim(),
           guestPhone: guestPhone.trim(),
@@ -233,6 +424,57 @@ export default function CoupleDashboardPage() {
     }
   };
 
+  const handleAudioFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 20 * 1024 * 1024) {
+        alert('Audio file size must be less than 20MB.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const audioData = evt.target?.result as string;
+        if (audioData) {
+          setBackgroundAudioUrl(audioData);
+          if (typeof window !== 'undefined' && event?.slug) {
+            localStorage.setItem(`agafari_bg_audio_${event.slug}`, audioData);
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveAudio = async () => {
+    if (!event?.slug) return;
+    setSavingAudio(true);
+    setAudioSuccessMsg('');
+    try {
+      if (typeof window !== 'undefined' && backgroundAudioUrl) {
+        localStorage.setItem(`agafari_bg_audio_${event.slug}`, backgroundAudioUrl);
+      }
+      const res = await fetch(`/api/events/${event.slug}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ backgroundAudioUrl }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.event) {
+          setEvent(data.event);
+        } else {
+          setEvent((prev) => prev ? { ...prev, backgroundAudioUrl } : null);
+        }
+        setAudioSuccessMsg('✓ Background audio track updated successfully! Guests visiting your celebration page will hear this track.');
+        setTimeout(() => setAudioSuccessMsg(''), 5000);
+      }
+    } catch (err) {
+      console.error('Failed to save background audio:', err);
+    } finally {
+      setSavingAudio(false);
+    }
+  };
+
   const handleCopyLink = (code: string, name: string) => {
     const slug = event?.slug || 'sara-and-dawit-2026';
     const fullUrl = `${window.location.origin}/event/${slug}?code=${code}&guest=${encodeURIComponent(name)}`;
@@ -241,34 +483,54 @@ export default function CoupleDashboardPage() {
     setTimeout(() => setCopiedCode(''), 3000);
   };
 
-  // Filter Media (Behind The Scenes vs Gathered Media)
-  const filteredMedia = mediaAssets.filter((m) => {
-    if (m.status === 'REJECTED') return false;
+  // Filter Media (Behind The Scenes vs Gathered Media - Excludes MEZMUR recommendations)
+  const filteredMedia = (mediaAssets || []).filter((m) => {
+    if (!m || m.status === 'REJECTED') return false;
+    const isMezmur =
+      m.category === 'MEZMUR' ||
+      m.category === 'MUSIC' ||
+      m.media_type === 'MEZMUR' ||
+      m.mediaType === 'MEZMUR' ||
+      (typeof m.caption === 'string' && m.caption.trim().startsWith('{') && (m.caption.includes('"title"') || m.caption.includes('"artist"')));
+    if (isMezmur) return false;
     if (mediaSubTab === 'ALL') return true;
     if (mediaSubTab === 'BTS') return m.category === 'BTS';
     if (mediaSubTab === 'GATHERED') return m.category === 'WISHES' || m.category === 'LIVE' || !m.category;
     return true;
   });
 
-  if (!event && !loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col items-center justify-center p-6 text-center font-sans">
-        <div className="max-w-md w-full bg-white border border-slate-200/90 rounded-3xl p-8 space-y-6 shadow-xl">
-          <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto text-amber-700">
-            <Crown className="w-8 h-8 text-amber-600" />
+      <div className="min-h-screen bg-slate-950 text-gold-400 flex items-center justify-center font-sans">
+        <div className="text-center space-y-4">
+          <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="font-serif text-gold-400 text-xs tracking-widest uppercase">Verifying Security & Access Permissions...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center p-6 text-center font-sans">
+        <div className="max-w-md w-full bg-slate-900 border border-gold-500/30 rounded-3xl p-8 space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center mx-auto text-gold-400">
+            <Lock className="w-8 h-8 text-gold-400" />
           </div>
           <div className="space-y-2">
-            <h2 className="font-bold text-2xl text-slate-900 tracking-tight">No Active Wedding Event Provisioned</h2>
-            <p className="text-xs text-amber-800 font-bold uppercase tracking-wider bg-amber-50 px-3 py-1 rounded-full border border-amber-200 inline-block">Couples Control Hub</p>
-            <p className="text-xs text-slate-500 font-medium leading-relaxed">
-              Everything starts from the System Super Admin portal. Your System Admin or Event Organizer will register your wedding and provision your couple credentials.
+            <h2 className="font-serif font-bold text-2xl text-gold-400 tracking-tight">Private Couple Dashboard</h2>
+            <p className="text-[10px] text-gold-500/90 font-bold uppercase tracking-widest bg-gold-500/10 px-3 py-1 rounded-full border border-gold-500/20 inline-block">
+              Authentication & Credentials Required
+            </p>
+            <p className="text-xs text-slate-300 font-light leading-relaxed pt-2">
+              No specific wedding event slug or couple account credentials were provided. To access your private wedding hub, please log in with your couple credentials or enter your exact wedding URL link.
             </p>
           </div>
           <Link
-            href="/admin/login"
-            className="w-full py-3.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 active:scale-95"
+            href="/couple/login"
+            className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-gold active:scale-95 cursor-pointer"
           >
-            <span>Log In to System Super Admin Portal →</span>
+            <span>Log In to Couple Portal →</span>
           </Link>
         </div>
       </div>
@@ -277,7 +539,7 @@ export default function CoupleDashboardPage() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-slate-100 text-slate-900 flex font-sans selection:bg-amber-400 selection:text-slate-950">
-      
+
       {/* =========================================================================
           LEFT SIDEBAR: COUPLE PORTAL NAVIGATION
          ========================================================================= */}
@@ -297,7 +559,7 @@ export default function CoupleDashboardPage() {
                 />
                 <div>
                   <h2 className="font-serif font-bold text-base text-gold-400 tracking-wide">
-                    {event?.brideName || 'Sara'} & {event?.groomName || 'Dawit'}
+                    {event?.brideName || 'Bride'} & {event?.groomName || 'Groom'}
                   </h2>
                   <span className="text-[10px] text-gold-400 font-semibold uppercase tracking-widest block">
                     COUPLE'S PORTAL
@@ -328,14 +590,30 @@ export default function CoupleDashboardPage() {
 
           {/* Navigation Links */}
           <nav className="p-4 space-y-2 text-xs font-semibold">
+            {/* 0. Background Audio & Entrance Mezmur */}
+            <button
+              onClick={() => { setActiveTab('SETUP'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all ${activeTab === 'SETUP'
+                  ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-extrabold shadow-md'
+                  : 'text-white/80 hover:bg-white/5 hover:text-white'
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <Music className="w-4 h-4 text-gold-400" />
+                <span>0. Background Audio & Mezmur</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-black/50 text-gold-300 font-bold border border-gold-500/30">
+                🎵
+              </span>
+            </button>
+
             {/* 1. Guest Data & QR Invitations */}
             <button
               onClick={() => { setActiveTab('GUESTS'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all ${
-                activeTab === 'GUESTS'
+              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all ${activeTab === 'GUESTS'
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-extrabold shadow-md'
                   : 'text-white/80 hover:bg-white/5 hover:text-white'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Users className="w-4 h-4 text-gold-400" />
@@ -349,11 +627,10 @@ export default function CoupleDashboardPage() {
             {/* 2. Behind-The-Scenes & Gathered Media Gallery */}
             <button
               onClick={() => { setActiveTab('MEDIA'); setMobileSidebarOpen(false); }}
-              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all ${
-                activeTab === 'MEDIA'
+              className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl transition-all ${activeTab === 'MEDIA'
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-extrabold shadow-md'
                   : 'text-white/80 hover:bg-white/5 hover:text-white'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Film className="w-4 h-4 text-gold-400" />
@@ -370,20 +647,20 @@ export default function CoupleDashboardPage() {
         <div className="p-4 border-t border-white/10 space-y-2">
           <Link
             href={`/event/${event?.slug || 'sara-and-dawit-2026'}`}
-            target="_blank"
             className="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold flex items-center justify-center gap-2 transition-colors border border-gold-500/20"
           >
             <Eye className="w-4 h-4 text-gold-400" />
             <span>Open Public Event Page</span>
           </Link>
 
-          <Link
-            href="/couple/login"
-            className="w-full py-2 px-3 rounded-xl hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full py-2 px-3 rounded-xl hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <LogOut className="w-3.5 h-3.5" />
             <span>Sign Out</span>
-          </Link>
+          </button>
         </div>
       </aside>
 
@@ -399,7 +676,7 @@ export default function CoupleDashboardPage() {
           MAIN WORKSPACE CONTENT
          ========================================================================= */}
       <div className="flex-1 md:pl-72 flex flex-col min-w-0">
-        
+
         {/* Top Executive Header */}
         <header className="sticky top-0 z-30 bg-gray-950/95 backdrop-blur-md border-b border-gold-500/30 px-6 py-4 flex items-center justify-between shadow-md">
           <div className="flex items-center gap-3">
@@ -408,7 +685,9 @@ export default function CoupleDashboardPage() {
                 AGAFARI WEDDING SUITE
               </div>
               <h1 className="font-serif font-bold text-lg sm:text-xl text-white">
-                {activeTab === 'GUESTS' ? 'Guest Directory & QR Pass Center' : 'Behind-The-Scenes & Gathered Media Gallery'}
+                {activeTab === 'SETUP' && 'Coming Soon Background Audio & Entrance Mezmur'}
+                {activeTab === 'GUESTS' && 'Guest Directory & QR Pass Center'}
+                {activeTab === 'MEDIA' && 'Behind-The-Scenes & Gathered Media Gallery'}
               </h1>
             </div>
           </div>
@@ -425,13 +704,312 @@ export default function CoupleDashboardPage() {
 
         {/* Workspace Body Content */}
         <main className="p-6 max-w-6xl w-full mx-auto space-y-6">
-          
+
+          {/* =========================================================================
+              SECTION 0: INVITATION COVER PHOTO & BACKGROUND AUDIO SETUP
+             ========================================================================= */}
+          {activeTab === 'SETUP' && (
+            <div className="space-y-6">
+
+              {/* Cover Photo Upload & Persistence Panel */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gray-950 border border-gold-500/30 shadow-xl space-y-6">
+                <div className="pb-4 border-b border-gold-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div>
+                    <h2 className="font-serif font-bold text-lg sm:text-xl text-gold-400 flex items-center gap-2">
+                      <ImageIcon className="w-5 h-5 text-gold-500" />
+                      Invitation Card Design & Couple Photo Upload
+                    </h2>
+                    <p className="text-xs text-gray-400 font-light mt-1">
+                      Choose your preferred invitation template style, upload couple photos, and preview your official printable QR invitation card pass.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCardModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-gold-400 via-gold-500 to-gold-600 text-black font-extrabold text-xs shadow-lg shadow-gold-500/20 flex items-center gap-2 hover:brightness-110 transition-all cursor-pointer shrink-0"
+                  >
+                    <Sparkles className="w-4 h-4 text-black" />
+                    <span>Live Preview & Download Card (.PNG)</span>
+                  </button>
+                </div>
+
+                {/* TEMPLATE PICKER FOR COUPLES */}
+                <div className="space-y-3 p-4 rounded-2xl bg-black/60 border border-gold-500/20">
+                  <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider">
+                    Select Card Design Template Style (2 Options)
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setCardTemplate('CLASSIC_HORIZONTAL')}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${cardTemplate === 'CLASSIC_HORIZONTAL'
+                          ? 'border-gold-400 bg-gold-500/10 ring-2 ring-gold-400/40 text-gold-200'
+                          : 'border-gray-800 bg-gray-900/50 text-gray-400 hover:border-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between font-bold text-xs">
+                        <span>Template 1: Royal Horizontal Pass</span>
+                        {cardTemplate === 'CLASSIC_HORIZONTAL' && <Check className="w-4 h-4 text-gold-400" />}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">Landscape 3:2 layout with dual QR gate pass seal and foil border accents.</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setCardTemplate('ELEGANT_VERTICAL')}
+                      className={`p-4 rounded-xl border-2 text-left transition-all ${cardTemplate === 'ELEGANT_VERTICAL'
+                          ? 'border-gold-400 bg-gold-500/10 ring-2 ring-gold-400/40 text-gold-200'
+                          : 'border-gray-800 bg-gray-900/50 text-gray-400 hover:border-gray-700'
+                        }`}
+                    >
+                      <div className="flex items-center justify-between font-bold text-xs">
+                        <span>Template 2: Romantic Floral Portrait</span>
+                        {cardTemplate === 'ELEGANT_VERTICAL' && <Check className="w-4 h-4 text-gold-400" />}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">Vertical 2:3 layout with champagne parchment background, golden roses filigree, and arched photo frame.</p>
+                    </button>
+                  </div>
+                </div>
+
+                {coverSuccessMsg && (
+                  <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span>{coverSuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Option A: Upload Device Photo */}
+                  <div className="p-5 rounded-2xl bg-black border border-gold-500/30 shadow-md space-y-3">
+                    <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <ImageIcon className="w-4 h-4 text-gold-500" />
+                      Option A: Select Image File from Device
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageFileUpload}
+                      className="block w-full text-xs text-gray-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gold-500 file:text-black hover:file:bg-gold-400 cursor-pointer"
+                    />
+                    <p className="text-[11px] text-gray-400">Supported formats: JPG, PNG, WEBP (Max 15MB)</p>
+                  </div>
+
+                  {/* Option B: Direct Image URL */}
+                  <div className="p-5 rounded-2xl bg-black border border-gold-500/30 shadow-md space-y-3">
+                    <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Radio className="w-4 h-4 text-gold-500" />
+                      Option B: Direct Image URL / Web Link
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://images.unsplash.com/photo-..."
+                      value={coverImageUrl}
+                      onChange={(e) => setCoverImageUrl(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gold-500/30 bg-gray-900 text-white text-xs focus:ring-2 focus:ring-gold-500 font-mono"
+                    />
+                    <p className="text-[11px] text-gray-400">Paste direct image link</p>
+                  </div>
+                </div>
+
+                {/* Cover Image Preview */}
+                {coverImageUrl && (
+                  <div className="p-4 rounded-2xl bg-black border border-gold-500/40 text-white flex flex-col sm:flex-row items-center gap-4 shadow-lg">
+                    <div className="w-24 h-24 rounded-xl overflow-hidden bg-gray-900 shrink-0 border border-gold-500/30">
+                      <img src={coverImageUrl} alt="Cover Preview" className="w-full h-full object-cover object-top" />
+                    </div>
+                    <div className="flex-1 truncate">
+                      <div className="text-xs font-bold text-gold-400">Active Invitation Cover Photo</div>
+                      <div className="text-[11px] text-gray-300 truncate mt-1">
+                        This image will be displayed on your invitation page card header.
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleSaveCoverImage}
+                      disabled={savingCoverImage}
+                      className="px-5 py-3 rounded-xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs shadow-md transition-all flex items-center gap-2 cursor-pointer shrink-0"
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-black" />
+                      <span>{savingCoverImage ? 'Saving Image...' : 'Save Uploaded Cover Photo'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Background Audio Panel */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gray-950 border border-gold-500/30 shadow-xl space-y-6">
+                <div className="pb-4 border-b border-gold-500/20">
+                  <h2 className="font-serif font-bold text-lg sm:text-xl text-gold-400 flex items-center gap-2">
+                    <Music className="w-5 h-5 text-gold-500" />
+                    Background Audio & Entrance Mezmur
+                  </h2>
+                  <p className="text-xs text-gray-400 font-light mt-1">
+                    Upload an audio file (.mp3, .wav, .m4a) from your device or paste a direct web audio link. This audio track will automatically play when guests visit your public celebration page.
+                  </p>
+                </div>
+
+                {audioSuccessMsg && (
+                  <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs font-bold flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span>{audioSuccessMsg}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Option A: Upload Audio File */}
+                  <div className="p-5 rounded-2xl bg-black border border-gold-500/30 shadow-md space-y-3">
+                    <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Volume2 className="w-4 h-4 text-gold-500" />
+                      Option A: Upload Audio File (.mp3, .wav, .m4a)
+                    </label>
+                    <input
+                      type="file"
+                      accept="audio/*"
+                      onChange={handleAudioFileUpload}
+                      className="block w-full text-xs text-gray-400 file:mr-3 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-gold-500 file:text-black hover:file:bg-gold-400 cursor-pointer"
+                    />
+                    <p className="text-[11px] text-gray-400">Supported formats: MP3, WAV, AAC, M4A (Max 20MB)</p>
+                  </div>
+
+                  {/* Option B: Direct Audio URL */}
+                  <div className="p-5 rounded-2xl bg-black border border-gold-500/30 shadow-md space-y-3">
+                    <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Radio className="w-4 h-4 text-gold-500" />
+                      Option B: Direct Audio URL / Web Link
+                    </label>
+                    <input
+                      type="url"
+                      placeholder="https://example.com/mezmur.mp3"
+                      value={backgroundAudioUrl}
+                      onChange={(e) => setBackgroundAudioUrl(e.target.value)}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gold-500/30 bg-gray-900 text-white text-xs focus:ring-2 focus:ring-gold-500"
+                    />
+                    <p className="text-[11px] text-gray-400">Paste direct link to any hosted mp3 or audio file</p>
+                  </div>
+                </div>
+
+                {/* Audio Preview Player */}
+                {backgroundAudioUrl && (
+                  <div className="p-5 rounded-2xl bg-black border border-gold-500/40 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-lg">
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <div className="w-10 h-10 rounded-full bg-gold-500/20 text-gold-400 flex items-center justify-center shrink-0">
+                        <Music className="w-5 h-5 animate-pulse" />
+                      </div>
+                      <div className="truncate">
+                        <div className="text-xs font-bold text-gold-400">Active Background Audio Track</div>
+                        <div className="text-[11px] text-gray-300 truncate max-w-xs">
+                          {backgroundAudioUrl.startsWith('data:') ? 'Custom Uploaded Device Audio File' : backgroundAudioUrl}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+                      <audio controls src={backgroundAudioUrl} className="h-9 max-w-[240px]" />
+                      <button
+                        type="button"
+                        onClick={() => setBackgroundAudioUrl('')}
+                        className="px-3 py-1.5 rounded-xl bg-rose-950 text-rose-300 border border-rose-500/40 hover:bg-rose-900 text-xs font-bold transition-all"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSaveAudio}
+                    disabled={savingAudio}
+                    className="px-6 py-3.5 rounded-xl bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black font-extrabold text-xs shadow-lg transition-all flex items-center gap-2"
+                  >
+                    <Music className="w-4 h-4 text-black" />
+                    <span>{savingAudio ? 'Saving Audio Track...' : 'Save All Wedding Customizations'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Guest Mezmur & Music Recommendations Panel */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gray-950 border border-gold-500/30 shadow-xl space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gold-500/20">
+                  <div>
+                    <h2 className="font-serif font-bold text-lg sm:text-xl text-gold-400 flex items-center gap-2">
+                      <Music className="w-5 h-5 text-gold-500" />
+                      Guest Mezmur & Song Recommendations ({musicRecommendations.length})
+                    </h2>
+                    <p className="text-xs text-gray-400 font-light mt-1">
+                      Songs and mezmurs suggested by your guests and family members for your wedding celebration.
+                    </p>
+                  </div>
+
+                  <div className="px-3 py-1 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-300 text-xs font-bold shrink-0">
+                    🎵 {musicRecommendations.length} Recommendations
+                  </div>
+                </div>
+
+                {musicRecommendations.length === 0 ? (
+                  <div className="p-8 text-center bg-black/40 rounded-2xl border border-dashed border-gold-500/20 text-gray-400 text-xs space-y-2">
+                    <Music className="w-8 h-8 text-gold-500/40 mx-auto" />
+                    <p className="font-bold text-gold-400">No song recommendations received yet</p>
+                    <p className="text-[11px] text-gray-400">Guests visiting your public celebration page can recommend mezmurs and songs to be played at your wedding.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {musicRecommendations.map((rec) => (
+                      <div
+                        key={rec.id}
+                        className="p-5 rounded-2xl bg-black border border-gold-500/30 hover:border-gold-500/60 shadow-md flex flex-col justify-between space-y-3 transition-all"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-400 border border-gold-500/30 text-[10px] font-bold uppercase tracking-wider">
+                              🎵 {rec.category || 'MEZMUR'}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-mono">
+                              By: {rec.guestName}
+                            </span>
+                          </div>
+
+                          <div className="font-serif font-bold text-base text-white leading-snug">
+                            {rec.title}
+                          </div>
+
+                          {rec.artist && (
+                            <div className="text-xs text-gold-400 font-medium">
+                              Singer / Artist: {rec.artist}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 border-t border-white/10 flex items-center justify-between gap-2">
+                          <div className="text-[10px] text-gray-400">
+                            Submitted by guest <strong className="text-gold-400">{rec.guestName}</strong>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setBackgroundAudioUrl(`${rec.title} - ${rec.artist || ''}`);
+                              alert(`Selected "${rec.title}" as entrance mezmur! Click 'Save All Wedding Customizations' to apply.`);
+                            }}
+                            className="px-3 py-1.5 rounded-xl bg-gold-500/20 hover:bg-gold-500/30 text-gold-300 border border-gold-500/40 text-xs font-bold transition-all cursor-pointer"
+                          >
+                            Use Track
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* =========================================================================
               SECTION 1: GUEST LIST SUBMISSION & UNIQUE ID QR PASS GENERATION
              ========================================================================= */}
           {activeTab === 'GUESTS' && (
             <div className="space-y-6">
-              
+
               {/* Quota KPI Overview Banner */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-5 rounded-2xl bg-gray-950 border border-gold-500/30 shadow-md">
@@ -470,22 +1048,20 @@ export default function CoupleDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setInviteType('CARD')}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                        inviteType === 'CARD'
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${inviteType === 'CARD'
                           ? 'bg-gold-500 text-black shadow-sm'
                           : 'text-gray-400 hover:text-white'
-                      }`}
+                        }`}
                     >
                       Physical Card QR
                     </button>
                     <button
                       type="button"
                       onClick={() => setInviteType('LINK')}
-                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                        inviteType === 'LINK'
+                      className={`px-3 py-1.5 rounded-lg font-bold transition-all ${inviteType === 'LINK'
                           ? 'bg-gold-500 text-black shadow-sm'
                           : 'text-gray-400 hover:text-white'
-                      }`}
+                        }`}
                     >
                       Digital Link
                     </button>
@@ -570,11 +1146,51 @@ export default function CoupleDashboardPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gold-500/20">
                   <div>
                     <h2 className="font-serif font-bold text-lg text-white">
-                      Accepted Guest Invitations ({invitations.length})
+                      Guest Invitations & RSVP Directory ({invitations.length})
                     </h2>
                     <p className="text-xs text-gray-400 font-light">
-                      Copy unique invitation links or download printable QR invitation card passes for each guest.
+                      Filter guests coming vs declined, copy unique invitation links, or download printable branded invitation card passes.
                     </p>
+                  </div>
+
+                  {/* RSVP Filter Pills */}
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-black border border-gold-500/30 text-xs font-bold">
+                    <button
+                      onClick={() => setGuestFilterTab('ALL')}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${guestFilterTab === 'ALL'
+                          ? 'bg-gold-500 text-black shadow-sm font-extrabold'
+                          : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                      All ({invitations.length})
+                    </button>
+                    <button
+                      onClick={() => setGuestFilterTab('ATTENDING')}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${guestFilterTab === 'ATTENDING'
+                          ? 'bg-emerald-600 text-white shadow-sm font-extrabold'
+                          : 'text-emerald-400 hover:text-white'
+                        }`}
+                    >
+                      ✓ Coming ({invitations.filter((i) => i.rsvpStatus === 'ATTENDING').length})
+                    </button>
+                    <button
+                      onClick={() => setGuestFilterTab('DECLINED')}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${guestFilterTab === 'DECLINED'
+                          ? 'bg-rose-600 text-white shadow-sm font-extrabold'
+                          : 'text-rose-400 hover:text-white'
+                        }`}
+                    >
+                      ✗ Declined ({invitations.filter((i) => i.rsvpStatus === 'DECLINED').length})
+                    </button>
+                    <button
+                      onClick={() => setGuestFilterTab('PENDING')}
+                      className={`px-3 py-1.5 rounded-lg transition-all ${guestFilterTab === 'PENDING'
+                          ? 'bg-amber-600 text-white shadow-sm font-extrabold'
+                          : 'text-amber-400 hover:text-white'
+                        }`}
+                    >
+                      ⏳ Pending ({invitations.filter((i) => !i.rsvpStatus || i.rsvpStatus === 'PENDING').length})
+                    </button>
                   </div>
                 </div>
 
@@ -596,74 +1212,112 @@ export default function CoupleDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gold-500/10">
-                        {invitations.map((inv) => (
-                          <tr key={inv.id} className="hover:bg-white/5 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <div className="font-serif font-bold text-white text-sm">{inv.guestName}</div>
-                              {inv.guestPhone && <div className="text-[11px] text-gray-400">{inv.guestPhone}</div>}
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-gold-300 font-bold">
-                              {inv.inviteCode}
-                            </td>
-                            <td className="py-3.5 px-4 font-bold text-white">
-                              {inv.maxGuests} {inv.maxGuests === 1 ? 'Person' : 'Persons'}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {inv.rsvpStatus === 'ATTENDING' ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-bold text-[10px] border border-emerald-500/30">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Attending
-                                </span>
-                              ) : inv.rsvpStatus === 'DECLINED' ? (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 font-bold text-[10px] border border-rose-500/30">
-                                  <XCircle className="w-3 h-3 text-rose-400" /> Declined
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 font-semibold text-[10px] border border-amber-500/30">
-                                  <Clock className="w-3 h-3 text-amber-400" /> Pending RSVP
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {inv.isScanned ? (
-                                <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" /> Checked In
-                                </span>
-                              ) : (
-                                <span className="text-gray-500 font-light text-[11px]">
-                                  Awaiting Gate
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => setSelectedInviteForPass(inv)}
-                                  className="px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-xs font-extrabold flex items-center gap-1 shadow-sm transition-all"
-                                  title="Download Invitation Card & QR"
-                                >
-                                  <QrCode className="w-3.5 h-3.5 text-black" />
-                                  <span>Download Card / QR</span>
-                                </button>
+                        {invitations
+                          .filter((inv) => {
+                            if (guestFilterTab === 'ALL') return true;
+                            if (guestFilterTab === 'ATTENDING') return inv.rsvpStatus === 'ATTENDING';
+                            if (guestFilterTab === 'DECLINED') return inv.rsvpStatus === 'DECLINED';
+                            if (guestFilterTab === 'PENDING') return !inv.rsvpStatus || inv.rsvpStatus === 'PENDING';
+                            return true;
+                          })
+                          .map((inv) => (
+                            <tr key={inv.id} className="hover:bg-white/5 transition-colors">
+                              <td className="py-3.5 px-4">
+                                <div className="font-serif font-bold text-white text-sm">{inv.guestName}</div>
+                                {inv.guestPhone && <div className="text-[11px] text-gray-400">{inv.guestPhone}</div>}
+                              </td>
+                              <td className="py-3.5 px-4 font-mono text-gold-300 font-bold">
+                                {inv.inviteCode}
+                              </td>
+                              <td className="py-3.5 px-4 font-bold text-white">
+                                {inv.maxGuests} {inv.maxGuests === 1 ? 'Person' : 'Persons'}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {inv.rsvpStatus === 'ATTENDING' ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 font-bold text-[10px] border border-emerald-500/30">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Attending
+                                  </span>
+                                ) : inv.rsvpStatus === 'DECLINED' ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-950 text-rose-300 font-bold text-[10px] border border-rose-500/30">
+                                    <XCircle className="w-3 h-3 text-rose-400" /> Declined
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-950 text-amber-300 font-semibold text-[10px] border border-amber-500/30">
+                                    <Clock className="w-3 h-3 text-amber-400" /> Pending RSVP
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4">
+                                {inv.isScanned ? (
+                                  <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" /> Checked In
+                                  </span>
+                                ) : (
+                                  <span className="text-gray-500 font-light text-[11px]">
+                                    Awaiting Gate
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3.5 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => setSelectedInviteForPass(inv)}
+                                    className="px-3 py-1.5 rounded-lg bg-gold-500 hover:bg-gold-400 text-black text-xs font-extrabold flex items-center gap-1 shadow-sm transition-all cursor-pointer"
+                                    title="Download Branded Invitation Card"
+                                  >
+                                    <QrCode className="w-3.5 h-3.5 text-black" />
+                                    <span>Download Card / QR</span>
+                                  </button>
 
-                                <button
-                                  onClick={() => handleCopyLink(inv.inviteCode, inv.guestName)}
-                                  className="p-1.5 rounded-lg border border-gold-500/30 bg-black hover:bg-gray-800 text-gold-400 transition-colors"
-                                  title="Copy Unique Invitation Link"
-                                >
-                                  {copiedCode === inv.inviteCode ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                  ) : (
-                                    <Share2 className="w-3.5 h-3.5 text-gold-400" />
-                                  )}
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                                  <button
+                                    onClick={() => handleCopyLink(inv.inviteCode, inv.guestName)}
+                                    className="p-1.5 rounded-lg border border-gold-500/30 bg-black hover:bg-gray-800 text-gold-400 transition-colors cursor-pointer"
+                                    title="Copy Unique Invitation Link"
+                                  >
+                                    {copiedCode === inv.inviteCode ? (
+                                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    ) : (
+                                      <Share2 className="w-3.5 h-3.5 text-gold-400" />
+                                    )}
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
                   </div>
                 )}
+              </div>
+
+              {/* Guest Music & Mezmur Recommendations Card (Req 7) */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-gray-950 border border-gold-500/30 shadow-xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-gold-500/20">
+                  <h2 className="font-serif font-bold text-lg text-gold-400 flex items-center gap-2">
+                    <Music className="w-5 h-5 text-gold-500" />
+                    Guest Music & Mezmur Recommendations ({musicRecommendations.length})
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {musicRecommendations.map((rec) => (
+                    <div key={rec.id} className="p-4 rounded-2xl bg-black border border-gold-500/20 flex items-center justify-between shadow-sm">
+                      <div className="space-y-1">
+                        <div className="text-xs font-bold text-white flex items-center gap-2">
+                          <Music className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+                          <span>{rec.title}</span>
+                          {rec.artist && <span className="text-gray-400 text-[11px]">by {rec.artist}</span>}
+                        </div>
+                        <div className="text-[11px] text-gold-400 font-medium">
+                          Recommended by: <strong className="text-white font-bold">{rec.guestName}</strong>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-400 font-bold text-[10px] border border-gold-500/30">
+                        {rec.category || 'MEZMUR'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -688,31 +1342,28 @@ export default function CoupleDashboardPage() {
                   <div className="flex items-center gap-2 p-1 rounded-xl bg-black border border-gold-500/30 text-xs font-bold">
                     <button
                       onClick={() => setMediaSubTab('ALL')}
-                      className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                        mediaSubTab === 'ALL'
+                      className={`px-3.5 py-1.5 rounded-lg transition-all ${mediaSubTab === 'ALL'
                           ? 'bg-gold-500 text-black shadow-sm font-extrabold'
                           : 'text-gray-400 hover:text-white'
-                      }`}
+                        }`}
                     >
                       🌟 All Media ({mediaAssets.length})
                     </button>
                     <button
                       onClick={() => setMediaSubTab('BTS')}
-                      className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                        mediaSubTab === 'BTS'
+                      className={`px-3.5 py-1.5 rounded-lg transition-all ${mediaSubTab === 'BTS'
                           ? 'bg-gold-500 text-black shadow-sm font-extrabold'
                           : 'text-gray-400 hover:text-white'
-                      }`}
+                        }`}
                     >
                       🎬 Behind-The-Scenes (BTS)
                     </button>
                     <button
                       onClick={() => setMediaSubTab('GATHERED')}
-                      className={`px-3.5 py-1.5 rounded-lg transition-all ${
-                        mediaSubTab === 'GATHERED'
+                      className={`px-3.5 py-1.5 rounded-lg transition-all ${mediaSubTab === 'GATHERED'
                           ? 'bg-gold-500 text-black shadow-sm font-extrabold'
                           : 'text-gray-400 hover:text-white'
-                      }`}
+                        }`}
                     >
                       📸 Gathered Guest Media
                     </button>
@@ -785,85 +1436,33 @@ export default function CoupleDashboardPage() {
       {/* =========================================================================
           HIGH-RES QR INVITATION CARD MODAL (VIEW & DOWNLOAD)
          ========================================================================= */}
-      <AnimatePresence>
-        {selectedInviteForPass && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          >
-            <div className="w-full max-w-sm bg-gray-950 rounded-3xl p-6 sm:p-8 border-2 border-gold-500 text-center relative shadow-2xl text-white">
-              <button
-                onClick={() => setSelectedInviteForPass(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300"
-              >
-                ✕
-              </button>
-
-              <div className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full bg-gold-500 text-black text-[10px] font-extrabold uppercase mb-3">
-                <Crown className="w-3 h-3 text-black" />
-                {selectedInviteForPass.inviteType === 'CARD' ? 'PRINTABLE CARD PASS' : 'DIGITAL LINK PASS'}
-              </div>
-
-              <h3 className="font-serif font-bold text-xl text-gold-400">
-                {selectedInviteForPass.guestName}
-              </h3>
-              <p className="text-xs text-gray-400 mb-4">
-                Permitted Headcount: <strong className="text-white font-bold">{selectedInviteForPass.maxGuests} {selectedInviteForPass.maxGuests === 1 ? 'Person' : 'Persons'}</strong>
-              </p>
-
-              {/* Scannable High-Res QR Pass */}
-              <div className="p-4 bg-white rounded-2xl border border-gold-500/40 inline-block shadow-lg mb-4">
-                <img
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
-                    `${typeof window !== 'undefined' ? window.location.origin : ''}/event/${event?.slug || 'sara-and-dawit-2026'}?code=${selectedInviteForPass.inviteCode}&guest=${encodeURIComponent(selectedInviteForPass.guestName)}`
-                  )}`}
-                  alt="Guest QR Code Pass"
-                  className="w-48 h-48 mx-auto"
-                />
-                <div className="font-mono text-[11px] font-bold text-black mt-2 tracking-wider">
-                  {selectedInviteForPass.inviteCode}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    const link = document.createElement('a');
-                    link.href = `https://api.qrserver.com/v1/create-qr-code/?size=500x500&data=${encodeURIComponent(
-                      `${window.location.origin}/event/${event?.slug || 'sara-and-dawit-2026'}?code=${selectedInviteForPass.inviteCode}&guest=${encodeURIComponent(selectedInviteForPass.guestName)}`
-                    )}`;
-                    link.download = `Invitation-Pass-${selectedInviteForPass.inviteCode}-${selectedInviteForPass.guestName.replace(/\s+/g, '_')}.png`;
-                    link.click();
-                  }}
-                  className="flex-1 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs shadow-md flex items-center justify-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5 text-black" /> Download Card Design
-                </button>
-
-                <button
-                  onClick={() => window.print()}
-                  className="p-2.5 rounded-xl bg-gray-800 hover:bg-gray-700 text-gold-400 border border-gold-500/30 shadow-sm"
-                  title="Print Pass"
-                >
-                  <Printer className="w-4 h-4 text-gold-400" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* High-Res Branded Invitation Card Modal */}
+      <InvitationCardModal
+        isOpen={Boolean(selectedInviteForPass) || cardModalOpen}
+        onClose={() => { setSelectedInviteForPass(null); setCardModalOpen(false); }}
+        invitation={selectedInviteForPass || {
+          guestName: `${event?.brideName || 'Bride'} & ${event?.groomName || 'Groom'}'s VIP Guest`,
+          inviteCode: 'G5qHaAkPNs7g',
+          maxGuests: 4,
+          tableNumber: '1',
+          rsvpStatus: 'ATTENDING',
+        }}
+        event={event ? {
+          ...event,
+          cardTemplate,
+          cardTheme,
+          couplePhotoUrl: coverImageUrl || event.couplePhotoUrl || event.coverImageUrl,
+        } : null}
+      />
 
       {/* Floating Mobile Bottom Ball Navigation Menu (Replacing Hamburger Button) */}
       <nav aria-label="Mobile Navigation" className="md:hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-black/90 backdrop-blur-xl border-2 border-gold-500/50 rounded-full px-5 py-2.5 flex items-center gap-4 shadow-2xl ring-2 ring-gold-500/20">
         <button
           onClick={() => setActiveTab('GUESTS')}
-          className={`p-3 rounded-full transition-all flex items-center justify-center ${
-            activeTab === 'GUESTS'
+          className={`p-3 rounded-full transition-all flex items-center justify-center ${activeTab === 'GUESTS'
               ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black shadow-lg scale-110'
               : 'text-gold-400/80 hover:text-gold-400 hover:bg-white/10'
-          }`}
+            }`}
           title="Guest List & QR Passes"
         >
           <Users className="w-5 h-5" />
@@ -871,11 +1470,10 @@ export default function CoupleDashboardPage() {
 
         <button
           onClick={() => setActiveTab('MEDIA')}
-          className={`p-3 rounded-full transition-all flex items-center justify-center ${
-            activeTab === 'MEDIA'
+          className={`p-3 rounded-full transition-all flex items-center justify-center ${activeTab === 'MEDIA'
               ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black shadow-lg scale-110'
               : 'text-gold-400/80 hover:text-gold-400 hover:bg-white/10'
-          }`}
+            }`}
           title="BTS & Gathered Media"
         >
           <Film className="w-5 h-5" />

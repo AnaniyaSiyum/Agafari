@@ -3,19 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Heart, 
-  Video, 
-  QrCode, 
-  ShieldCheck, 
-  ArrowRight, 
-  Calendar, 
-  CheckCircle2, 
-  Star, 
-  Play, 
-  Phone, 
-  Mail, 
+import {
+  Sparkles,
+  Heart,
+  Video,
+  QrCode,
+  ShieldCheck,
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  Star,
+  Play,
+  Phone,
+  Mail,
   ExternalLink,
   Crown,
   Award,
@@ -35,7 +35,8 @@ import {
   X,
   Radio,
   Users,
-  Film
+  Film,
+  MessageCircle
 } from 'lucide-react';
 
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
@@ -46,6 +47,7 @@ export default function HomePage() {
   const [faqModalOpen, setFaqModalOpen] = useState(false);
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('hero');
+  const [consultationOpen, setConsultationOpen] = useState(false);
 
   // Scroll spy tracking to detect which section the user is currently viewing
   useEffect(() => {
@@ -135,27 +137,27 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white text-gray-900 flex flex-col relative font-sans">
-      
+
       {/* 0. Ambient Floating Gold Sparkles */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
         {[...Array(10)].map((_, i) => (
           <motion.div
             key={i}
             initial={{ y: 0, opacity: 0.2 }}
-            animate={{ 
-              y: [-20, -60, -20], 
+            animate={{
+              y: [-20, -60, -20],
               x: [0, i % 2 === 0 ? 25 : -25, 0],
-              opacity: [0.2, 0.8, 0.2] 
+              opacity: [0.2, 0.8, 0.2]
             }}
-            transition={{ 
-              duration: 6 + i * 2, 
-              repeat: Infinity, 
+            transition={{
+              duration: 6 + i * 2,
+              repeat: Infinity,
               ease: "easeInOut",
-              delay: i * 1.1 
+              delay: i * 1.1
             }}
-            style={{ 
-              top: `${8 + i * 10}%`, 
-              left: `${5 + i * 10}%` 
+            style={{
+              top: `${8 + i * 10}%`,
+              left: `${5 + i * 10}%`
             }}
             className="absolute text-gold-500 text-xl select-none"
           >
@@ -169,7 +171,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="p-1.5 rounded-xl bg-black shadow-md flex items-center justify-center">
-              <motion.img 
+              <motion.img
                 whileHover={{ scale: 1.05 }}
                 src="/branding/artboard-13.png"
                 alt="Agafari (አጋፋሪ) Logo"
@@ -224,16 +226,53 @@ export default function HomePage() {
       </header>
 
       {/* 2. Hero Section */}
-      <section id="hero" className="relative px-6 pt-24 pb-32 w-full max-w-full text-center z-10 overflow-hidden flex flex-col items-center justify-center min-h-[90vh]">
-        {/* Realistic Background Image */}
-        <div className="absolute inset-0 z-0">
-          <img 
+      <section id="hero" className="relative px-4 sm:px-6 pt-20 pb-28 w-full max-w-full text-center z-10 overflow-hidden flex flex-col items-center justify-center min-h-[92vh]">
+        {/* Realistic Background Image with Layered Radial Golden Aura */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <img
             src="/images/hero_couple_bg.png"
             alt="Beautiful Ethiopian Wedding"
-            className="w-full h-full object-cover object-center opacity-30 mix-blend-luminosity filter brightness-90"
+            className="w-full h-full object-cover object-center opacity-25 mix-blend-luminosity filter brightness-95"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/80 to-white z-10" />
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gold-500/10 rounded-full blur-[100px] z-0 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/80 to-white z-10" />
+
+          {/* Glowing Ambient Radial Halos */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-gradient-to-r from-amber-300/20 via-gold-500/25 to-amber-500/20 rounded-full blur-[120px] z-0" />
+          <div className="absolute top-1/2 left-10 w-72 h-72 bg-gold-400/15 rounded-full blur-[90px] z-0" />
+          <div className="absolute top-1/3 right-10 w-72 h-72 bg-amber-500/15 rounded-full blur-[90px] z-0" />
+        </div>
+
+        {/* Floating Glassmorphic Badges around Hero (Desktop Only) */}
+        <div className="hidden lg:block absolute inset-0 max-w-6xl mx-auto pointer-events-none z-30">
+          {/* Top Left Badge */}
+          <motion.div
+            animate={{ y: [-8, 8, -8] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-28 left-4 px-4 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto"
+          >
+            <Sparkles className="w-4 h-4 text-gold-400 animate-pulse" />
+            <span>✨ 250+ Couples Celebrated</span>
+          </motion.div>
+
+          {/* Top Right Badge */}
+          <motion.div
+            animate={{ y: [8, -8, 8] }}
+            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+            className="absolute top-32 right-4 px-4 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <span>🛡️ 100% Gate Anti-Passback</span>
+          </motion.div>
+
+          {/* Bottom Right Badge */}
+          <motion.div
+            animate={{ y: [-6, 6, -6] }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+            className="absolute bottom-40 right-8 px-4 py-2 rounded-2xl bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-xs font-bold shadow-2xl flex items-center gap-2 pointer-events-auto"
+          >
+            <Video className="w-4 h-4 text-rose-400" />
+            <span>⚡ Instant Telegram Sync</span>
+          </motion.div>
         </div>
 
         <div className="relative z-20 w-full max-w-5xl mx-auto flex flex-col items-center">
@@ -244,33 +283,33 @@ export default function HomePage() {
             className="flex flex-col items-center w-full"
           >
             {/* Agafari Golden Logo */}
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.8, ease: "easeOut" }}
-              className="relative w-40 h-40 md:w-56 md:h-56 mb-4 drop-shadow-[0_15px_25px_rgba(212,175,55,0.3)]"
+              className="relative w-40 h-40 md:w-52 md:h-52 mb-3 drop-shadow-[0_15px_30px_rgba(212,175,55,0.35)]"
             >
-              <img 
-                src="/branding/artboard-13.png" 
-                alt="Agafari Golden Logo" 
-                className="w-full h-full object-contain filter drop-shadow-xl"
+              <img
+                src="/branding/artboard-13.png"
+                alt="Agafari Golden Logo"
+                className="w-full h-full object-contain filter drop-shadow-2xl"
               />
             </motion.div>
 
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sage-muted/80 backdrop-blur-sm text-sage-dark text-[11px] font-semibold uppercase tracking-wider mb-6 border border-sage/30 shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/90 backdrop-blur-md text-gold-400 text-[11px] font-extrabold uppercase tracking-wider mb-5 border border-gold-500/40 shadow-md"
             >
-              <Crown className="w-3.5 h-3.5 text-metallic" />
+              <Crown className="w-3.5 h-3.5 text-gold-400" />
               {t('landing.hero.badge')}
             </motion.div>
 
             {/* Headline */}
             <h1 className={`font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-sage-dark leading-tight drop-shadow-sm ${locale === 'am' ? 'font-amharic-royal' : ''}`}>
               {t('landing.hero.titlePart1')} <br />
-              <motion.span 
+              <motion.span
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.8 }}
@@ -280,17 +319,17 @@ export default function HomePage() {
               </motion.span>
             </h1>
 
-            <p className={`max-w-2xl mx-auto text-sm sm:text-base text-charcoal-light mt-6 mb-8 font-light leading-relaxed drop-shadow-sm ${locale === 'am' ? 'font-amharic-body' : ''}`}>
+            <p className={`max-w-2xl mx-auto text-sm sm:text-base text-charcoal-light mt-5 mb-8 font-light leading-relaxed drop-shadow-sm ${locale === 'am' ? 'font-amharic-body' : ''}`}>
               {t('landing.hero.description')}
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
               <motion.a
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.98 }}
                 href="#demo"
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-bold text-sm shadow-accent transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-8 py-4 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-extrabold text-xs sm:text-sm shadow-accent transition-all flex items-center justify-center gap-2"
               >
                 <Play className="w-4 h-4 fill-sage-dark" />
                 {t('landing.hero.ctaDemo')}
@@ -299,34 +338,193 @@ export default function HomePage() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 href="#packages"
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-sage-dark/90 backdrop-blur-sm text-neutral font-semibold text-sm hover:bg-sage transition-all shadow-sage flex items-center justify-center gap-2 border border-sage/50"
+                className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-950/90 backdrop-blur-md text-gold-300 font-bold text-xs sm:text-sm hover:bg-black transition-all shadow-xl flex items-center justify-center gap-2 border border-gold-500/40"
               >
                 {t('landing.hero.ctaPackages')}
+                <ArrowRight className="w-4 h-4 text-gold-400" />
               </motion.a>
             </div>
           </motion.div>
 
+          {/* Interactive Dual-Device Mockup Preview */}
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="mt-14 w-full max-w-4xl relative"
+          >
+            {/* Ambient Halo behind phones */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[320px] bg-gradient-to-r from-amber-400/20 via-gold-500/30 to-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+
+            {/* Dual Device Grid Shell */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+
+              {/* Phone 1: Envelope & Gate Pass QR */}
+              <motion.div
+                whileHover={{ y: -6, scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+                className="p-5 sm:p-6 rounded-3xl bg-slate-950 border-2 border-gold-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl relative overflow-hidden group text-left"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/10 rounded-full blur-2xl" />
+
+                {/* Status Bar */}
+                <div className="flex items-center justify-between border-b border-gold-500/20 pb-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <span className="text-[10px] text-gold-400 font-extrabold uppercase tracking-widest">
+                      Agafari Gate Pass
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">100% Anti-Passback</span>
+                </div>
+
+                {/* Pass Preview Card */}
+                <div className="bg-gradient-to-b from-slate-900 to-black p-4 rounded-2xl border border-gold-500/30 text-center relative overflow-hidden shadow-inner">
+                  {/* Laser Beam effect */}
+                  <motion.div
+                    animate={{ y: [0, 130, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                    className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] z-20 pointer-events-none"
+                  />
+
+                  <div className="text-[10px] text-amber-400 font-serif uppercase tracking-widest mb-1">
+                    Sara & Dawit's Wedding
+                  </div>
+                  <div className="font-serif font-bold text-white text-lg mb-2">
+                    Abebe Kebede & Family
+                  </div>
+
+                  {/* QR Image Graphic Container */}
+                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl shadow-lg relative flex items-center justify-center border-2 border-gold-400">
+                    <img
+                      src="/images/feature_qr_pass.png"
+                      alt="Gate Pass QR"
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-9 h-9 rounded-xl bg-black/90 p-1 flex items-center justify-center shadow-lg border border-gold-400">
+                        <QrCode className="w-5 h-5 text-gold-400" />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pass Details Info */}
+                  <div className="mt-3 flex items-center justify-between text-[11px] bg-slate-900/90 px-3 py-2 rounded-xl border border-gold-500/20 text-slate-300">
+                    <div>
+                      <span className="text-slate-400 block text-[9px] uppercase">Table</span>
+                      <strong className="text-gold-300">VIP Table #4</strong>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-slate-400 block text-[9px] uppercase">Seats</span>
+                      <strong className="text-emerald-400">2 Guests Allowed</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Verified Pass
+                  </span>
+                  <span className="text-[10px] text-amber-400 font-semibold uppercase">Scan & Enter Gate</span>
+                </div>
+              </motion.div>
+
+              {/* Phone 2: TikTok Memory Feed & Wishes */}
+              <motion.div
+                whileHover={{ y: -6, scale: 1.02 }}
+                transition={{ duration: 0.3 }}
+                className="p-5 sm:p-6 rounded-3xl bg-slate-950 border-2 border-gold-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl relative overflow-hidden group text-left"
+              >
+                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl" />
+
+                {/* Status Bar */}
+                <div className="flex items-center justify-between border-b border-gold-500/20 pb-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" />
+                    <span className="text-[10px] text-gold-400 font-extrabold uppercase tracking-widest">
+                      TikTok Memory Feed
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-400 font-mono">Live Guest Feed</span>
+                </div>
+
+                {/* Feed Card Preview */}
+                <div className="h-56 bg-slate-900 rounded-2xl overflow-hidden border border-gold-500/30 relative group/feed">
+                  <img
+                    src="/images/feature_feed_live.png"
+                    alt="Memory Feed Preview"
+                    className="w-full h-full object-cover filter brightness-90 group-hover/feed:scale-105 transition-transform duration-700"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+
+                  {/* Play Overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-full bg-gold-500/90 text-black flex items-center justify-center shadow-2xl border border-white/50 backdrop-blur-md">
+                      <Play className="w-5 h-5 fill-black ml-0.5" />
+                    </div>
+                  </div>
+
+                  {/* Reaction Heart Animation */}
+                  <div className="absolute right-3 bottom-12 flex flex-col items-center gap-3">
+                    <motion.div
+                      animate={{ scale: [1, 1.25, 1] }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                      className="w-8 h-8 rounded-full bg-black/60 border border-white/30 backdrop-blur-md flex items-center justify-center text-rose-400 shadow-md"
+                    >
+                      <Heart className="w-4 h-4 fill-rose-500" />
+                    </motion.div>
+                    <span className="text-[10px] font-bold text-white drop-shadow">1.2k</span>
+                  </div>
+
+                  {/* Caption Snippet */}
+                  <div className="absolute bottom-3 left-3 right-14 text-left">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-5 h-5 rounded-full bg-gold-400 text-black text-[9px] font-bold flex items-center justify-center">
+                        H
+                      </div>
+                      <span className="text-white text-xs font-bold drop-shadow">Hellen T.</span>
+                      <span className="text-[9px] text-amber-300 bg-black/60 px-2 py-0.5 rounded-full border border-amber-400/30">
+                        🎤 Voice Wish
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-200 line-clamp-1 font-light drop-shadow">
+                      "Wishing Sara & Dawit endless love and blessings! 💍✨"
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+                  <span className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px]">
+                    <Video className="w-4 h-4 text-amber-400" /> 1-Click Guest Upload
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Telegram Synced</span>
+                </div>
+              </motion.div>
+
+            </div>
+          </motion.div>
+
           {/* Feature Badges Strip */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mx-auto pt-8 border-t border-metallic/30"
+            className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mx-auto pt-8 border-t border-gold-500/20"
           >
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/40 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/50">
-              <CheckCircle2 className="w-4 h-4 text-metallic shrink-0" />
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/60 px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/80 shadow-sm">
+              <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
               {t('landing.hero.feature1')}
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/40 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/50">
-              <CheckCircle2 className="w-4 h-4 text-metallic shrink-0" />
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/60 px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/80 shadow-sm">
+              <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
               {t('landing.hero.feature2')}
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/40 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/50">
-              <CheckCircle2 className="w-4 h-4 text-metallic shrink-0" />
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/60 px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/80 shadow-sm">
+              <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
               {t('landing.hero.feature3')}
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/40 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/50">
-              <CheckCircle2 className="w-4 h-4 text-metallic shrink-0" />
+            <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/60 px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/80 shadow-sm">
+              <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
               {t('landing.hero.feature4')}
             </div>
           </motion.div>
@@ -405,7 +603,6 @@ export default function HomePage() {
                     <div className="px-6 pb-6 bg-white">
                       <a
                         href={feat.link}
-                        target="_blank"
                         className="w-full py-3 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-amber-400 hover:to-gold-500 text-black text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-gold border border-gold-400/40"
                       >
                         {feat.btnText}
@@ -456,149 +653,218 @@ export default function HomePage() {
       </section>
 
       {/* 5. PACKAGES & PRICING SECTION */}
-      <section id="packages" className="py-24 px-6 max-w-6xl mx-auto">
-        <motion.div 
+      <section id="packages" className="py-24 px-4 sm:px-6 max-w-7xl mx-auto space-y-16">
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          className="text-center max-w-2xl mx-auto space-y-2"
         >
-          <span className="text-[10px] text-metallic-dark font-semibold uppercase tracking-widest block mb-1">
+          <span className="text-[11px] text-amber-600 font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-amber-100/80 border border-amber-300/60 inline-block">
             {t('landing.packagesSection.badge')}
           </span>
-          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-sage-dark">
+          <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
             {t('landing.packagesSection.title')}
           </h2>
-          <p className="text-charcoal-light text-xs max-w-md mx-auto font-light mt-2">
+          <p className="text-gray-600 text-xs sm:text-sm font-light leading-relaxed">
             {t('landing.packagesSection.description')}
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-          {/* Silver Package */}
-          <motion.div 
+        {/* 3 Tier Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+          {/* ESSENTIAL Card */}
+          <motion.div
             whileHover={{ y: -6 }}
-            className="p-7 rounded-3xl border border-gold-500/30 hover:border-gold-500 hover:shadow-gold transition-all duration-300 flex flex-col justify-between bg-white shadow-md"
+            className="p-7 sm:p-8 rounded-3xl border border-slate-200 hover:border-amber-400 hover:shadow-xl transition-all duration-300 flex flex-col justify-between bg-white shadow-md relative"
           >
             <div>
-              <div className="text-[10px] font-semibold text-gold-600 uppercase tracking-wider mb-1">
-                {t('landing.packagesSection.silverTag')}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-extrabold text-slate-700 uppercase tracking-widest px-2.5 py-1 rounded-md bg-slate-100 border border-slate-200">
+                  {t('landing.packagesSection.essentialTag')}
+                </span>
+                <span className="text-xs text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
+                  15k ETB
+                </span>
               </div>
-              <h3 className="font-serif text-xl font-bold text-gray-900 mb-3">
-                {t('landing.packagesSection.silverTitle')}
+              <h3 className="font-serif text-2xl font-bold text-gray-900 mb-1">
+                {t('landing.packagesSection.essentialTitle')}
               </h3>
-              <p className="text-gray-600 text-xs font-light mb-5">
-                {t('landing.packagesSection.silverDesc')}
+              <div className="text-3xl font-extrabold text-slate-900 mb-3 flex items-baseline gap-1">
+                15k <span className="text-xs font-normal text-slate-500">/ event</span>
+              </div>
+              <p className="text-gray-600 text-xs font-light mb-6 border-b border-slate-100 pb-4">
+                {t('landing.packagesSection.essentialDesc')}
               </p>
-              <ul className="space-y-2.5 text-xs text-gray-700 border-t border-gray-100 pt-5">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.silverF1')}
+              <ul className="space-y-3 text-xs text-slate-700">
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>💌 <strong>250</strong> {t('landing.packagesSection.digitalInvites')}</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.silverF2')}
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎙️ {t('landing.packagesSection.personalGreeting')}</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.silverF3')}
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🖼️ <strong>6</strong> {t('landing.packagesSection.galleryPhotos')}</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>💭 <strong>{t('landing.packagesSection.unlimited')}</strong> {t('landing.packagesSection.textWishes')}</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎥 <strong>100</strong> {t('landing.packagesSection.videoWishes')}</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎬 <strong>8</strong> {t('landing.packagesSection.btsMoments')}</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>⏳ {t('landing.packagesSection.weddingCountdown')}</span>
                 </li>
               </ul>
             </div>
 
             <a
               href="tel:+251911000000"
-              className="mt-6 w-full py-3 rounded-full bg-black text-white text-center font-bold text-xs hover:bg-gray-800 transition-colors block shadow-md"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-center font-bold text-xs transition-colors block shadow-md"
             >
-              {t('landing.packagesSection.silverBtn')}
+              {t('landing.packagesSection.essentialBtn')}
             </a>
           </motion.div>
 
-          {/* Gold Package */}
-          <motion.div 
+          {/* PREMIUM Card */}
+          <motion.div
             whileHover={{ y: -6 }}
-            className="p-7 rounded-3xl border-2 border-gold-500 hover:shadow-gold transition-all duration-300 relative flex flex-col justify-between bg-white shadow-lg"
+            className="p-7 sm:p-8 rounded-3xl border-2 border-amber-500 hover:shadow-2xl transition-all duration-300 relative flex flex-col justify-between bg-gradient-to-b from-amber-50/40 via-white to-white shadow-xl scale-[1.02] z-10"
           >
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-gold-500 text-black text-[9px] font-bold uppercase tracking-wider shadow-sm flex items-center gap-1">
-              <Crown className="w-3 h-3 text-black" />
-              {t('landing.packagesSection.goldBadge')}
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black text-[10px] font-extrabold uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-amber-300">
+              <Crown className="w-3.5 h-3.5 text-black" />
+              {t('landing.packagesSection.premiumBadge')}
             </div>
 
             <div>
-              <div className="text-[10px] font-semibold text-gold-600 uppercase tracking-wider mb-1 mt-1">
-                {t('landing.packagesSection.goldTag')}
+              <div className="flex items-center justify-between mb-3 mt-2">
+                <span className="text-[10px] font-extrabold text-amber-900 uppercase tracking-widest px-2.5 py-1 rounded-md bg-amber-100 border border-amber-300">
+                  {t('landing.packagesSection.premiumTag')}
+                </span>
+                <span className="text-xs text-amber-900 font-extrabold bg-amber-200/80 px-2.5 py-1 rounded-full border border-amber-400">
+                  35k ETB
+                </span>
               </div>
-              <h3 className="font-serif text-xl font-bold text-gray-900 mb-3">
-                {t('landing.packagesSection.goldTitle')}
+              <h3 className="font-serif text-2xl font-bold text-gray-900 mb-1">
+                {t('landing.packagesSection.premiumTitle')}
               </h3>
-              <p className="text-gray-600 text-xs font-light mb-5">
-                {t('landing.packagesSection.goldDesc')}
+              <div className="text-3xl font-extrabold text-slate-900 mb-3 flex items-baseline gap-1">
+                35k <span className="text-xs font-normal text-slate-500">/ event</span>
+              </div>
+              <p className="text-gray-600 text-xs font-light mb-6 border-b border-amber-100 pb-4">
+                {t('landing.packagesSection.premiumDesc')}
               </p>
-              <ul className="space-y-2.5 text-xs text-gray-700 border-t border-gray-100 pt-5">
-                <li className="flex items-center gap-2 font-semibold text-gray-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.goldF1')}
+              <ul className="space-y-3 text-xs text-slate-800">
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>💌 <strong>400</strong> {t('landing.packagesSection.digitalInvites')}</span>
                 </li>
-                <li className="flex items-center gap-2 font-semibold text-gray-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.goldF2')}
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>📋 {t('landing.packagesSection.fullWeddingInfo')} & 💑 Journey</span>
                 </li>
-                <li className="flex items-center gap-2 font-semibold text-gray-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.goldF3')}
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>🎙️ {t('landing.packagesSection.familyGreetings')}</span>
                 </li>
-                <li className="flex items-center gap-2 font-semibold text-gray-900">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.goldF4')}
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>🎤 <strong>100</strong> Voice & 🎥 <strong>230</strong> Video Wishes</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>🎬 <strong>20</strong> BTS Moments & 📲 Telegram Sync</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>🎬 <strong>1</strong> Feed Video / Guest</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-bold">
+                  <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>🔴 <strong>2</strong> Live Stream Access Viewers</span>
                 </li>
               </ul>
             </div>
 
             <a
               href="tel:+251911000000"
-              className="mt-6 w-full py-3 rounded-full bg-gold-500 hover:bg-gold-600 text-black text-center font-bold text-xs shadow-gold transition-all block"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-center font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all block"
             >
-              {t('landing.packagesSection.goldBtn')}
+              {t('landing.packagesSection.premiumBtn')}
             </a>
           </motion.div>
 
-          {/* Platinum Package */}
-          <motion.div 
+          {/* GOLDEN Card */}
+          <motion.div
             whileHover={{ y: -6 }}
-            className="p-7 rounded-3xl border border-gold-500/30 hover:border-gold-500 hover:shadow-gold transition-all duration-300 flex flex-col justify-between bg-white shadow-md"
+            className="p-7 sm:p-8 rounded-3xl border border-amber-300 hover:border-amber-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between bg-white shadow-md relative"
           >
             <div>
-              <div className="text-[10px] font-semibold text-gold-600 uppercase tracking-wider mb-1">
-                {t('landing.packagesSection.platTag')}
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-extrabold text-amber-800 uppercase tracking-widest px-2.5 py-1 rounded-md bg-amber-50 border border-amber-200">
+                  {t('landing.packagesSection.goldenTag')}
+                </span>
+                <span className="text-xs text-amber-800 font-bold bg-amber-100/70 px-2.5 py-1 rounded-full border border-amber-300">
+                  45k ETB
+                </span>
               </div>
-              <h3 className="font-serif text-xl font-bold text-gray-900 mb-3">
-                {t('landing.packagesSection.platTitle')}
+              <h3 className="font-serif text-2xl font-bold text-gray-900 mb-1">
+                {t('landing.packagesSection.goldenTitle')}
               </h3>
-              <p className="text-gray-600 text-xs font-light mb-5">
-                {t('landing.packagesSection.platDesc')}
+              <div className="text-3xl font-extrabold text-slate-900 mb-3 flex items-baseline gap-1">
+                45k <span className="text-xs font-normal text-slate-500">/ event</span>
+              </div>
+              <p className="text-gray-600 text-xs font-light mb-6 border-b border-slate-100 pb-4">
+                {t('landing.packagesSection.goldenDesc')}
               </p>
-              <ul className="space-y-2.5 text-xs text-gray-700 border-t border-gray-100 pt-5">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.platF1')}
+              <ul className="space-y-3 text-xs text-slate-700">
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>💌 <strong>{t('landing.packagesSection.unlimited')}</strong> {t('landing.packagesSection.digitalInvites')}</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.platF2')}
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎙️ {t('landing.packagesSection.extendedGreetings')}</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-gold-500 shrink-0" />
-                  {t('landing.packagesSection.platF3')}
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🖼️ <strong>14</strong> {t('landing.packagesSection.galleryPhotos')}</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎤 Voice & 🎥 Video Wishes <strong>{t('landing.packagesSection.unlimited')}</strong></span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎬 BTS Moments <strong>{t('landing.packagesSection.unlimited')}</strong></span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🎬 <strong>3</strong> Feed Videos / Guest</span>
+                </li>
+                <li className="flex items-center gap-2.5 font-medium">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>🔴 <strong>3</strong> Live Stream Viewers & 💍 Forever Countdown</span>
                 </li>
               </ul>
             </div>
 
             <a
               href="tel:+251911000000"
-              className="mt-6 w-full py-3 rounded-full bg-black text-white text-center font-bold text-xs hover:bg-gray-800 transition-colors block shadow-md"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-center font-bold text-xs transition-colors block shadow-md"
             >
-              {t('landing.packagesSection.platBtn')}
+              {t('landing.packagesSection.goldenBtn')}
             </a>
           </motion.div>
         </div>
@@ -607,7 +873,7 @@ export default function HomePage() {
       {/* 6. OVERHAULED "EXPERIENCE AGAFARI LIVE" SIMULATOR SECTION */}
       <section id="demo" className="py-24 bg-gray-50/60 w-full max-w-full px-4 sm:px-6 border-t border-b border-gray-200/60 relative">
         <div className="max-w-6xl mx-auto">
-          
+
           {/* Active Section & Live Page Indicator Badge */}
           <div className="flex items-center justify-center mb-6">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black border border-gold-500/40 shadow-md text-white text-xs backdrop-blur-md">
@@ -616,15 +882,15 @@ export default function HomePage() {
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
               </span>
               <span className="text-gold-400 font-bold uppercase text-[10px] tracking-wider">
-                {locale === 'am' ? 'የቀጥታ ማሳያ ክፍል' : 'Live Interactive Hub'}
+                {t('landing.demoHub.badge')}
               </span>
               <span className="text-gold-500/40">•</span>
               <span className="text-[11px] text-gray-200 font-medium">
-                {activeDemoTab === 'COMING_SOON' && (locale === 'am' ? '1. የቀን መቁጠሪያና ምርቃት' : '1. Countdown & Wishes')}
-                {activeDemoTab === 'INVITATION' && (locale === 'am' ? '2. ዲጂታል ግብዣና QR' : '2. Digital Gate Pass')}
-                {activeDemoTab === 'FEED' && (locale === 'am' ? '3. የትዝታ ቪዲዮዎች' : '3. TikTok Memory Feed')}
-                {activeDemoTab === 'LIVE' && (locale === 'am' ? '4. የቀጥታ ስርጭት' : '4. Global Broadcast')}
-                {activeDemoTab === 'SCANNER' && (locale === 'am' ? '5. የበር መቃኛ' : '5. Gate Scanner App')}
+                {activeDemoTab === 'COMING_SOON' && t('landing.demoHub.tab1')}
+                {activeDemoTab === 'INVITATION' && t('landing.demoHub.tab2')}
+                {activeDemoTab === 'FEED' && t('landing.demoHub.tab3')}
+                {activeDemoTab === 'LIVE' && t('landing.demoHub.tab4')}
+                {activeDemoTab === 'SCANNER' && t('landing.demoHub.tab5')}
               </span>
             </div>
           </div>
@@ -652,11 +918,10 @@ export default function HomePage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveDemoTab(tab.id as any)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                  activeDemoTab === tab.id
-                    ? 'bg-sage-dark text-metallic shadow-sage scale-105'
-                    : 'glass-panel text-sage-dark hover:bg-white'
-                }`}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeDemoTab === tab.id
+                  ? 'bg-sage-dark text-metallic shadow-sage scale-105'
+                  : 'glass-panel text-sage-dark hover:bg-white'
+                  }`}
               >
                 {tab.label}
               </button>
@@ -699,7 +964,6 @@ export default function HomePage() {
                     </p>
                     <Link
                       href="/event/sara-and-dawit-2026"
-                      target="_blank"
                       className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-bold text-xs shadow-accent transition-all hover:scale-105"
                     >
                       <Monitor className="w-4 h-4" />
@@ -742,7 +1006,6 @@ export default function HomePage() {
                     </p>
                     <Link
                       href="/event/sara-and-dawit-2026?code=INV-SD2026-001"
-                      target="_blank"
                       className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-bold text-xs shadow-accent transition-all hover:scale-105"
                     >
                       <Monitor className="w-4 h-4" />
@@ -785,7 +1048,6 @@ export default function HomePage() {
                     </p>
                     <Link
                       href="/event/sara-and-dawit-2026/feed"
-                      target="_blank"
                       className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-bold text-xs shadow-accent transition-all hover:scale-105"
                     >
                       <Monitor className="w-4 h-4" />
@@ -828,7 +1090,6 @@ export default function HomePage() {
                     </p>
                     <Link
                       href="/event/sara-and-dawit-2026"
-                      target="_blank"
                       className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-bold text-xs shadow-accent transition-all hover:scale-105"
                     >
                       <Monitor className="w-4 h-4" />
@@ -871,7 +1132,6 @@ export default function HomePage() {
                     </p>
                     <Link
                       href="/scanner"
-                      target="_blank"
                       className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-bold text-xs shadow-accent transition-all hover:scale-105"
                     >
                       <Monitor className="w-4 h-4" />
@@ -887,7 +1147,7 @@ export default function HomePage() {
 
       {/* 7. REAL WEDDINGS SHOWCASE SECTION */}
       <section id="portfolio" className="pt-28 pb-24 px-6 max-w-7xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -907,7 +1167,7 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Showcase Card 1 */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -962,7 +1222,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* Showcase Card 2 */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -1017,7 +1277,7 @@ export default function HomePage() {
           </motion.div>
 
           {/* Showcase Card 3 */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -1198,7 +1458,7 @@ export default function HomePage() {
       {/* 9. PROFESSIONAL WEDDING PLATFORM FOOTER */}
       <footer className="bg-charcoal text-neutral/80 pt-16 pb-28 sm:pb-16 px-6 border-t border-metallic/20 text-xs relative z-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-neutral/10">
-          
+
           {/* Brand Info Column */}
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-3">
@@ -1218,12 +1478,12 @@ export default function HomePage() {
               {t('landing.footer.brandDesc')}
             </p>
 
-            <motion.a 
+            <motion.a
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.98 }}
-              href="https://hamelmal.com" 
-              target="_blank" 
-              rel="noreferrer" 
+              href="https://hamelmal.com"
+              target="_blank"
+              rel="noreferrer"
               className="mt-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-metallic via-amber-400 to-metallic-dark hover:from-amber-300 hover:to-metallic text-sage-dark font-extrabold text-xs shadow-accent transition-all inline-flex items-center gap-2 border border-amber-300/40 group"
             >
               <Sparkles className="w-3.5 h-3.5 text-sage-dark group-hover:rotate-12 transition-transform" />
@@ -1316,59 +1576,56 @@ export default function HomePage() {
 
       {/* 10. LUXURY MOBILE FLOATING BOTTOM BAR NAVIGATION WITH ACTIVE SCROLL SPY & LIVE INDICATOR */}
       <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 glass-panel-sage p-1.5 rounded-2xl border-2 border-metallic/40 shadow-[0_10px_35px_rgba(0,0,0,0.4)] flex items-center justify-between text-[10px] font-bold text-neutral bg-sage-dark/95 backdrop-blur-xl">
-        
+
         {/* 1) Features Tab */}
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
-          href="#features" 
-          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${
-            activeSection === 'features'
-              ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-              : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
-          }`}
+          href="#features"
+          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'features'
+            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
+            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            }`}
         >
           <Layers className={`w-4 h-4 ${activeSection === 'features' ? 'text-sage-dark' : 'text-metallic'}`} />
           <span>{t('landing.mobileNav.features')}</span>
           {activeSection === 'features' && (
-            <motion.span 
+            <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark" 
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
             />
           )}
         </motion.a>
 
         {/* 2) Packages Tab */}
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
-          href="#packages" 
-          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${
-            activeSection === 'packages'
-              ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-              : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
-          }`}
+          href="#packages"
+          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'packages'
+            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
+            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            }`}
         >
           <Award className={`w-4 h-4 ${activeSection === 'packages' ? 'text-sage-dark' : 'text-metallic'}`} />
           <span>{t('landing.mobileNav.packages')}</span>
           {activeSection === 'packages' && (
-            <motion.span 
+            <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark" 
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
             />
           )}
         </motion.a>
 
         {/* 3) Live Demo Tab (Authentic Live Broadcast Feature Design with true active-only highlight) */}
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
-          href="#demo" 
-          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${
-            activeSection === 'demo'
-              ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-              : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
-          }`}
+          href="#demo"
+          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'demo'
+            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
+            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            }`}
         >
           <div className="relative">
             <Video className={`w-4 h-4 ${activeSection === 'demo' ? 'text-sage-dark' : 'text-rose-400'}`} />
@@ -1378,51 +1635,49 @@ export default function HomePage() {
             {t('landing.mobileNav.demo')}
           </span>
           {activeSection === 'demo' && (
-            <motion.span 
+            <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark" 
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
             />
           )}
         </motion.a>
 
         {/* 4) Weddings Portfolio Tab */}
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
-          href="#portfolio" 
-          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${
-            activeSection === 'portfolio'
-              ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-              : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
-          }`}
+          href="#portfolio"
+          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'portfolio'
+            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
+            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            }`}
         >
           <Star className={`w-4 h-4 ${activeSection === 'portfolio' ? 'text-sage-dark' : 'text-metallic'}`} />
           <span>{t('landing.mobileNav.weddings')}</span>
           {activeSection === 'portfolio' && (
-            <motion.span 
+            <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark" 
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
             />
           )}
         </motion.a>
 
         {/* 5) About Us Tab */}
-        <motion.a 
+        <motion.a
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.94 }}
-          href="#about" 
-          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${
-            activeSection === 'about'
-              ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-              : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
-          }`}
+          href="#about"
+          className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'about'
+            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
+            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            }`}
         >
           <Building2 className={`w-4 h-4 ${activeSection === 'about' ? 'text-sage-dark' : 'text-metallic'}`} />
           <span>{t('landing.mobileNav.about')}</span>
           {activeSection === 'about' && (
-            <motion.span 
+            <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark" 
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
             />
           )}
         </motion.a>
@@ -1513,6 +1768,112 @@ export default function HomePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 13. FLOATING QUICK CONSULTATION DOCK (Recommendation #6) */}
+      <div className="fixed bottom-20 right-4 md:bottom-8 md:right-8 z-50 flex flex-col items-end">
+        <AnimatePresence>
+          {consultationOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="mb-3 w-72 sm:w-80 rounded-3xl bg-slate-950/95 border-2 border-gold-500/60 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl p-5 text-left text-white relative overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-28 h-28 bg-gold-500/10 rounded-full blur-2xl pointer-events-none" />
+
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-gold-500/20 pb-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-gold-500 text-black flex items-center justify-center font-bold text-xs shadow-md">
+                    👑
+                  </div>
+                  <div>
+                    <h4 className="font-serif font-bold text-xs text-gold-300 leading-none">
+                      {t('landing.consultation.title', 'Agafari Concierge')}
+                    </h4>
+                    <span className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                      {t('landing.consultation.onlineStatus', 'Live Now (9am - 8pm)')}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setConsultationOpen(false)}
+                  className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center transition-all cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-300 font-light mb-4 leading-relaxed">
+                {t('landing.consultation.subtitle', 'Planning a wedding? Speak directly with our wedding technology specialists.')}
+              </p>
+
+              {/* Quick Contact Action List */}
+              <div className="space-y-2">
+                {/* Direct Phone */}
+                <a
+                  href="tel:+251911000000"
+                  className="p-3 rounded-2xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-amber-400 hover:to-gold-500 text-black font-extrabold text-xs flex items-center justify-between shadow-gold border border-gold-300/40 transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Phone className="w-4 h-4 text-black shrink-0" />
+                    <span>{t('landing.consultation.callBtn', 'Call +251 911 000 000')}</span>
+                  </div>
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+                </a>
+
+                {/* Telegram Support */}
+                <a
+                  href="https://t.me/AgafariSupport"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="p-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-gold-500/30 text-white font-semibold text-xs flex items-center justify-between transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Send className="w-4 h-4 text-sky-400 shrink-0" />
+                    <span>{t('landing.consultation.telegramBtn', 'Chat on Telegram')}</span>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
+                </a>
+
+                {/* Book 15-Min Demo */}
+                <a
+                  href="#packages"
+                  onClick={() => setConsultationOpen(false)}
+                  className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-300 font-semibold text-xs flex items-center justify-between transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>{t('landing.consultation.bookDemoBtn', 'Book 15-Min VIP Demo')}</span>
+                  </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-1 transition-transform" />
+                </a>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Main Floating Trigger Button */}
+        <motion.button
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.94 }}
+          onClick={() => setConsultationOpen(!consultationOpen)}
+          className="px-4 py-3 rounded-full bg-slate-950 border-2 border-gold-500 shadow-[0_10px_35px_rgba(212,175,55,0.45)] text-gold-400 flex items-center gap-2.5 backdrop-blur-md cursor-pointer group"
+        >
+          <div className="relative flex items-center justify-center">
+            <MessageCircle className="w-5 h-5 text-gold-400 group-hover:rotate-12 transition-transform" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-950 animate-pulse" />
+          </div>
+          <span className="text-xs font-bold text-white hidden sm:inline-block">
+            {t('landing.consultation.triggerBtn', 'Quick Consultation')}
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold-500 text-black font-extrabold uppercase">
+            VIP
+          </span>
+        </motion.button>
+      </div>
     </div>
   );
 }

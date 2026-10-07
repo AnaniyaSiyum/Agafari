@@ -34,7 +34,7 @@ interface MediaItem {
   id: string;
   uploaderName: string;
   mediaType: 'VIDEO' | 'IMAGE';
-  category: 'WISHES' | 'BTS' | 'LIVE' | 'GALLERY' | 'CEREMONY' | 'ENGAGEMENT' | 'PRE_WEDDING';
+  category: 'WISHES' | 'BTS' | 'LIVE' | 'GALLERY' | 'CEREMONY' | 'ENGAGEMENT' | 'PRE_WEDDING' | 'MEZMUR';
   cdnUrl: string;
   caption: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -74,14 +74,6 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
           const eventJson = await eventRes.json();
           const evt = eventJson.event;
           if (evt) {
-            const orgId = evt.organizerId || evt.organizer_id;
-            const isIndiv = evt.isIndividual || evt.managedBy === 'INDIVIDUAL' || evt.managed_by === 'INDIVIDUAL';
-            if (orgId && !isIndiv && typeof window !== 'undefined' && window.location.pathname.startsWith(`/event/${slug}`)) {
-              const newPath = window.location.pathname.replace(`/event/${slug}`, `/${orgId}/${slug}`);
-              window.location.replace(`${newPath}${window.location.search}`);
-              return;
-            }
-
             setEventData({
               id: evt.id,
               title: evt.title,
@@ -109,43 +101,53 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
     verifyAccess();
   }, [slug]);
 
-  // Fetch Media Items
+  // Fetch Media & Mezmur Music Items
   const fetchMedia = async () => {
     setLoadingMedia(true);
     try {
-      const res = await fetch(`/api/events/${slug}/media?status=ALL`);
+      const [res, musicRes] = await Promise.all([
+        fetch(`/api/events/${slug}/media?status=ALL`),
+        fetch(`/api/events/${slug}/music?status=ALL`)
+      ]);
+
+      let rawItems: any[] = [];
       if (res.ok) {
         const data = await res.json();
-        const rawItems = data.items || data.mediaAssets || [];
-        const normalized = rawItems.map((item: any) => ({
-          id: item.id,
-          uploaderName: item.uploaderName || item.uploader_name || 'Anonymous Guest',
-          mediaType: item.mediaType || item.media_type || 'IMAGE',
-          category: item.category || 'WISHES',
-          cdnUrl: item.cdnUrl || item.cdn_url || item.url || '',
-          caption: item.caption || '',
-          status: item.status || 'PENDING',
-          createdAt: item.createdAt || item.created_at || new Date().toISOString(),
-        }));
-        setMediaList(normalized);
-      } else if (eventData?.id) {
-        const orgRes = await fetch(`/api/organizer/media?eventId=${eventData.id}&status=ALL`);
-        if (orgRes.ok) {
-          const orgData = await orgRes.json();
-          const rawItems = orgData.items || orgData.mediaAssets || [];
-          const normalized = rawItems.map((item: any) => ({
-            id: item.id,
-            uploaderName: item.uploaderName || item.uploader_name || 'Anonymous Guest',
-            mediaType: item.mediaType || item.media_type || 'IMAGE',
-            category: item.category || 'WISHES',
-            cdnUrl: item.cdnUrl || item.cdn_url || item.url || '',
-            caption: item.caption || '',
-            status: item.status || 'PENDING',
-            createdAt: item.createdAt || item.created_at || new Date().toISOString(),
-          }));
-          setMediaList(normalized);
+        rawItems = [...(data.items || data.mediaAssets || [])];
+      }
+
+      if (musicRes.ok) {
+        const mData = await musicRes.json();
+        const musicRecs = mData.recommendations || mData.items || [];
+        const existingIds = new Set(rawItems.map((i: any) => i.id));
+
+        for (const m of musicRecs) {
+          if (!existingIds.has(m.id)) {
+            rawItems.push({
+              id: m.id,
+              uploader_name: m.guestName || m.uploaderName || 'Honored Guest',
+              media_type: 'MEZMUR',
+              category: 'MEZMUR',
+              cdn_url: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800',
+              caption: typeof m.title === 'string' ? JSON.stringify({ title: m.title, artist: m.artist || '' }) : m.caption,
+              status: m.status || 'PENDING',
+              created_at: m.createdAt || new Date().toISOString(),
+            });
+          }
         }
       }
+
+      const normalized = rawItems.map((item: any) => ({
+        id: item.id,
+        uploaderName: item.uploaderName || item.uploader_name || 'Anonymous Guest',
+        mediaType: item.mediaType || item.media_type || 'IMAGE',
+        category: item.category || 'WISHES',
+        cdnUrl: item.cdnUrl || item.cdn_url || item.url || '',
+        caption: item.caption || '',
+        status: item.status || 'PENDING',
+        createdAt: item.createdAt || item.created_at || new Date().toISOString(),
+      }));
+      setMediaList(normalized);
     } catch (err) {
       console.error('Failed to load media assets:', err);
     } finally {
@@ -455,7 +457,7 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
           <span className="text-xs font-bold text-slate-500 uppercase tracking-wider shrink-0 flex items-center gap-1.5 px-2">
             <Tag className="w-4 h-4 text-amber-600" /> Category:
           </span>
-          {['ALL', 'GALLERY', 'ENGAGEMENT', 'PRE_WEDDING', 'CEREMONY', 'BTS', 'WISHES'].map((cat) => (
+          {['ALL', 'MEZMUR', 'GALLERY', 'ENGAGEMENT', 'PRE_WEDDING', 'CEREMONY', 'BTS', 'WISHES'].map((cat) => (
             <button
               key={cat}
               onClick={() => setFilterCategory(cat)}
@@ -465,7 +467,7 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
                   : 'bg-slate-100 text-slate-600 hover:text-slate-900 hover:bg-slate-200'
               }`}
             >
-              {cat.replace('_', ' ')}
+              {cat === 'MEZMUR' ? '🎵 MEZMUR & MUSIC' : cat.replace('_', ' ')}
             </button>
           ))}
         </div>
@@ -500,51 +502,87 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-                >
-                  <div className="space-y-3">
-                    {/* Header Meta */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 truncate">
-                        <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200">
-                          {(item.uploaderName || 'A').charAt(0)}
+              {filteredItems.map((item) => {
+                let mezmurTitle = item.caption;
+                let mezmurArtist = '';
+                if (item.category === 'MEZMUR' && item.caption) {
+                  try {
+                    if (item.caption.startsWith('{')) {
+                      const p = JSON.parse(item.caption);
+                      mezmurTitle = p.title || item.caption;
+                      mezmurArtist = p.artist || '';
+                    } else if (item.caption.includes('|')) {
+                      const parts = item.caption.split('|');
+                      mezmurTitle = parts[0].trim();
+                      mezmurArtist = parts[1]?.trim() || '';
+                    }
+                  } catch (e) {}
+                }
+
+                return (
+                  <div
+                    key={item.id}
+                    className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                  >
+                    <div className="space-y-3">
+                      {/* Header Meta */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 truncate">
+                          <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200">
+                            {(item.uploaderName || 'A').charAt(0)}
+                          </div>
+                          <div className="truncate">
+                            <div className="font-bold text-slate-900 text-xs truncate">{item.uploaderName}</div>
+                            <div className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">{item.category || 'WISHES'}</div>
+                          </div>
                         </div>
-                        <div className="truncate">
-                          <div className="font-bold text-slate-900 text-xs truncate">{item.uploaderName}</div>
-                          <div className="text-[10px] text-amber-700 font-bold uppercase tracking-wider">{item.category || 'WISHES'}</div>
-                        </div>
+
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 ${
+                          item.status === 'APPROVED'
+                            ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                            : item.status === 'REJECTED'
+                            ? 'bg-rose-100 text-rose-800 border-rose-200'
+                            : 'bg-amber-100 text-amber-800 border-amber-200'
+                        }`}>
+                          {item.status}
+                        </span>
                       </div>
 
-                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 ${
-                        item.status === 'APPROVED'
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
-                          : item.status === 'REJECTED'
-                          ? 'bg-rose-100 text-rose-800 border-rose-200'
-                          : 'bg-amber-100 text-amber-800 border-amber-200'
-                      }`}>
-                        {item.status}
-                      </span>
-                    </div>
-
-                    {/* Media Preview Box */}
-                    <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative shadow-inner">
-                      {item.mediaType === 'VIDEO' || (item.cdnUrl && item.cdnUrl.includes('.mp4')) ? (
-                        <video
-                          src={item.cdnUrl}
-                          controls
-                          className="w-full h-full object-cover"
-                        />
+                      {/* Media Preview Box */}
+                      {item.category === 'MEZMUR' ? (
+                        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-2">
+                          <div className="flex items-center gap-2 text-amber-700 font-bold text-xs uppercase tracking-wider">
+                            <span>🎵 Mezmur & Music Recommendation</span>
+                          </div>
+                          <div className="font-serif font-bold text-base text-slate-900 leading-snug">
+                            {mezmurTitle}
+                          </div>
+                          {mezmurArtist && (
+                            <div className="text-xs text-amber-900 font-semibold">
+                              by {mezmurArtist}
+                            </div>
+                          )}
+                          <div className="text-[10px] text-slate-500 font-mono pt-1">
+                            Suggested by: {item.uploaderName}
+                          </div>
+                        </div>
                       ) : (
-                        <img
-                          src={item.cdnUrl}
-                          alt={item.caption || 'Wedding upload'}
-                          className="w-full h-full object-cover"
-                        />
+                        <div className="aspect-video w-full rounded-2xl overflow-hidden bg-slate-900 border border-slate-200 relative shadow-inner">
+                          {item.mediaType === 'VIDEO' || (item.cdnUrl && item.cdnUrl.includes('.mp4')) ? (
+                            <video
+                              src={item.cdnUrl}
+                              controls
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={item.cdnUrl}
+                              alt={item.caption || 'Wedding upload'}
+                              className="w-full h-full object-cover"
+                            />
+                          )}
+                        </div>
                       )}
-                    </div>
 
                     {/* Caption */}
                     {item.caption && (
@@ -591,10 +629,11 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       </main>
 

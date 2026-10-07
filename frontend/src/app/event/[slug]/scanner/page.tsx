@@ -108,15 +108,6 @@ export default function EventGateScannerPage({ params }: { params: { slug: strin
         }
         const eventJson = await eventRes.json();
         const evt = eventJson.event;
-        if (evt) {
-          const orgId = evt.organizerId || evt.organizer_id;
-          const isIndiv = evt.isIndividual || evt.managedBy === 'INDIVIDUAL' || evt.managed_by === 'INDIVIDUAL';
-          if (orgId && !isIndiv && typeof window !== 'undefined' && window.location.pathname.startsWith(`/event/${slug}`)) {
-            const newPath = window.location.pathname.replace(`/event/${slug}`, `/${orgId}/${slug}`);
-            window.location.replace(`${newPath}${window.location.search}`);
-            return;
-          }
-
           setEventData({
             id: evt.id,
             title: evt.title,
@@ -125,7 +116,6 @@ export default function EventGateScannerPage({ params }: { params: { slug: strin
             venueName: evt.venue_name || evt.venueName || 'Main Wedding Venue',
             adminApprovalStatus: evt.adminApprovalStatus || evt.admin_approval_status || 'APPROVED',
           });
-        }
 
         const authRes = await fetch('/api/auth/me');
         if (authRes.ok) {

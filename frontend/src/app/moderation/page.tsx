@@ -13,7 +13,7 @@ import {
   Sparkles,
   Crown
 } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 
 interface EventSummary {
   id: string;
@@ -147,6 +147,8 @@ export default function MediaModerationRootPage() {
               <p className="text-xs text-gold-400">Select a Wedding Event to Open its Specific Moderation Queue</p>
             </div>
           </div>
+
+          <LanguageSwitcher />
         </div>
 
         {/* Event Selection Grid */}

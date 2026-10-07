@@ -87,39 +87,23 @@ export function verifyToken(token: string): AuthTokenPayload | null {
 }
 
 export function getAuthUser(req: NextRequest): AuthTokenPayload | null {
+  // 1. Check Bearer token in Authorization header
   const authHeader = req.headers.get('authorization');
-  let token: string | undefined;
   if (authHeader?.startsWith('Bearer ')) {
-    token = authHeader.substring(7);
-  } else {
-    token = req.cookies.get('agafari_token')?.value;
-  }
-
-  if (token) {
+    const token = authHeader.substring(7);
     const verified = verifyToken(token);
     if (verified) return verified;
   }
 
-  // Support local dev preview token header or dev session
-  const devRoleHeader = req.headers.get('x-dev-role') as UserRole | null;
-  if (devRoleHeader) {
-    return {
-      userId: `usr_${devRoleHeader.toLowerCase()}_001`,
-      email: `${devRoleHeader.toLowerCase()}@agafari.com`,
-      role: devRoleHeader,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 86400 * 365,
-    };
+  // 2. Check session cookie
+  const cookieToken = req.cookies.get('agafari_token')?.value;
+  if (cookieToken) {
+    const verified = verifyToken(cookieToken);
+    if (verified) return verified;
   }
 
-  // Default dev session payload for seamless local development
-  return {
-    userId: 'usr_admin_001',
-    email: 'admin@agafari.com',
-    role: 'SYSTEM_ADMIN',
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 86400 * 365,
-  };
+  // Strictly return null when no valid JWT token is present to enforce HTTP 401/403 security
+  return null;
 }
 
 export function hasRole(user: AuthTokenPayload | null, allowedRoles: UserRole[]): boolean {

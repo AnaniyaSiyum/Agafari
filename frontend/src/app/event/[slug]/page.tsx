@@ -4,44 +4,47 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Heart, 
-  Send, 
-  Calendar, 
-  MapPin, 
-  Video, 
-  QrCode, 
-  Film, 
-  CheckCircle, 
-  MessageSquareHeart, 
-  ArrowLeft, 
-  ArrowRight, 
-  Navigation, 
-  Crown, 
-  Shirt, 
-  Music, 
-  CheckCircle2, 
-  Users, 
-  Building2, 
-  X, 
-  Radio, 
-  Share2, 
-  HelpCircle, 
-  User, 
-  Upload, 
-  Play, 
-  Camera, 
-  ShieldCheck, 
-  Download, 
-  Copy, 
-  Check, 
+import {
+  Sparkles,
+  Heart,
+  Send,
+  Calendar,
+  MapPin,
+  Video,
+  QrCode,
+  Film,
+  CheckCircle,
+  MessageSquareHeart,
+  ArrowLeft,
+  ArrowRight,
+  Navigation,
+  Crown,
+  Shirt,
+  Music,
+  CheckCircle2,
+  Users,
+  Building2,
+  X,
+  Radio,
+  Share2,
+  HelpCircle,
+  User,
+  Upload,
+  Play,
+  Camera,
+  ShieldCheck,
+  Download,
+  Copy,
+  Check,
   ExternalLink,
   Home,
   Clock,
-  XCircle
+  XCircle,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
+import InvitationCardModal from '@/components/InvitationCardModal';
 
 interface MezmurItem {
   id: string;
@@ -159,17 +162,43 @@ function PublicWeddingCelebrationContent({
   const [submittingRsvp, setSubmittingRsvp] = useState(false);
   const [rsvpSuccessMessage, setRsvpSuccessMessage] = useState('');
   const [copiedPass, setCopiedPass] = useState(false);
+  const [cardModalOpen, setCardModalOpen] = useState(false);
 
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [currentAudioSrc, setCurrentAudioSrc] = useState<string>('/audio/leykunu_mezmur.wav');
+  const [currentAudioSrc, setCurrentAudioSrc] = useState<string>('/audio/leykunu_mezmur.mp3');
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    const uploadedAudio = event?.backgroundAudioUrl || (event as any)?.background_audio_url || event?.backgroundMusicUrl;
-    if (uploadedAudio && typeof uploadedAudio === 'string' && uploadedAudio.trim().length > 0) {
+    const cachedAudio = typeof window !== 'undefined' && slug ? localStorage.getItem(`agafari_bg_audio_${slug}`) : null;
+    const uploadedAudio = event?.backgroundAudioUrl || (event as any)?.background_audio_url || (event as any)?.customization?.backgroundAudioUrl || cachedAudio;
+    if (uploadedAudio && typeof uploadedAudio === 'string' && uploadedAudio.trim().length > 0 && !uploadedAudio.includes('youtube') && !uploadedAudio.includes('youtu.be')) {
       setCurrentAudioSrc(uploadedAudio.trim());
     } else {
-      setCurrentAudioSrc('/audio/leykunu_mezmur.wav');
+      setCurrentAudioSrc('/audio/leykunu_mezmur.mp3');
+    }
+  }, [event, slug]);
+
+  // Reload audio element whenever audio src changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.load();
+      if (isPlayingAudio) {
+        audioRef.current.play().catch((err) => console.log('Audio autoplay after src change:', err));
+      }
+    }
+  }, [currentAudioSrc]);
+
+  // Check if today is the actual wedding day (or if live stream is actively running)
+  const isTodayWeddingDay = React.useMemo(() => {
+    if (!event) return false;
+    if (event.isLive || (event as any).status === 'LIVE') return true;
+    if (!event.eventDate) return false;
+    try {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const eventStr = new Date(event.eventDate).toISOString().split('T')[0];
+      return todayStr === eventStr;
+    } catch {
+      return false;
     }
   }, [event]);
 
@@ -179,11 +208,21 @@ function PublicWeddingCelebrationContent({
       audioRef.current.pause();
       setIsPlayingAudio(false);
     } else {
-      audioRef.current.play().then(() => {
-        setIsPlayingAudio(true);
-      }).catch((err) => {
-        console.warn('Audio playback error on user toggle:', err);
-      });
+      if (audioRef.current.readyState === 0) {
+        audioRef.current.load();
+      }
+      const playPromise = audioRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
+          setIsPlayingAudio(true);
+        }).catch((err) => {
+          console.warn('Audio playback error on user toggle:', err);
+          // Fallback to standard track if custom src fails
+          if (currentAudioSrc !== '/audio/leykunu_mezmur.mp3') {
+            setCurrentAudioSrc('/audio/leykunu_mezmur.mp3');
+          }
+        });
+      }
     }
   };
 
@@ -193,11 +232,14 @@ function PublicWeddingCelebrationContent({
 
     const attemptPlay = () => {
       if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().then(() => {
-          setIsPlayingAudio(true);
-        }).catch((err) => {
-          console.log('Autoplay deferred until guest interaction:', err);
-        });
+        const p = audioRef.current.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsPlayingAudio(true);
+          }).catch((err) => {
+            console.log('Autoplay deferred until guest interaction:', err);
+          });
+        }
       }
     };
 
@@ -205,9 +247,12 @@ function PublicWeddingCelebrationContent({
 
     const handleUserGesture = () => {
       if (audioRef.current && audioRef.current.paused) {
-        audioRef.current.play().then(() => {
-          setIsPlayingAudio(true);
-        }).catch(() => {});
+        const p = audioRef.current.play();
+        if (p !== undefined) {
+          p.then(() => {
+            setIsPlayingAudio(true);
+          }).catch(() => { });
+        }
       }
     };
 
@@ -261,6 +306,9 @@ function PublicWeddingCelebrationContent({
           if (decodedGuest) {
             setRsvpGuestName(decodedGuest);
             setSenderName(decodedGuest);
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(`agafari_guest_name_${slug}`, decodedGuest);
+            }
           }
         }
 
@@ -276,11 +324,41 @@ function PublicWeddingCelebrationContent({
                 if (inviteData.invitation.guestName) {
                   setRsvpGuestName(inviteData.invitation.guestName);
                   setSenderName(inviteData.invitation.guestName);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(`agafari_guest_name_${slug}`, inviteData.invitation.guestName);
+                  }
+                }
+                if (inviteData.invitation.rsvpStatus && inviteData.invitation.rsvpStatus !== 'PENDING') {
+                  setHasAnsweredRsvp(true);
+                  setAttendanceChoice(inviteData.invitation.rsvpStatus);
+                  if (typeof window !== 'undefined') {
+                    localStorage.setItem(`agafari_rsvp_${slug}`, inviteData.invitation.rsvpStatus);
+                    localStorage.setItem(`agafari_rsvp_answered_${slug}`, 'true');
+                  }
                 }
                 setInvitationSource(inviteData.invitation.inviteType || 'LINK');
               }
             }
-          } catch (e) {}
+          } catch (e) { }
+        }
+
+        // 3. Fallback to localStorage saved RSVP guest name & response
+        if (typeof window !== 'undefined') {
+          if (!rsvpGuestName) {
+            const savedName = localStorage.getItem(`agafari_guest_name_${slug}`);
+            if (savedName) {
+              setRsvpGuestName(savedName);
+              setSenderName(savedName);
+            }
+          }
+          const savedRsvp = localStorage.getItem(`agafari_rsvp_${slug}`);
+          const rsvpAnswered = localStorage.getItem(`agafari_rsvp_answered_${slug}`);
+          if (savedRsvp && (savedRsvp === 'ATTENDING' || savedRsvp === 'DECLINED' || savedRsvp === 'MAYBE')) {
+            setHasAnsweredRsvp(true);
+            setAttendanceChoice(savedRsvp as any);
+          } else if (rsvpAnswered === 'true') {
+            setHasAnsweredRsvp(true);
+          }
         }
       } catch (err) {
         console.error('Failed to load event celebration hub:', err);
@@ -290,15 +368,28 @@ function PublicWeddingCelebrationContent({
     }
 
     loadEventHub();
+  }, [slug, codeParam]);
 
-    // Trigger RSVP Modal only if guest has not answered yet
-    if (!hasAnsweredRsvp) {
+  // Calculate if RSVP is locked (less than 3 days / 72h before event)
+  const isRsvpLocked = React.useMemo(() => {
+    if (!event?.eventDate) return false;
+    const target = new Date(event.eventDate).getTime();
+    const now = new Date().getTime();
+    const diffHours = (target - now) / (1000 * 60 * 60);
+    return diffHours < 72;
+  }, [event?.eventDate]);
+
+  // Trigger RSVP Modal only if guest has NOT answered yet and RSVP is NOT locked
+  useEffect(() => {
+    if (!hasAnsweredRsvp && !isRsvpLocked && !loading) {
       const timer = setTimeout(() => {
         setRsvpModalOpen(true);
       }, 4500);
       return () => clearTimeout(timer);
+    } else {
+      setRsvpModalOpen(false);
     }
-  }, [slug, codeParam]);
+  }, [hasAnsweredRsvp, isRsvpLocked, loading]);
 
   // Real-time Countdown Clock Tick
   useEffect(() => {
@@ -328,24 +419,22 @@ function PublicWeddingCelebrationContent({
     return () => clearInterval(interval);
   }, [event?.eventDate]);
 
-  // Calculate if RSVP is locked (less than 3 days / 72h before event)
-  const isRsvpLocked = React.useMemo(() => {
-    if (!event?.eventDate) return false;
-    const target = new Date(event.eventDate).getTime();
-    const now = new Date().getTime();
-    const diffHours = (target - now) / (1000 * 60 * 60);
-    return diffHours < 72;
-  }, [event?.eventDate]);
-
   // Submit RSVP Attendance Directly (1-Click Instant Automatic Submit)
   const handleDirectRsvpSelect = async (choice: 'ATTENDING' | 'MAYBE' | 'DECLINED') => {
+    if (isRsvpLocked) {
+      alert('RSVP updates are locked within 72 hours of the wedding date.');
+      return;
+    }
+
     setAttendanceChoice(choice);
     setHasAnsweredRsvp(true);
     setRsvpModalOpen(false);
 
-    if (isRsvpLocked) {
-      return;
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(`agafari_rsvp_${slug}`, choice);
+      localStorage.setItem(`agafari_rsvp_answered_${slug}`, 'true');
     }
+
     setSubmittingRsvp(true);
 
     try {
@@ -368,7 +457,8 @@ function PublicWeddingCelebrationContent({
   // Submit Wish or Video Blessing
   const handleWishSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!senderName.trim() || (!wishMessage.trim() && !videoFile && !videoPreviewUrl)) return;
+    const effectiveSenderName = (senderName || rsvpGuestName || invitation?.guestName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : null) || 'Honored Guest').trim();
+    if (!effectiveSenderName || (!wishMessage.trim() && !videoFile && !videoPreviewUrl)) return;
 
     setSubmittingWish(true);
     try {
@@ -380,8 +470,8 @@ function PublicWeddingCelebrationContent({
       const res = await fetch(`/api/events/${slug}/wishes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          senderName, 
+        body: JSON.stringify({
+          senderName: effectiveSenderName,
           message: payloadMessage,
           mediaType: wishType,
           videoUrl: wishType === 'VIDEO' ? (videoPreviewUrl || fallbackVideo) : undefined,
@@ -394,7 +484,6 @@ function PublicWeddingCelebrationContent({
           setWishes((prev) => [data.wish, ...prev]);
         }
         setWishSubmittedSuccess(true);
-        setSenderName('');
         setWishMessage('');
         setVideoFile(null);
         setVideoPreviewUrl(null);
@@ -416,9 +505,37 @@ function PublicWeddingCelebrationContent({
     }
   };
 
-  const handleSongRecommendation = (e: React.FormEvent) => {
+  const handleSongRecommendation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!guestSongTitle.trim()) return;
+
+    const guestDisplayName = rsvpGuestName || senderName || 'Honored Guest';
+
+    try {
+      await Promise.all([
+        fetch(`/api/events/${slug}/music`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guestName: guestDisplayName,
+            songTitle: guestSongTitle.trim(),
+            artistName: guestSongArtist.trim(),
+          }),
+        }),
+        fetch(`/api/events/${slug}/rsvp`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            guestName: guestDisplayName,
+            songRecommendation: `${guestSongTitle.trim()}${guestSongArtist.trim() ? ` by ${guestSongArtist.trim()}` : ''}`,
+            attendanceStatus: attendanceChoice || 'ATTENDING',
+            inviteCode: activeInviteCode,
+          }),
+        })
+      ]);
+    } catch (err) {
+      console.error('Error submitting song recommendation:', err);
+    }
 
     setSongSubmittedSuccess(true);
     setGuestSongTitle('');
@@ -518,8 +635,8 @@ function PublicWeddingCelebrationContent({
   const venueTitle = event.venueName || 'Sheraton Addis Luxury Ballroom';
 
   // Dynamic Unique QR Code Payload Generator
-  const currentQuota = guestAttendanceType === 'COUPLE' ? 2 : 1;
-  const currentTable = invitation?.tableNumber || (currentQuota === 2 ? 'Table 1: VIP Couples' : 'Table 4: Individual VIP');
+  const currentQuota = Number(invitation?.maxGuests || (invitation as any)?.max_guests || (guestAttendanceType === 'COUPLE' ? 2 : 1));
+  const currentTable = invitation?.tableNumber || (currentQuota > 1 ? `Table 1: VIP Group (${currentQuota} Persons)` : 'Table 4: Individual VIP');
 
   const appBaseUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002');
   const invitationPageUrl = `${appBaseUrl}/event/${event.slug}?code=${activeInviteCode}`;
@@ -617,20 +734,32 @@ function PublicWeddingCelebrationContent({
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-white text-gray-900 pb-28 font-sans relative">
-      
-      {/* ========================================================================= */}
-      {/* 1. FULL-SCREEN HERO BANNER (100% FULL WIDTH & HEIGHT) */}
-      {/* ========================================================================= */}
-      <section className="relative w-full min-h-screen h-screen bg-stone-950 text-white flex flex-col justify-between p-4 sm:p-8 overflow-hidden shadow-2xl">
-        {/* Dynamic Cover Background Image for THIS Specific Event */}
+    <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
+      {/* Ambient Blurred Outer Background for Widescreen Desktop */}
+      <div className="fixed inset-0 z-0 opacity-30 blur-3xl pointer-events-none scale-110">
         <img
-          src={event.coverImageUrl || '/images/hero_couple_bg.png'}
-          alt={coupleTitle}
-          className="fixed inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
+          src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
+          alt=""
+          className="w-full h-full object-cover object-center"
         />
-        {/* Soft Contrast Gradient Overlay for Text Readability */}
-        <div className="fixed inset-0 bg-gradient-to-b from-black/50 via-transparent to-stone-950/95 z-0 pointer-events-none" />
+        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
+      </div>
+
+      {/* Main Centered Phone-View Frame (100% on Mobile, ~60% Width / max-w-[620px] Centered on Desktop) */}
+      <div className="relative z-10 w-full md:w-[60vw] md:max-w-[580px] lg:max-w-[620px] min-h-screen bg-stone-950 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col pb-28">
+
+        {/* ========================================================================= */}
+        {/* 1. FULL-SCREEN HERO BANNER (PORTRAIT PHONE FRAME ON DESKTOP) */}
+        {/* ========================================================================= */}
+        <section className="relative w-full min-h-screen h-screen bg-stone-950 text-white flex flex-col justify-between p-4 sm:p-6 overflow-hidden shadow-2xl">
+          {/* Dynamic Cover Background Image for THIS Specific Event */}
+          <img
+            src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
+            alt={coupleTitle}
+            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
+          />
+          {/* Soft Contrast Gradient Overlay for Text Readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-stone-950/95 z-0 pointer-events-none" />
 
         {/* Top Header Bar */}
         <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
@@ -643,35 +772,51 @@ function PublicWeddingCelebrationContent({
           </Link>
 
           <div className="flex items-center gap-3 shrink-0">
-            {(!event?.backgroundAudioUrl && !(event as any)?.background_audio_url) && (event?.youtubeVideoId || event?.backgroundMusicUrl?.includes('youtube') || event?.backgroundMusicUrl?.includes('youtu.be')) ? (
-              <iframe
-                id="youtube-audio-player"
-                src={`https://www.youtube.com/embed/${event?.youtubeVideoId}?enablejsapi=1&autoplay=${isPlayingAudio ? 1 : 0}&loop=1&playlist=${event?.youtubeVideoId}`}
-                className="hidden"
-                allow="autoplay"
-              />
-            ) : null}
-
             <audio
               ref={audioRef}
               autoPlay
               loop
               playsInline
+              preload="auto"
               src={currentAudioSrc}
               onPlay={() => setIsPlayingAudio(true)}
               onPause={() => setIsPlayingAudio(false)}
+              onError={() => {
+                console.warn('Audio playback error, falling back to default MP3');
+                if (currentAudioSrc !== '/audio/leykunu_mezmur.mp3') {
+                  setCurrentAudioSrc('/audio/leykunu_mezmur.mp3');
+                }
+              }}
             />
 
             <button
               onClick={toggleAudio}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-sm transition-all cursor-pointer shadow-md ${
-                isPlayingAudio
-                  ? 'bg-gold-500 text-black shadow-gold scale-110 border border-gold-300'
-                  : 'bg-black/80 text-gold-400 border border-gold-500/40 hover:scale-105'
-              }`}
-              title={isPlayingAudio ? 'Mute Sound' : 'Unmute Sound'}
+              className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-extrabold transition-all cursor-pointer shadow-md border ${isPlayingAudio
+                ? 'bg-gold-500 text-black shadow-gold scale-105 border-gold-300'
+                : 'bg-black/80 text-gold-400 border-gold-500/40 hover:scale-105'
+                }`}
+              title={isPlayingAudio ? 'Mute Background Audio' : 'Play Background Audio'}
             >
-              {isPlayingAudio ? '🔊' : '🔇'}
+              {isPlayingAudio ? (
+                <>
+                  <Volume2 className="w-4 h-4 text-black animate-pulse" />
+                  <span>🔊 Music On</span>
+                </>
+              ) : (
+                <>
+                  <VolumeX className="w-4 h-4 text-gold-400" />
+                  <span>🔇 Play Music</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={() => setCardModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black text-xs font-extrabold shadow-gold transition-all cursor-pointer active:scale-95 hover:scale-105"
+              title="Download Official Invitation Card Pass"
+            >
+              <Download className="w-3.5 h-3.5 text-black" />
+              <span>Card Pass</span>
             </button>
 
             <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md text-gold-400 text-xs font-bold border border-gold-500/40 shadow-lg">
@@ -706,7 +851,7 @@ function PublicWeddingCelebrationContent({
       {/* 2. MAIN INVITATION LETTER & DETAILS SECTIONS BELOW HERO */}
       {/* ========================================================================= */}
       <section className="relative z-10 px-4 sm:px-6 py-10 max-w-4xl mx-auto space-y-10">
-        
+
         {/* LIVE BROADCAST BANNER & PLAYER EMBED */}
         {(event.youtubeVideoId && event.status !== 'ENDED') && (
           <motion.div
@@ -755,7 +900,7 @@ function PublicWeddingCelebrationContent({
         )}
 
         {/* INVITATION LETTER WITH DYNAMIC DETAILS */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -893,56 +1038,50 @@ function PublicWeddingCelebrationContent({
           </div>
         </div>
 
-        {/* WATCH LIVE BROADCAST STREAM BANNER */}
-        <div className="w-full max-w-4xl p-6 rounded-3xl bg-gradient-to-r from-rose-950/80 via-black/80 to-rose-950/80 backdrop-blur-xl border-2 border-rose-500/50 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl">
-          <div className="flex items-center gap-3 text-left">
-            <div className="w-12 h-12 rounded-2xl bg-rose-600/30 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/40">
-              <Video className="w-6 h-6 text-rose-400 animate-pulse" />
+        {/* WATCH LIVE BROADCAST STREAM BANNER (ONLY ON WEDDING DAY OR WHEN LIVE) */}
+        {isTodayWeddingDay && (
+          <div className="w-full max-w-4xl p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-950 to-rose-950 backdrop-blur-xl border-2 border-rose-500/60 text-white flex flex-col sm:flex-row items-center justify-between gap-5 shadow-2xl shadow-rose-950/50">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-12 h-12 rounded-2xl bg-rose-600/30 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/40">
+                <Video className="w-6 h-6 text-rose-400 animate-pulse" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider bg-rose-500/20 px-2.5 py-0.5 rounded-full border border-rose-500/30">
+                    Live Broadcast Stream
+                  </span>
+                  <span className="text-emerald-400 font-bold text-[10px] animate-pulse">● Today is Wedding Day</span>
+                </div>
+                <h3 className="font-serif font-bold text-lg sm:text-xl text-white mt-1">Watch {coupleTitle}'s Wedding Live</h3>
+              </div>
             </div>
-            <div>
-              <div className="text-[10px] text-rose-400 font-bold uppercase tracking-wider">Live Broadcast Stream</div>
-              <h3 className="font-serif font-bold text-lg text-white">Watch {coupleTitle}'s Wedding Live</h3>
+
+            <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full sm:w-auto shrink-0">
+              <Link
+                href={`/event/${slug}/feed?tab=LIVE${rawQuery ? `&${rawQuery}` : ''}`}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-2 border border-rose-400/40 cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
+                <span>Watch Live Broadcast</span>
+              </Link>
+
+              <Link
+                href={`/event/${slug}/feed${rawQuery ? `?${rawQuery}` : ''}`}
+                className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-black/80 hover:bg-black text-amber-300 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 border border-amber-500/40 cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <Film className="w-4 h-4 text-amber-400" />
+                <span>📱 TikTok-Style Video Feed</span>
+              </Link>
             </div>
           </div>
-
-          <Link
-            href={`/event/${slug}/feed?tab=LIVE${rawQuery ? `&${rawQuery}` : ''}`}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-700 to-rose-600 hover:from-rose-600 hover:to-rose-800 text-white font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-2 shrink-0 border border-rose-400/40 cursor-pointer hover:scale-105"
-          >
-            <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-            <span>Watch Live Broadcast</span>
-          </Link>
-        </div>
-
-        {/* ATTENDANCE RSVP CONFIRMATION BAR */}
-        <div className="w-full max-w-4xl p-6 sm:p-8 rounded-3xl border-2 border-gold-500/50 bg-black/80 backdrop-blur-xl text-white flex items-center justify-between shadow-2xl">
-          <div className="text-left">
-            <div className="text-xs text-gold-400 font-bold uppercase tracking-wider mb-1">
-              Attendance Confirmation
-            </div>
-            <div className="font-serif font-bold text-base sm:text-xl text-white">
-              {hasAnsweredRsvp ? 'Confirmed for Wedding Celebration ✓' : 'Will you attend our celebration?'}
-            </div>
-          </div>
-
-          <button
-            onClick={() => setRsvpModalOpen(true)}
-            className={`px-6 py-3.5 rounded-2xl font-extrabold text-xs sm:text-sm transition-all shrink-0 border cursor-pointer hover:scale-105 ${
-              isRsvpLocked
-                ? 'bg-gray-800 text-gray-400 border-gray-600'
-                : 'bg-gold-500 hover:bg-gold-600 text-black shadow-gold border-gold-400'
-            }`}
-          >
-            {isRsvpLocked ? '🔒 RSVP Locked (Within 3 Days)' : hasAnsweredRsvp ? 'Update RSVP' : 'Submit RSVP'}
-          </button>
-        </div>
+        )}
       </section>
 
       {/* ========================================================================= */}
       {/* 3. QR GATE PASS SECTION */}
       {/* ========================================================================= */}
       <section className="px-4 sm:px-6 py-8 max-w-4xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -966,50 +1105,78 @@ function PublicWeddingCelebrationContent({
             </p>
           </div>
 
-          {/* Scannable Unique QR Code Card */}
-          <div className="p-4 sm:p-5 bg-white rounded-3xl border-2 border-gold-500/50 inline-block shadow-2xl relative group my-2">
-            <img
-              src={qrImageUrl}
-              alt={`Personal Entrance QR Pass for ${rsvpGuestName}`}
-              className="w-52 h-52 sm:w-64 sm:h-64 mx-auto rounded-2xl"
-            />
-            <div className="mt-3 flex items-center justify-center gap-1.5 text-[10px] font-extrabold text-gray-900 tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>LIVE TOKEN SIGNATURE: {activeInviteCode}</span>
-            </div>
-          </div>
+          {/* VIP Gate Invitation Card Pass Section */}
+          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-stone-900 via-black to-stone-950 border-2 border-gold-500/60 shadow-2xl my-4 text-left space-y-6 relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/10 rounded-full blur-2xl pointer-events-none" />
 
-          <div className="space-y-1.5">
-            <div className="text-xs font-mono font-bold text-gold-300 bg-black/70 backdrop-blur-md py-1.5 px-4 rounded-full inline-block border border-gold-500/40 shadow-md">
-              PASS CODE: <span className="text-gold-400 font-extrabold">{activeInviteCode}</span>
-            </div>
-            <div className="text-xs text-gray-200 font-medium drop-shadow">
-              {t('publicEvent.qrPass.quotaAllowed')}: <strong className="text-white font-bold">{currentQuota} {currentQuota > 1 ? t('common.guests') : t('common.guest')}</strong>
-            </div>
-          </div>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              {/* Left Column: QR Code Box */}
+              <div className="p-4 bg-white rounded-3xl border-2 border-gold-500 shadow-2xl text-center shrink-0">
+                <img
+                  src={qrImageUrl}
+                  alt={`Personal Entrance QR Pass for ${rsvpGuestName}`}
+                  className="w-48 h-48 sm:w-56 sm:h-56 mx-auto rounded-2xl"
+                />
+                <div className="mt-2.5 flex items-center justify-center gap-1.5 text-[10px] font-extrabold text-gray-900 tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>PASS CODE: {activeInviteCode}</span>
+                </div>
+              </div>
 
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            <button
-              type="button"
-              onClick={downloadVerificationCard}
-              className="px-6 py-3 rounded-full bg-gradient-to-r from-gold-400 to-amber-500 hover:from-gold-300 hover:to-gold-500 text-black font-extrabold text-xs shadow-gold transition-all flex items-center gap-2 border border-amber-200 cursor-pointer active:scale-95 hover:scale-105"
-            >
-              <Download className="w-4 h-4 text-black" />
-              {t('publicEvent.qrPass.downloadPass')}
-            </button>
+              {/* Right Column (Beside QR Code): Card Pass Info & Download Button */}
+              <div className="flex-1 space-y-4 text-center md:text-left">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-extrabold uppercase tracking-wider border border-gold-500/40">
+                  <Crown className="w-3.5 h-3.5 text-gold-400" />
+                  <span>Official Royal Gate Entrance Pass</span>
+                </div>
 
-            <button
-              onClick={() => {
-                const personalLink = `${window.location.origin}/event/${slug}?code=${activeInviteCode}&guest=${encodeURIComponent(rsvpGuestName)}`;
-                navigator.clipboard.writeText(personalLink);
-                setCopiedPass(true);
-                setTimeout(() => setCopiedPass(false), 3000);
-              }}
-              className="px-6 py-3 rounded-full bg-black/80 backdrop-blur-md text-white hover:bg-black/90 font-bold text-xs border border-gold-500/40 transition-all flex items-center gap-2 cursor-pointer active:scale-95 hover:scale-105 shadow-md"
-            >
-              {copiedPass ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gold-400" />}
-              {copiedPass ? t('common.copied') : 'Copy Personal Invitation Link'}
-            </button>
+                <div>
+                  <h4 className="font-serif font-bold text-xl sm:text-2xl text-white">
+                    {rsvpGuestName || 'Honored Guest & Family'}
+                  </h4>
+                  <p className="text-xs text-gold-300 font-serif italic mt-0.5">
+                    {coupleTitle} • {formattedDateString}
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-black/60 border border-gold-500/30 text-xs text-stone-300 space-y-1.5">
+                  <div className="flex items-center gap-2 justify-center md:justify-start">
+                    <Users className="w-4 h-4 text-gold-400 shrink-0" />
+                    <span>Quota: <strong className="text-white font-bold">{currentQuota} {currentQuota > 1 ? 'Persons' : 'Person'}</strong></span>
+                  </div>
+                  <div className="flex items-center gap-2 justify-center md:justify-start">
+                    <MapPin className="w-4 h-4 text-gold-400 shrink-0" />
+                    <span className="font-medium text-stone-200">{venueTitle}</span>
+                  </div>
+                </div>
+
+                {/* Prominent Download Button Right Beside QR Code */}
+                <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setCardModalOpen(true)}
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
+                  >
+                    <Download className="w-4 h-4 text-black animate-bounce" />
+                    <span>Download Designed Card Pass (.PNG)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const personalLink = `${window.location.origin}/event/${slug}?code=${activeInviteCode}&guest=${encodeURIComponent(rsvpGuestName)}`;
+                      navigator.clipboard.writeText(personalLink);
+                      setCopiedPass(true);
+                      setTimeout(() => setCopiedPass(false), 3000);
+                    }}
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-black/90 text-stone-200 hover:text-white font-bold text-xs border border-gold-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:scale-105"
+                  >
+                    {copiedPass ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gold-400" />}
+                    <span>{copiedPass ? 'Link Copied!' : 'Copy Link'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </motion.div>
       </section>
@@ -1093,7 +1260,7 @@ function PublicWeddingCelebrationContent({
 
       {/* 5. GUEST BLESSING SECTION (VIDEO BLESSING DEFAULT) */}
       <section className="px-6 py-12 max-w-4xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
@@ -1120,22 +1287,20 @@ function PublicWeddingCelebrationContent({
               <button
                 type="button"
                 onClick={() => setWishType('VIDEO')}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  wishType === 'VIDEO'
-                    ? 'bg-black text-gold-400 shadow-md border border-gold-500/40 scale-105'
-                    : 'bg-gray-50 border border-gold-500/30 text-gray-900'
-                }`}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${wishType === 'VIDEO'
+                  ? 'bg-black text-gold-400 shadow-md border border-gold-500/40 scale-105'
+                  : 'bg-gray-50 border border-gold-500/30 text-gray-900'
+                  }`}
               >
                 <Camera className="w-3.5 h-3.5" /> 📹 Video Blessing (Default)
               </button>
               <button
                 type="button"
                 onClick={() => setWishType('TEXT')}
-                className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  wishType === 'TEXT'
-                    ? 'bg-black text-gold-400 shadow-md border border-gold-500/40 scale-105'
-                    : 'bg-gray-50 border border-gold-500/30 text-gray-900'
-                }`}
+                className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${wishType === 'TEXT'
+                  ? 'bg-black text-gold-400 shadow-md border border-gold-500/40 scale-105'
+                  : 'bg-gray-50 border border-gold-500/30 text-gray-900'
+                  }`}
               >
                 <MessageSquareHeart className="w-3.5 h-3.5" /> ✍️ Text Blessing
               </button>
@@ -1144,16 +1309,22 @@ function PublicWeddingCelebrationContent({
 
           <form onSubmit={handleWishSubmit} className="space-y-4 text-xs relative z-10">
             <div>
-              <label className="block text-[10px] font-bold text-gray-900 uppercase tracking-wider mb-1.5">
-                {t('publicEvent.wishes.senderName')}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[10px] font-bold text-gray-900 uppercase tracking-wider">
+                  {t('publicEvent.wishes.senderName')}
+                </label>
+                <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 shadow-2xs">
+                  🔒 Auto-filled from RSVP Guest Pass
+                </span>
+              </div>
               <input
                 type="text"
                 required
-                value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
+                readOnly
+                disabled
+                value={senderName || rsvpGuestName || invitation?.guestName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : '') || 'Honored Guest'}
                 placeholder={t('publicEvent.wishes.senderPlaceholder')}
-                className="w-full px-4 py-3 rounded-xl border-2 border-gold-500/30 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gold-500 text-xs font-medium"
+                className="w-full px-4 py-3 rounded-xl border-2 border-gold-500/40 bg-gray-100 text-gray-900 font-bold text-xs focus:outline-none cursor-not-allowed shadow-inner"
               />
             </div>
 
@@ -1253,6 +1424,56 @@ function PublicWeddingCelebrationContent({
               </motion.div>
             )}
           </AnimatePresence>
+        </motion.div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* VERY BOTTOM SECTION: ATTENDANCE RSVP CONFIRMATION BAR */}
+      {/* ========================================================================= */}
+      <section className="px-4 sm:px-6 pt-6 pb-12 max-w-4xl mx-auto w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="w-full p-6 sm:p-8 rounded-3xl border-2 border-gold-500/60 bg-black/90 backdrop-blur-xl text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xl shadow-gold-500/10"
+        >
+          <div className="text-left space-y-1">
+            <div className="text-xs text-gold-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle className="w-4 h-4 text-emerald-400" />
+              <span>Attendance Confirmation</span>
+            </div>
+            <div className="font-serif font-bold text-lg sm:text-2xl text-white">
+              {hasAnsweredRsvp ? (
+                <span className="flex items-center gap-2 text-emerald-400">
+                  ✓ Response Saved: {attendanceChoice === 'ATTENDING' ? 'Attending Celebration' : attendanceChoice === 'DECLINED' ? 'Cannot Attend' : 'Maybe Attending'}
+                </span>
+              ) : (
+                'Will you attend our celebration?'
+              )}
+            </div>
+            {isRsvpLocked && (
+              <p className="text-[11px] text-amber-400 font-medium">
+                🔒 RSVP changes locked (Within 72 hours of wedding ceremony)
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => {
+              if (isRsvpLocked) {
+                alert('RSVP updates are locked within 72 hours of the wedding date to finalize venue seating.');
+                return;
+              }
+              setRsvpModalOpen(true);
+            }}
+            disabled={isRsvpLocked}
+            className={`px-8 py-4 rounded-2xl font-extrabold text-xs sm:text-sm transition-all shrink-0 border shadow-lg ${isRsvpLocked
+              ? 'bg-gray-800 text-gray-500 border-gray-700 cursor-not-allowed opacity-80'
+              : 'bg-gradient-to-r from-gold-400 via-amber-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 text-black shadow-gold border-amber-300 cursor-pointer hover:scale-105 active:scale-95'
+              }`}
+          >
+            {isRsvpLocked ? '🔒 RSVP Locked (Within 72 Hours)' : hasAnsweredRsvp ? 'Update RSVP Response' : 'Submit RSVP Response'}
+          </button>
         </motion.div>
       </section>
 
@@ -1367,7 +1588,7 @@ function PublicWeddingCelebrationContent({
                 <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-300 text-center text-emerald-950 text-xs shadow-md">
                   <CheckCircle className="w-9 h-9 text-emerald-600 mx-auto mb-2 animate-bounce" />
                   <p className="font-bold text-sm text-gray-900">
-                    {locale === 'am' ? 'ምላሽዎ ተመዝግቧል!' : 'Response Confirmed!'}
+                    {t('publicEvent.rsvp.confirmed')}
                   </p>
                   <p className="text-[11px] text-emerald-800 mt-1">{rsvpSuccessMessage}</p>
                 </div>
@@ -1394,10 +1615,10 @@ function PublicWeddingCelebrationContent({
                         </div>
                         <div className="text-left">
                           <div className="font-serif font-bold text-sm text-black">
-                            {locale === 'am' ? 'በደስታ እገኛለሁ 🥂' : 'Yes, Attending 🥂'}
+                            {t('publicEvent.rsvp.yesTitle')}
                           </div>
                           <div className="text-[10px] text-black/80 font-medium">
-                            {locale === 'am' ? 'በሰርጉ ላይ እገኛለሁ' : 'I will be there to celebrate with you'}
+                            {t('publicEvent.rsvp.yesDesc')}
                           </div>
                         </div>
                       </div>
@@ -1418,10 +1639,10 @@ function PublicWeddingCelebrationContent({
                         </div>
                         <div className="text-left">
                           <div className="font-serif font-bold text-sm text-gray-900">
-                            {locale === 'am' ? 'እርግጠኛ አይደለሁም 🤔' : 'Maybe 🤔'}
+                            {t('publicEvent.rsvp.maybeTitle')}
                           </div>
                           <div className="text-[10px] text-gray-600 font-normal">
-                            {locale === 'am' ? 'አልወሰንኩም / ምናልባት እገኛለሁ' : 'Not sure yet / Will try to make it'}
+                            {t('publicEvent.rsvp.maybeDesc')}
                           </div>
                         </div>
                       </div>
@@ -1442,14 +1663,13 @@ function PublicWeddingCelebrationContent({
                         </div>
                         <div className="text-left">
                           <div className="font-serif font-bold text-sm text-rose-900">
-                            {locale === 'am' ? 'አልችልም 💔' : 'Cannot Attend 💔'}
+                            {t('publicEvent.rsvp.noTitle')}
                           </div>
                           <div className="text-[10px] text-rose-700/80 font-normal">
-                            {locale === 'am' ? 'በሰርጉ ላይ መገኘት አልችልም' : 'Unable to attend, best wishes'}
+                            {t('publicEvent.rsvp.noDesc')}
                           </div>
                         </div>
                       </div>
-                      <ArrowRight className="w-4 h-4 text-rose-600 group-hover:translate-x-1 transition-transform" />
                     </motion.button>
                   </div>
                 </div>
@@ -1458,6 +1678,81 @@ function PublicWeddingCelebrationContent({
           </motion.div>
         )}
       </AnimatePresence>
+      {/* FLOATING BOTTOM NAVIGATION DOCK */}
+      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-black/90 backdrop-blur-xl border-2 border-gold-500/60 rounded-full px-3 py-2 shadow-2xl flex items-center gap-2 sm:gap-3 text-xs font-bold">
+        <Link
+          href={`/event/${slug}${queryString}`}
+          className="px-4 py-2 rounded-full bg-gold-500 text-black shadow-gold scale-105 transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <Home className="w-4 h-4 shrink-0 fill-black" />
+          <span className="hidden sm:inline">{t('nav.home', 'Home')}</span>
+        </Link>
+
+        <Link
+          href={`/event/${slug}/history${queryString}`}
+          className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <Heart className="w-4 h-4 shrink-0" />
+          <span className="hidden sm:inline">{t('nav.history', 'Couple History')}</span>
+          <span className="sm:hidden">{t('nav.history', 'History')}</span>
+        </Link>
+
+        <Link
+          href={`/event/${slug}/program${queryString}`}
+          className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <Calendar className="w-4 h-4 shrink-0" />
+          <span className="hidden sm:inline">{t('nav.program', 'Programs')}</span>
+        </Link>
+
+        <Link
+          href={`/event/${slug}/gallery${queryString}`}
+          className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
+        >
+          <Camera className="w-4 h-4 shrink-0" />
+          <span>{t('nav.gallery', 'Gallery')}</span>
+        </Link>
+
+        <button
+          onClick={toggleAudio}
+          className={`px-3.5 py-2 rounded-full transition-all flex items-center gap-1.5 cursor-pointer ${isPlayingAudio
+            ? 'bg-amber-400 text-black shadow-gold font-extrabold scale-105'
+            : 'text-gold-300 hover:bg-gold-500/20 hover:text-white font-bold'
+            }`}
+          title={isPlayingAudio ? 'Mute Background Audio' : 'Play Background Audio'}
+        >
+          {isPlayingAudio ? (
+            <Volume2 className="w-4 h-4 shrink-0 text-black animate-pulse" />
+          ) : (
+            <VolumeX className="w-4 h-4 shrink-0 text-gold-400" />
+          )}
+          <span>{isPlayingAudio ? '🔊' : '🎵'}</span>
+        </button>
+      </div>
+
+      {/* Branded High-Resolution Invitation Card Pass Modal */}
+      <InvitationCardModal
+        isOpen={cardModalOpen}
+        onClose={() => setCardModalOpen(false)}
+        invitation={{
+          guestName: rsvpGuestName || invitation?.guestName || 'Honored Guest',
+          inviteCode: activeInviteCode,
+          maxGuests: currentQuota,
+          tableNumber: invitation?.tableNumber,
+          rsvpStatus: attendanceChoice || 'ATTENDING',
+        }}
+        event={{
+          title: event.title,
+          brideName: event.brideName,
+          groomName: event.groomName,
+          eventDate: event.eventDate,
+          startTime: event.startTime,
+          venueName: event.venueName,
+          dressCode: event.dressCode,
+          slug: event.slug,
+        }}
+      />
+      </div>
     </div>
   );
 }
@@ -1469,3 +1764,4 @@ export default function PublicWeddingCelebrationPage({ params }: { params: { slu
     </React.Suspense>
   );
 }
+

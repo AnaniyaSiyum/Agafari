@@ -40,7 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       id: item.id,
       uploaderName: item.uploader_name || item.uploaderName || 'Guest',
       mediaType: item.media_type || item.mediaType || 'VIDEO',
-      category: item.category || 'WISHES',
+      category: item.category || (typeof item.caption === 'string' && item.caption.trim().startsWith('{') ? 'MEZMUR' : 'WISHES'),
       cdnUrl: item.cdn_url || item.cdnUrl || item.url || '',
       thumbnailUrl: item.thumbnail_url || item.thumbnailUrl || null,
       caption: item.caption || '',
@@ -56,10 +56,10 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   }
 }
 
-// POST: guest uploads a wish/BTS clip — always starts PENDING, a moderator must approve it
+// POST: guest or media moderator uploads a wish/BTS clip
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
-    const { uploaderName, mediaType, category, cdnUrl, thumbnailUrl, caption } = await req.json();
+    const { uploaderName, mediaType, category, cdnUrl, thumbnailUrl, caption, status } = await req.json();
     if (!uploaderName || !mediaType || !cdnUrl) {
       return NextResponse.json({ error: 'uploaderName, mediaType, and cdnUrl are required.' }, { status: 400 });
     }
@@ -67,11 +67,14 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
+    const user = getAuthUser(req);
+    const initialStatus = (user?.role === 'SYSTEM_ADMIN' || user?.role === 'EVENT_ORGANIZER' || status === 'APPROVED') ? 'APPROVED' : 'PENDING';
+
     const mediaId = `med_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     await query(
       `INSERT INTO media_assets (id, event_id, uploader_name, media_type, category, cdn_url, thumbnail_url, caption, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'PENDING')`,
-      [mediaId, event.id, uploaderName.trim(), mediaType, category ?? 'WISHES', cdnUrl, thumbnailUrl ?? null, caption ?? null]
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      [mediaId, event.id, uploaderName.trim(), mediaType, category ?? 'WISHES', cdnUrl, thumbnailUrl ?? null, caption ?? null, initialStatus]
     );
 
     const item = await queryOne('SELECT * FROM media_assets WHERE id = $1', [mediaId]);

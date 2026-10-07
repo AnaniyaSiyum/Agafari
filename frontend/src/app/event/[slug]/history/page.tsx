@@ -173,11 +173,23 @@ function CoupleHistoryContent({ params }: { params: { slug: string } }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-stone-950 text-white font-sans relative pb-32 overflow-x-hidden">
-      
-      {/* Background Glow Accents */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl pointer-events-none z-0" />
-      <div className="fixed bottom-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0" />
+    <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
+      {/* Ambient Blurred Outer Background for Widescreen Desktop */}
+      <div className="fixed inset-0 z-0 opacity-30 blur-3xl pointer-events-none scale-110">
+        <img
+          src={event?.coverImageUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=800&auto=format&fit=crop'}
+          alt=""
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
+      </div>
+
+      {/* Main Centered Phone-View Frame (100% on Mobile, ~60% Width / max-w-[620px] Centered on Desktop) */}
+      <div className="relative z-10 w-full md:w-[60vw] md:max-w-[580px] lg:max-w-[620px] min-h-screen bg-stone-950 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col pb-32">
+        
+        {/* Background Glow Accents */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl pointer-events-none z-0" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none z-0" />
 
       {/* 1. TOP HEADER NAVBAR */}
       <header className="sticky top-0 z-40 bg-black/80 backdrop-blur-xl border-b border-gold-500/30 px-4 sm:px-8 py-3 flex items-center justify-between shadow-2xl">
@@ -297,7 +309,7 @@ function CoupleHistoryContent({ params }: { params: { slug: string } }) {
           className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
         >
           <Home className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Home</span>
+          <span className="hidden sm:inline">{t('nav.home', 'Home')}</span>
         </Link>
 
         <Link
@@ -305,8 +317,8 @@ function CoupleHistoryContent({ params }: { params: { slug: string } }) {
           className="px-4 py-2 rounded-full bg-gold-500 text-black shadow-gold scale-105 transition-all flex items-center gap-1.5 cursor-pointer"
         >
           <Heart className="w-4 h-4 shrink-0 fill-black" />
-          <span className="hidden sm:inline">Couple History</span>
-          <span className="sm:hidden">History</span>
+          <span className="hidden sm:inline">{t('nav.history', 'Couple History')}</span>
+          <span className="sm:hidden">{t('nav.history', 'History')}</span>
         </Link>
 
         <Link
@@ -314,7 +326,7 @@ function CoupleHistoryContent({ params }: { params: { slug: string } }) {
           className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
         >
           <Calendar className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Programs</span>
+          <span className="hidden sm:inline">{t('nav.program', 'Programs')}</span>
         </Link>
 
         <Link
@@ -322,12 +334,12 @@ function CoupleHistoryContent({ params }: { params: { slug: string } }) {
           className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
         >
           <Camera className="w-4 h-4 shrink-0" />
-          <span>Gallery</span>
+          <span>{t('nav.gallery', 'Gallery')}</span>
         </Link>
       </div>
-
     </div>
-  );
+  </div>
+);
 }
 
 export default function CoupleHistoryPage({ params }: { params: { slug: string } }) {

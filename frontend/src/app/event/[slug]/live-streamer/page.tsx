@@ -54,14 +54,6 @@ export default function EventLiveStreamerPage({ params }: { params: { slug: stri
           const eventJson = await eventRes.json();
           if (eventJson.event) {
             const ev = eventJson.event;
-            const orgId = ev.organizerId || ev.organizer_id;
-            const isIndiv = ev.isIndividual || ev.managedBy === 'INDIVIDUAL' || ev.managed_by === 'INDIVIDUAL';
-            if (orgId && !isIndiv && typeof window !== 'undefined' && window.location.pathname.startsWith(`/event/${slug}`)) {
-              const newPath = window.location.pathname.replace(`/event/${slug}`, `/${orgId}/${slug}`);
-              window.location.replace(`${newPath}${window.location.search}`);
-              return;
-            }
-
             setEventData({
               id: ev.id,
               title: ev.title,
@@ -242,7 +234,6 @@ export default function EventLiveStreamerPage({ params }: { params: { slug: stri
         <div className="flex items-center gap-2 sm:gap-3">
           <Link
             href={`/event/${slug}/feed?tab=LIVE`}
-            target="_blank"
             className="px-4 py-2 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-rose-600/20 transition-all active:scale-95 cursor-pointer"
           >
             <ExternalLink className="w-4 h-4 text-white" />
@@ -383,7 +374,6 @@ export default function EventLiveStreamerPage({ params }: { params: { slug: stri
 
               <Link
                 href={`/event/${slug}/feed?tab=LIVE`}
-                target="_blank"
                 className="px-6 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs shadow-sm transition-all flex items-center gap-2 active:scale-95"
               >
                 <ExternalLink className="w-4 h-4 text-white" />

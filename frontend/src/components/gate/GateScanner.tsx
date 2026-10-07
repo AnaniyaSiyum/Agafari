@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { CheckCircle, AlertTriangle, XCircle, RefreshCw, Zap } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n';
 
 interface ScanResultState {
   status: 'VALID' | 'ALREADY_SCANNED' | 'INVALID';
@@ -61,6 +62,7 @@ const playBeep = (type: 'detect' | 'success' | 'already' | 'error') => {
 };
 
 export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?: string }) {
+  const { t } = useTranslation();
   const [scanResult, setScanResult] = useState<ScanResultState | null>(null);
   const [loading, setLoading] = useState(false);
   const [scannerActive, setScannerActive] = useState(true);
@@ -152,7 +154,7 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
                 playBeep('already');
                 setScanResult({
                   status: 'ALREADY_SCANNED',
-                  message: data.message || '⚠️ WARNING: Pass was already checked in at gate.',
+                  message: data.message || t('gate.alreadyWarning'),
                   code: codeToVerify,
                   guestName: data.invitation.guestName,
                   maxGuests: data.invitation.maxGuests,
@@ -163,7 +165,7 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
                 playBeep('error');
                 setScanResult({
                   status: 'INVALID',
-                  message: data.message || '🔴 ACCESS DENIED: Unrecognized or counterfeit QR code.',
+                  message: data.message || t('gate.accessDenied'),
                   code: codeToVerify,
                 });
               }
@@ -171,7 +173,7 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
               playBeep('error');
               setScanResult({
                 status: 'INVALID',
-                message: '🔴 ACCESS DENIED: Network error or server verification timeout.',
+                message: t('gate.networkError'),
                 code: codeToVerify,
               });
             } finally {
@@ -196,7 +198,7 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
         } catch (e) {}
       }
     };
-  }, [eventSlug, scannerActive]);
+  }, [eventSlug, scannerActive, t]);
 
   const handleResume = () => {
     setScanResult(null);
@@ -219,7 +221,7 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
       {loading && (
         <div className="p-3 rounded-2xl bg-gold-500/10 border border-gold-500/30 text-gold-600 font-bold text-xs text-center flex items-center justify-center gap-2 animate-pulse">
           <Zap className="w-4 h-4 text-gold-500" />
-          <span>Verifying Pass Credentials against Gate API...</span>
+          <span>{t('gate.verifyingPass')}</span>
         </div>
       )}
 
@@ -248,10 +250,10 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
               </span>
               <h4 className="font-serif font-bold text-base">
                 {scanResult.status === 'VALID'
-                  ? '✓ VALID INVITATION PASS'
+                  ? t('gate.validTitle')
                   : scanResult.status === 'ALREADY_SCANNED'
-                  ? '⚠️ ALREADY SCANNED PASS'
-                  : '🔴 INVALID / COUNTERFEIT PASS'}
+                  ? t('gate.alreadyTitle')
+                  : t('gate.invalidTitle')}
               </h4>
               <p className="text-xs font-medium">{scanResult.message}</p>
             </div>
@@ -262,10 +264,11 @@ export function GateScanner({ eventSlug = 'sara-and-dawit-2026' }: { eventSlug?:
             className="w-full py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs flex items-center justify-center gap-2 border border-gold-500/30 cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            <span>Scan Next Pass</span>
+            <span>{t('gate.scanNextPass')}</span>
           </button>
         </div>
       )}
     </div>
   );
 }
+

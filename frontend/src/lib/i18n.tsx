@@ -42,7 +42,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const savedLocale = localStorage.getItem('agafari_locale') as Locale;
+      const savedLocale = (localStorage.getItem('agafari_locale') || (document.cookie.match(/agafari_locale=([^;]+)/)?.[1])) as Locale;
       if (['en', 'am', 'om', 'ti'].includes(savedLocale)) {
         setLocaleState(savedLocale);
       }
@@ -53,6 +53,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     setLocaleState(newLocale);
     try {
       localStorage.setItem('agafari_locale', newLocale);
+      document.cookie = `agafari_locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
     } catch (e) {}
   };
 

@@ -111,14 +111,13 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
   }, [tabQuery]);
 
   useEffect(() => {
-    if (guestQuery) {
-      const decoded = decodeURIComponent(guestQuery).trim();
-      if (decoded) {
-        setCommentSender(decoded);
-        setUploaderName(decoded);
-      }
+    const savedGuestName = typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : null;
+    const initialName = guestQuery ? decodeURIComponent(guestQuery).trim() : savedGuestName;
+    if (initialName) {
+      setCommentSender(initialName);
+      setUploaderName(initialName);
     }
-  }, [guestQuery]);
+  }, [guestQuery, slug]);
 
   useEffect(() => {
     async function fetchMedia() {
@@ -295,7 +294,8 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
   // Submit Upload Form
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploaderName || !caption) return;
+    const effectiveUploaderName = (uploaderName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : '') || 'Honored Guest').trim();
+    if (!effectiveUploaderName || !caption) return;
     setUploading(true);
 
     try {
@@ -304,7 +304,7 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          uploaderName,
+          uploaderName: effectiveUploaderName,
           caption,
           category: uploadCategory,
           mediaType: 'VIDEO',
@@ -323,7 +323,6 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
         setTimeout(() => {
           setUploadSuccess(false);
           setIsUploadOpen(false);
-          setUploaderName('');
           setCaption('');
           setVideoFile(null);
           setVideoPreviewUrl(null);
@@ -388,6 +387,11 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
 
   // Filter media items based on active tab
   const filteredMediaItems = mediaItems.filter((item) => {
+    const isMezmur =
+      item.category === 'MEZMUR' ||
+      item.category === 'MUSIC' ||
+      (typeof item.caption === 'string' && item.caption.trim().startsWith('{') && (item.caption.includes('"title"') || item.caption.includes('"artist"')));
+    if (isMezmur) return false;
     if (activeTab === 'WISHES') return item.category === 'WISHES' || !item.category;
     if (activeTab === 'BTS') return item.category === 'BTS';
     if (activeTab === 'LIVE') return item.category === 'LIVE';
@@ -395,11 +399,23 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
   });
 
   return (
-    <div 
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-      className="h-[100dvh] w-full bg-black text-neutral flex flex-col font-sans relative overflow-hidden select-none"
-    >
+    <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
+      {/* Ambient Blurred Outer Background for Widescreen Desktop */}
+      <div className="fixed inset-0 z-0 opacity-30 blur-3xl pointer-events-none scale-110">
+        <img
+          src="/images/hero_couple_bg.png"
+          alt=""
+          className="w-full h-full object-cover object-center"
+        />
+        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
+      </div>
+
+      {/* Main Centered Phone-View Frame (100% on Mobile, ~60% Width / max-w-[620px] Centered on Desktop) */}
+      <div 
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+        className="relative z-10 w-full md:w-[60vw] md:max-w-[580px] lg:max-w-[620px] h-[100dvh] bg-black border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col font-sans relative overflow-hidden select-none"
+      >
       
       {/* 1. TIKTOK-STYLE TOP NAVIGATION HEADER */}
       <header className="absolute top-0 left-0 right-0 z-50 px-3 sm:px-6 py-3 flex items-center justify-between pointer-events-none bg-gradient-to-b from-black/90 via-black/50 to-transparent">
@@ -882,13 +898,19 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
               ) : (
                 <form onSubmit={handleUploadSubmit} className="space-y-3.5 text-xs text-left">
                   <div>
-                    <label className="block text-gray-900 font-bold mb-1">Your Name *</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-gray-900 font-bold">Your Name *</label>
+                      <span className="text-[10px] text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                        🔒 Auto-filled from RSVP Guest Pass
+                      </span>
+                    </div>
                     <input
                       type="text"
-                      value={uploaderName}
-                      onChange={(e) => setUploaderName(e.target.value)}
+                      value={uploaderName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : '') || 'Honored Guest'}
+                      readOnly
+                      disabled
                       placeholder="e.g. Aunt Meron & Family"
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-50 border border-gold-500/30 text-gray-900 focus:outline-none focus:ring-1 focus:ring-gold-500"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-gray-100 border border-gold-500/40 text-gray-900 font-bold text-xs focus:outline-none cursor-not-allowed shadow-inner"
                       required
                     />
                   </div>
@@ -936,6 +958,7 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
     </div>
   );
 }

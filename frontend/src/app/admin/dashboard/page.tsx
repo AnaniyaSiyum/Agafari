@@ -100,6 +100,7 @@ interface UserData {
   fullName: string;
   companyName?: string;
   description?: string;
+  organizerId?: string;
   role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'GUEST';
   eventId?: string | null;
   temporaryPassword?: string;
@@ -116,14 +117,66 @@ interface MediaAssetData {
   createdAt: string;
 }
 
+const DEFAULT_PLATFORM_USERS: UserData[] = [
+  {
+    id: 'usr-admin-1',
+    email: 'admin@agafari.com',
+    fullName: 'System Super Admin',
+    companyName: 'Agafari Headquarters',
+    role: 'SYSTEM_ADMIN',
+    temporaryPassword: 'admin123',
+  },
+  {
+    id: 'usr-org-1',
+    email: 'organizer@agafari.com',
+    fullName: 'Agafari Luxury Event Production',
+    companyName: 'Agafari Luxury Event Production',
+    description: 'Official certified event management partner. Specializing in full-service luxury weddings, guest registration, and live broadcast production.',
+    organizerId: 'org-usr-org-1',
+    role: 'EVENT_ORGANIZER',
+    temporaryPassword: 'org123',
+  },
+  {
+    id: 'usr-org-2',
+    email: 'royal@agafari.com',
+    fullName: 'Ethiopian Royal Wedding Planners',
+    companyName: 'Ethiopian Royal Wedding Planners',
+    description: 'Certified premium event agency specializing in high-profile traditional Ethiopian weddings, VIP guest management, and stage design.',
+    organizerId: 'org-usr-org-2',
+    role: 'EVENT_ORGANIZER',
+    temporaryPassword: 'org123',
+  },
+  {
+    id: 'usr-org-3',
+    email: 'agency@kanaevents.com',
+    fullName: 'Kana Events & Wedding Production',
+    companyName: 'Kana Events & Wedding Production',
+    description: 'Full-service event production studio managing venue setup, guest seating charts, live video streaming, and digital invitations.',
+    organizerId: 'org-usr-org-3',
+    role: 'EVENT_ORGANIZER',
+    temporaryPassword: 'org123',
+  },
+  {
+    id: 'usr-org-4',
+    email: 'contact@habeshaelite.com',
+    fullName: 'Habesha Elite Wedding Coordinators',
+    companyName: 'Habesha Elite Wedding Coordinators',
+    description: 'Bespoke Ethiopian wedding planning agency offering gate QR scanning, live broadcast management, and guest wish moderation.',
+    organizerId: 'org-usr-org-4',
+    role: 'EVENT_ORGANIZER',
+    temporaryPassword: 'org123',
+  },
+];
+
 export default function SystemAdminDashboardPage() {
   const { t } = useTranslation();
+  const router = useRouter();
   // Navigation: 'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS'
   const [activeTab, setActiveTab] = useState<'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS'>('APPROVALS');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [events, setEvents] = useState<EventData[]>([]);
-  const [users, setUsers] = useState<UserData[]>([]);
+  const [users, setUsers] = useState<UserData[]>(DEFAULT_PLATFORM_USERS);
   const [loading, setLoading] = useState(true);
 
   // Selected Drill-Down Event & Impersonation Hub
@@ -186,15 +239,53 @@ export default function SystemAdminDashboardPage() {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('agafari_user');
+      const token = localStorage.getItem('agafari_token');
+      const role = localStorage.getItem('agafari_role');
+      if (!userStr || !token || role !== 'SYSTEM_ADMIN') {
+        localStorage.removeItem('agafari_user');
+        localStorage.removeItem('agafari_role');
+        localStorage.removeItem('agafari_token');
+        document.cookie = 'agafari_token=; path=/; max-age=0';
+        router.push('/admin/login');
+        return;
+      }
+    }
     fetchAdminData();
   }, []);
 
+  const handleSignOut = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('agafari_user');
+      localStorage.removeItem('agafari_role');
+      localStorage.removeItem('agafari_token');
+      document.cookie = 'agafari_token=; path=/; max-age=0';
+    }
+    router.push('/admin/login');
+  };
+
+  const getAdminAuthHeaders = () => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (typeof window !== 'undefined') {
+      const storedToken = localStorage.getItem('agafari_token');
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+    }
+    return headers;
+  };
+
   async function fetchAdminData() {
     try {
+      const headers = getAdminAuthHeaders();
+
       const [eventsRes, usersRes, mediaRes] = await Promise.all([
-        fetch('/api/admin/events'),
-        fetch('/api/admin/users'),
-        fetch('/api/organizer/media'),
+        fetch('/api/admin/events', { headers }),
+        fetch('/api/admin/users', { headers }),
+        fetch('/api/organizer/media', { headers }),
       ]);
 
       if (eventsRes.ok) {
@@ -202,18 +293,29 @@ export default function SystemAdminDashboardPage() {
         const loadedEvents: EventData[] = eventsData.events || [];
         setEvents(loadedEvents);
         if (loadedEvents.length > 0) {
-          setSelectedEvent(loadedEvents[0]);
+          setSelectedEvent((prev) => prev || loadedEvents[0]);
         } else {
           setSelectedEvent(null);
         }
       }
 
+      let loadedUsers: UserData[] = [];
       if (usersRes.ok) {
         const usersData = await usersRes.json();
-        setUsers(usersData.users || []);
+        loadedUsers = usersData.users || [];
       }
+
+      const existingEmails = new Set(loadedUsers.map((u) => (u.email || '').toLowerCase()));
+      for (const defUser of DEFAULT_PLATFORM_USERS) {
+        if (!existingEmails.has(defUser.email.toLowerCase())) {
+          loadedUsers.push(defUser);
+        }
+      }
+
+      setUsers(loadedUsers);
     } catch (err) {
       console.error('Failed to load admin data:', err);
+      setUsers((prev) => (prev.length > 0 ? prev : DEFAULT_PLATFORM_USERS));
     } finally {
       setLoading(false);
     }
@@ -224,7 +326,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch('/api/admin/events', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({ eventId, adminApprovalStatus: 'APPROVED', status: 'COMING_SOON' }),
       });
 
@@ -247,7 +349,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch('/api/admin/events', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({ eventId, adminApprovalStatus: 'REJECTED' }),
       });
 
@@ -280,6 +382,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch(`/api/admin/events?eventId=${encodeURIComponent(eventId)}`, {
         method: 'DELETE',
+        headers: getAdminAuthHeaders(),
       });
 
       if (res.ok) {
@@ -304,6 +407,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch(`/api/admin/users?userId=${encodeURIComponent(userId)}`, {
         method: 'DELETE',
+        headers: getAdminAuthHeaders(),
       });
 
       if (res.ok) {
@@ -333,6 +437,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch(`/api/admin/users?userId=${encodeURIComponent(org.id)}`, {
         method: 'DELETE',
+        headers: getAdminAuthHeaders(),
       });
 
       if (res.ok) {
@@ -353,7 +458,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch('/api/admin/events', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({ eventId, isLive: nextIsLive, status: nextIsLive ? 'LIVE' : 'COMING_SOON' }),
       });
 
@@ -381,7 +486,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch('/api/admin/events', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({
           title: `${newBrideName} & ${newGroomName}'s Royal Wedding`,
           slug: cleanSlug,
@@ -437,7 +542,7 @@ export default function SystemAdminDashboardPage() {
 
       const res = await fetch('/api/admin/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({
           fullName: orgAgencyName.trim(),
           companyName: orgAgencyName.trim(),
@@ -488,7 +593,7 @@ export default function SystemAdminDashboardPage() {
     try {
       const res = await fetch('/api/admin/users', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminAuthHeaders(),
         body: JSON.stringify({ userId: resettingUser.id, newPassword: newPasswordVal }),
       });
 
@@ -518,7 +623,7 @@ export default function SystemAdminDashboardPage() {
   const pendingApprovals = events.filter((e) => e.adminApprovalStatus === 'PENDING');
   const activeHosting = events.filter((e) => e.status !== 'COMPLETED' && e.status !== 'ARCHIVED' && e.adminApprovalStatus === 'APPROVED');
   const hostedArchives = events.filter((e) => e.status === 'COMPLETED' || e.status === 'ARCHIVED');
-  const organizerUsers = users.filter((u) => u.role === 'EVENT_ORGANIZER');
+  const organizerUsers = users.filter((u) => u.role && u.role.toUpperCase() === 'EVENT_ORGANIZER');
 
   // Filtered Fleet
   const filteredEvents = events.filter((evt) => {
@@ -681,13 +786,14 @@ export default function SystemAdminDashboardPage() {
 
         {/* Footer */}
         <div className="p-4 border-t border-white/10 space-y-2">
-          <Link
-            href="/admin/login"
-            className="w-full py-2.5 px-3 rounded-xl hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors"
+          <button
+            type="button"
+            onClick={handleSignOut}
+            className="w-full py-2.5 px-3 rounded-xl hover:bg-rose-950/40 text-rose-300 text-xs font-medium flex items-center justify-center gap-2 transition-colors cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
-            <span>{t('nav.signOut')}</span>
-          </Link>
+            <span>{t('nav.signOut', 'Sign Out')}</span>
+          </button>
         </div>
       </aside>
 
@@ -1524,7 +1630,6 @@ export default function SystemAdminDashboardPage() {
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <Link
                         href={`${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`}
-                        target="_blank"
                         onClick={() => {
                           setShowCreateModal(false);
                           setCreatedAdminControlUrl(null);

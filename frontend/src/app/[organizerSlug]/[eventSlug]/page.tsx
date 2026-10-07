@@ -48,7 +48,8 @@ import {
   Volume2,
   AlertTriangle
 } from 'lucide-react';
-import { LanguageSwitcher } from '@/lib/i18n';
+import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
+import InvitationCardModal from '@/components/InvitationCardModal';
 import { inspectImageFile, IMAGE_SPECS, ImageInspectionResult } from '@/lib/imageInspector';
 
 interface RoleCredential {
@@ -133,6 +134,7 @@ export default function DedicatedEventControlPage({
 }: {
   params: { organizerSlug: string; eventSlug: string };
 }) {
+  const { t } = useTranslation();
   const router = useRouter();
   const { organizerSlug, eventSlug } = params;
 
@@ -162,6 +164,9 @@ export default function DedicatedEventControlPage({
     couplePhotoUrl: '',
     backgroundAudioUrl: '',
     youtubeVideoId: '',
+    cardTheme: 'ROYAL_GOLD' as 'ROYAL_GOLD' | 'CHAMPAGNE_IVORY' | 'ROSE_GOLD' | 'EMERALD_GOLD',
+    cardTemplate: 'CLASSIC_HORIZONTAL' as 'CLASSIC_HORIZONTAL' | 'ELEGANT_VERTICAL',
+    customWording: 'Together with their families request the pleasure of your company',
     // Love Story fields
     loveStoryHeadline: 'Our Journey to Forever',
     firstMetDate: '2024-05-12',
@@ -169,6 +174,8 @@ export default function DedicatedEventControlPage({
     proposalDate: '2025-12-25',
     proposalStory: ''
   });
+
+  const [cardModalOpen, setCardModalOpen] = useState(false);
 
   // Additional locations state
   const [additionalLocations, setAdditionalLocations] = useState<AdditionalLocation[]>([]);
@@ -287,13 +294,16 @@ export default function DedicatedEventControlPage({
             welcomeMessage: evt.welcomeMessage || evt.welcome_message || `We are overjoyed to welcome you to our wedding celebration!`,
             coverImageUrl: evt.coverImageUrl || evt.cover_image_url || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200',
             couplePhotoUrl: evt.couplePhotoUrl || 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800',
-            backgroundAudioUrl: evt.backgroundAudioUrl || evt.background_audio_url || evt.customization?.backgroundAudioUrl || '',
+            backgroundAudioUrl: evt.backgroundAudioUrl || evt.background_audio_url || evt.customization?.backgroundAudioUrl || (typeof window !== 'undefined' && eventSlug ? localStorage.getItem(`agafari_bg_audio_${eventSlug}`) : null) || '',
             youtubeVideoId: evt.youtubeVideoId || evt.youtube_video_id || '',
             loveStoryHeadline: evt.loveStory?.headline || 'Our Journey to Forever',
             firstMetDate: evt.loveStory?.firstMetDate || '2024-05-12',
             firstMetStory: evt.loveStory?.firstMetStory || `${brideName} and ${groomName} first crossed paths on a sunny afternoon in Addis Ababa. What began as a simple coffee conversation turned into hours of deep dialogue about faith, family traditions, and their shared vision for the future.`,
             proposalDate: evt.loveStory?.proposalDate || '2025-12-25',
-            proposalStory: evt.loveStory?.proposalStory || `During a weekend retreat, ${groomName} surprised ${brideName} with a romantic candlelight dinner. With music playing, he got down on one knee and proposed. ${brideName} joyfully answered YES!`
+            proposalStory: evt.loveStory?.proposalStory || `During a weekend retreat, ${groomName} surprised ${brideName} with a romantic candlelight dinner. With music playing, he got down on one knee and proposed. ${brideName} joyfully answered YES!`,
+            cardTheme: evt.cardTheme || evt.card_theme || 'ROYAL_GOLD',
+            cardTemplate: evt.cardTemplate || evt.card_template || 'CLASSIC_HORIZONTAL',
+            customWording: evt.customWording || evt.custom_wording || 'Together with their families request the pleasure of your company',
           });
 
           if (evt.loveStory?.storyCards && Array.isArray(evt.loveStory.storyCards) && evt.loveStory.storyCards.length > 0) {
@@ -397,6 +407,10 @@ export default function DedicatedEventControlPage({
       },
       programs
     };
+
+    if (formState.backgroundAudioUrl && typeof window !== 'undefined' && eventSlug) {
+      localStorage.setItem(`agafari_bg_audio_${eventSlug}`, formState.backgroundAudioUrl);
+    }
 
     try {
       const res = await fetch(`/api/events/${eventSlug}`, {
@@ -551,6 +565,9 @@ export default function DedicatedEventControlPage({
         const audioUrl = event.target?.result as string;
         if (audioUrl) {
           setFormState((prev) => ({ ...prev, backgroundAudioUrl: audioUrl }));
+          if (typeof window !== 'undefined' && eventSlug) {
+            localStorage.setItem(`agafari_bg_audio_${eventSlug}`, audioUrl);
+          }
         }
       };
       reader.readAsDataURL(file);
@@ -602,7 +619,7 @@ export default function DedicatedEventControlPage({
           <div className="w-16 h-16 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto text-amber-600">
             <Crown className="w-8 h-8 animate-bounce text-amber-600" />
           </div>
-          <p className="text-base font-bold text-slate-800 tracking-tight">Loading Command Hub...</p>
+          <p className="text-base font-bold text-slate-800 tracking-tight">{t('commandHub.loading')}</p>
           <p className="text-xs text-slate-400">Syncing role credentials & event controls</p>
         </div>
       </div>
@@ -620,7 +637,7 @@ export default function DedicatedEventControlPage({
           </div>
           <div className="space-y-2">
             <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-bold uppercase tracking-wider border border-amber-500/40">
-              🟡 Pending Super Admin Approval
+              🟡 {t('commandHub.pendingAdmin')}
             </span>
             <h2 className="font-serif font-bold text-2xl text-white pt-2">
               Wedding Request Awaiting Approval
@@ -635,7 +652,7 @@ export default function DedicatedEventControlPage({
               href={`/organizer/dashboard?id=${organizerSlug}`}
               className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-2"
             >
-              <span>Return to Organizer Dashboard</span>
+              <span>{t('couplePortal.returnToDashboard')}</span>
             </Link>
           </div>
         </div>
@@ -846,7 +863,6 @@ export default function DedicatedEventControlPage({
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
                     href={`/${organizerSlug}/${eventSlug}/couple`}
-                    target="_blank"
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Couple Portal</span>
@@ -906,7 +922,6 @@ export default function DedicatedEventControlPage({
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
                     href={`/${organizerSlug}/${eventSlug}/live-streamer`}
-                    target="_blank"
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Streamer Studio</span>
@@ -966,7 +981,6 @@ export default function DedicatedEventControlPage({
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
                     href={`/${organizerSlug}/${eventSlug}/scanner`}
-                    target="_blank"
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Scanner App</span>
@@ -1026,7 +1040,6 @@ export default function DedicatedEventControlPage({
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
                     href={`/${organizerSlug}/${eventSlug}/moderation`}
-                    target="_blank"
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Moderation Hub</span>
@@ -1735,6 +1748,258 @@ export default function DedicatedEventControlPage({
                 )}
               </div>
 
+              {/* SECTION 8: BRANDED INVITATION CARD DESIGN & STYLING CONTROLS */}
+              <div className="p-6 rounded-2xl bg-slate-900 text-white border border-amber-500/40 space-y-6 shadow-xl">
+                <div className="flex items-center justify-between border-b border-amber-500/30 pb-3">
+                  <div>
+                    <h3 className="font-serif font-bold text-base text-amber-400 flex items-center gap-2">
+                      <Crown className="w-5 h-5 text-amber-400" />
+                      8. Branded Wedding Invitation Card Design & Customization Engine
+                    </h3>
+                    <p className="text-xs text-slate-300 mt-1">
+                      Choose between 2 invitation templates, upload the couple's photo, set wedding time & location, and customize wording.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setCardModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/20 flex items-center gap-2 hover:brightness-110 transition-all cursor-pointer shrink-0"
+                  >
+                    <Sparkles className="w-4 h-4 text-slate-950" />
+                    <span>Live Preview & Test Card (.PNG)</span>
+                  </button>
+                </div>
+
+                {/* STEP 1: CHOOSE CARD DESIGN TEMPLATE */}
+                <div className="space-y-3">
+                  <label className="block text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                    <Layers className="w-4 h-4 text-amber-400" />
+                    1. Choose Invitation Card Design Template (2 Premium Types)
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Template 1 */}
+                    <div
+                      onClick={() => setFormState({ ...formState, cardTemplate: 'CLASSIC_HORIZONTAL' })}
+                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                        formState.cardTemplate === 'CLASSIC_HORIZONTAL'
+                          ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/50 shadow-md'
+                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-amber-300 uppercase tracking-wide">Template 1: Royal Horizontal Pass</span>
+                          {formState.cardTemplate === 'CLASSIC_HORIZONTAL' && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px]">SELECTED</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          Landscape 3:2 layout featuring dual QR gate pass seal, foil border accents, event details column, and photo header.
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                        <span>Aspect Ratio: 3:2 (Landscape)</span>
+                        <span className="text-amber-400 font-bold">Classic Luxury</span>
+                      </div>
+                    </div>
+
+                    {/* Template 2 */}
+                    <div
+                      onClick={() => setFormState({ ...formState, cardTemplate: 'ELEGANT_VERTICAL' })}
+                      className={`p-4 rounded-2xl border-2 transition-all cursor-pointer relative overflow-hidden flex flex-col justify-between ${
+                        formState.cardTemplate === 'ELEGANT_VERTICAL'
+                          ? 'border-amber-400 bg-amber-500/10 ring-2 ring-amber-400/50 shadow-md'
+                          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700 opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-amber-300 uppercase tracking-wide">Template 2: Romantic Floral Portrait</span>
+                          {formState.cardTemplate === 'ELEGANT_VERTICAL' && (
+                            <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px]">SELECTED</span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 leading-relaxed">
+                          Vertical 2:3 portrait design with champagne parchment background, golden rose filigree, arch-framed couple portrait, script typography, date/time row, and QR pass stamp.
+                        </p>
+                      </div>
+                      <div className="mt-3 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-mono">
+                        <span>Aspect Ratio: 2:3 (Portrait)</span>
+                        <span className="text-amber-400 font-bold">Romantic Floral</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* STEP 2: COUPLE PHOTO UPLOAD */}
+                <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 space-y-3">
+                  <label className="block text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-amber-400" />
+                    2. Upload Official Couple Photo for Invitation Card
+                  </label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+                    <div className="sm:col-span-2 space-y-2">
+                      <p className="text-[11px] text-slate-400">
+                        Upload a high-resolution photo of the couple. This photo will be featured inside the invitation card frame.
+                      </p>
+                      <label className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-amber-500/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs cursor-pointer transition-all">
+                        <Camera className="w-4 h-4 text-amber-400" />
+                        <span>{formState.couplePhotoUrl ? 'Change Couple Photo Image' : 'Choose Image File from Device'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = (evt) => {
+                                const base64 = evt.target?.result as string;
+                                if (base64) setFormState({ ...formState, couplePhotoUrl: base64 });
+                              };
+                              reader.readAsDataURL(file);
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    {formState.couplePhotoUrl && (
+                      <div className="relative w-28 h-28 rounded-xl overflow-hidden border-2 border-amber-400/70 shadow-lg mx-auto sm:mx-0">
+                        <img src={formState.couplePhotoUrl} alt="Couple Photo Preview" className="w-full h-full object-cover" />
+                        <div className="absolute inset-x-0 bottom-0 bg-slate-950/80 text-amber-300 text-[9px] text-center font-bold py-0.5">
+                          Card Photo Preview
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* STEP 3: WEDDING ESSENTIALS & LOCATION INPUTS */}
+                <div className="space-y-3 pt-1">
+                  <label className="block text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-amber-400" />
+                    3. Wedding Details, Starting Time & Venue Location
+                  </label>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Bride's Name</label>
+                      <input
+                        type="text"
+                        value={formState.brideName}
+                        onChange={(e) => setFormState({ ...formState, brideName: e.target.value })}
+                        placeholder="e.g. Nayla"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Groom's Name</label>
+                      <input
+                        type="text"
+                        value={formState.groomName}
+                        onChange={(e) => setFormState({ ...formState, groomName: e.target.value })}
+                        placeholder="e.g. Deny"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Wedding Date</label>
+                      <input
+                        type="date"
+                        value={formState.eventDate}
+                        onChange={(e) => setFormState({ ...formState, eventDate: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Wedding Starting Time</label>
+                      <input
+                        type="text"
+                        value={formState.startTime}
+                        onChange={(e) => setFormState({ ...formState, startTime: e.target.value })}
+                        placeholder="e.g. 10:00 AM or 14:00"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1">
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Primary Venue / Location Name</label>
+                      <input
+                        type="text"
+                        value={formState.venueName}
+                        onChange={(e) => setFormState({ ...formState, venueName: e.target.value })}
+                        placeholder="e.g. Sheraton Addis Luxury Ballroom"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-300 font-semibold mb-1">Venue Address & City</label>
+                      <input
+                        type="text"
+                        value={formState.venueAddress}
+                        onChange={(e) => setFormState({ ...formState, venueAddress: e.target.value })}
+                        placeholder="e.g. Taitu Street, Addis Ababa, Ethiopia"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-950 text-white font-medium focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* STEP 4: PALETTE & FORMAL WORDING */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-slate-800">
+                  {/* Card Theme Palette Picker */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-amber-300 uppercase tracking-wider">
+                      Card Theme Palette & Foil Accents
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      {[
+                        { id: 'ROYAL_GOLD', label: 'Royal Velvet & Gold', color: 'bg-stone-900 border-amber-500 text-amber-300' },
+                        { id: 'CHAMPAGNE_IVORY', label: 'Champagne Ivory & Gold', color: 'bg-amber-50 border-amber-600 text-amber-900' },
+                        { id: 'ROSE_GOLD', label: 'Rose Gold & Blush', color: 'bg-rose-950 border-rose-400 text-rose-200' },
+                        { id: 'EMERALD_GOLD', label: 'Emerald Luxury & Gold', color: 'bg-emerald-950 border-emerald-400 text-emerald-200' },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setFormState({ ...formState, cardTheme: t.id as any })}
+                          className={`p-3 rounded-xl border-2 text-left font-bold transition-all cursor-pointer ${t.color} ${
+                            formState.cardTheme === t.id ? 'ring-2 ring-amber-400 scale-[1.02] shadow-md' : 'opacity-70 hover:opacity-100'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-[11px]">{t.label}</span>
+                            {formState.cardTheme === t.id && <Check className="w-4 h-4 shrink-0" />}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Invitation Subtitle Wording */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-amber-300 uppercase tracking-wider">
+                      Custom Formal Invitation Statement Wording
+                    </label>
+                    <textarea
+                      rows={4}
+                      value={formState.customWording}
+                      onChange={(e) => setFormState({ ...formState, customWording: e.target.value })}
+                      placeholder="e.g. Together with their families request the pleasure of your company at their wedding celebration"
+                      className="w-full px-4 py-3 rounded-xl border border-amber-500/40 bg-black text-white text-xs font-serif leading-relaxed focus:ring-2 focus:ring-amber-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
 
               {/* SAVE BUTTON */}
               <div className="flex justify-end pt-3">
@@ -1889,6 +2154,34 @@ export default function DedicatedEventControlPage({
           </div>
         )}
 
+      {/* Live Branded Invitation Card Pass Preview Modal */}
+      <InvitationCardModal
+        isOpen={cardModalOpen}
+        onClose={() => setCardModalOpen(false)}
+        invitation={{
+          guestName: 'Abebe Bikila & Family',
+          inviteCode: 'G5qHaAkPNs7g',
+          maxGuests: 4,
+          tableNumber: '4',
+          rsvpStatus: 'ATTENDING',
+        }}
+        event={{
+          title: `${formState.brideName || 'Bride'} & ${formState.groomName || 'Groom'}`,
+          brideName: formState.brideName,
+          groomName: formState.groomName,
+          eventDate: formState.eventDate,
+          startTime: formState.startTime,
+          venueName: formState.venueName,
+          venueAddress: formState.venueAddress,
+          dressCode: formState.dressCode,
+          coverImageUrl: formState.coverImageUrl,
+          couplePhotoUrl: formState.couplePhotoUrl || formState.coverImageUrl,
+          cardTheme: formState.cardTheme,
+          cardTemplate: formState.cardTemplate,
+          customWording: formState.customWording,
+          slug: eventSlug,
+        }}
+      />
       </main>
     </div>
   );

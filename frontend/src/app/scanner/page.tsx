@@ -10,10 +10,9 @@ import {
   Lock, 
   Sparkles, 
   ChevronRight,
-  Search,
-  CheckCircle2
+  Search
 } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 
 interface EventSummary {
   id: string;
@@ -105,7 +104,7 @@ export default function GateScannerRootPage() {
       <div className="min-h-screen bg-stone-950 text-white flex items-center justify-center p-6 font-sans">
         <div className="text-center space-y-3">
           <div className="w-10 h-10 border-4 border-gold-400 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="font-serif text-gold-400 text-sm">Initializing Gate Scanner Terminal...</p>
+          <p className="font-serif text-gold-400 text-sm">{t('scannerPage.initializing')}</p>
         </div>
       </div>
     );
@@ -119,21 +118,21 @@ export default function GateScannerRootPage() {
             <Lock className="w-8 h-8 text-rose-500" />
           </div>
           <div className="space-y-2">
-            <h2 className="font-serif font-bold text-2xl text-white">Gate Scanner Portal Restricted</h2>
-            <p className="text-xs text-gold-400 font-semibold uppercase tracking-wider">Per-Wedding Gate Security System</p>
+            <h2 className="font-serif font-bold text-2xl text-white">{t('scannerPage.restrictedTitle')}</h2>
+            <p className="text-xs text-gold-400 font-semibold uppercase tracking-wider">{t('scannerPage.securitySubtitle')}</p>
             <p className="text-xs text-gray-300 font-light leading-relaxed">
-              The Gate QR Scanner is an operational security tool for designated gate scanners and event staff. Please sign in or enter your wedding event slug below.
+              {t('scannerPage.securityDescription')}
             </p>
           </div>
 
           <form onSubmit={handleManualSearchSubmit} className="space-y-3 pt-2 text-left">
-            <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider">Enter Wedding Event Slug</label>
+            <label className="block text-xs font-bold text-gold-400 uppercase tracking-wider">{t('scannerPage.enterSlugLabel')}</label>
             <div className="relative">
               <input
                 type="text"
                 value={searchSlug}
                 onChange={(e) => setSearchSlug(e.target.value)}
-                placeholder="e.g. sara-and-dawit-2026"
+                placeholder={t('scannerPage.placeholderSlug')}
                 className="w-full px-4 py-3 pl-10 rounded-2xl bg-stone-900 border border-gold-500/30 text-white text-xs focus:outline-none focus:ring-2 focus:ring-gold-500"
                 required
               />
@@ -144,7 +143,7 @@ export default function GateScannerRootPage() {
               className="w-full py-3.5 rounded-2xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-gold cursor-pointer"
             >
               <QrCode className="w-4 h-4 text-black" />
-              <span>Launch Gate Scanner Terminal</span>
+              <span>{t('scannerPage.launchBtn')}</span>
             </button>
           </form>
 
@@ -154,13 +153,13 @@ export default function GateScannerRootPage() {
               className="w-full py-3 rounded-2xl bg-stone-900 hover:bg-stone-800 text-gray-300 font-extrabold text-xs transition-all flex items-center justify-center gap-2 border border-stone-700"
             >
               <ShieldCheck className="w-4 h-4 text-gold-400" />
-              <span>Sign In as Staff / Organizer</span>
+              <span>{t('scannerPage.signInStaff')}</span>
             </Link>
             <Link
               href="/"
               className="block text-xs text-gray-400 hover:text-white pt-1"
             >
-              Return to Public Homepage
+              {t('scannerPage.returnHome')}
             </Link>
           </div>
         </div>
@@ -181,11 +180,13 @@ export default function GateScannerRootPage() {
             <div>
               <div className="flex items-center gap-2">
                 <QrCode className="w-5 h-5 text-gold-400" />
-                <h1 className="font-serif font-bold text-xl text-white">Gate Scanner Launchpad</h1>
+                <h1 className="font-serif font-bold text-xl text-white">{t('scannerPage.launchpadTitle')}</h1>
               </div>
-              <p className="text-xs text-gold-400">Select a Wedding Event to Open its Door Gate Security Terminal</p>
+              <p className="text-xs text-gold-400">{t('scannerPage.launchpadSubtitle')}</p>
             </div>
           </div>
+
+          <LanguageSwitcher />
         </div>
 
         {/* Search Bar & Event Grid */}
@@ -193,7 +194,7 @@ export default function GateScannerRootPage() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <h2 className="font-serif font-bold text-lg text-white flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-gold-400" />
-              <span>Select Wedding Gate Terminal ({events.length})</span>
+              <span>{t('scannerPage.selectTerminal')} ({events.length})</span>
             </h2>
 
             <form onSubmit={handleManualSearchSubmit} className="flex items-center gap-2 w-full sm:w-auto">
@@ -201,7 +202,7 @@ export default function GateScannerRootPage() {
                 type="text"
                 value={searchSlug}
                 onChange={(e) => setSearchSlug(e.target.value)}
-                placeholder="Enter event slug..."
+                placeholder={t('scannerPage.placeholderSlug')}
                 className="px-3.5 py-2 rounded-xl bg-stone-900 border border-gold-500/30 text-white text-xs focus:ring-1 focus:ring-gold-500"
               />
               <button
@@ -223,21 +224,21 @@ export default function GateScannerRootPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold uppercase tracking-wider">
-                      Gate Active • {evt.slug}
+                      {t('scannerPage.gateActive')} • {evt.slug}
                     </span>
                     <ChevronRight className="w-5 h-5 text-gold-400 group-hover:translate-x-1 transition-transform" />
                   </div>
 
                   <h3 className="font-serif font-bold text-lg text-white group-hover:text-gold-400 transition-colors">
-                    {evt.title || `${evt.bride_name || evt.brideName} & ${evt.groom_name || evt.groomName} Wedding`}
+                    {evt.title || `${evt.bride_name || evt.brideName} & ${evt.groom_name || evt.groomName}`}
                   </h3>
                   <p className="text-xs text-gray-400 font-light">
-                    Launch live camera viewfinder & manual invitation pass lookup terminal for door check-in.
+                    {t('scannerPage.launchpadSubtitle')}
                   </p>
                 </div>
 
                 <div className="pt-3 border-t border-stone-800 flex items-center justify-between text-xs text-gold-400 font-bold">
-                  <span>Open Gate Scanner Terminal</span>
+                  <span>{t('scannerPage.openTerminalBtn')}</span>
                   <QrCode className="w-4 h-4 text-gold-400" />
                 </div>
               </Link>
@@ -249,3 +250,4 @@ export default function GateScannerRootPage() {
     </div>
   );
 }
+

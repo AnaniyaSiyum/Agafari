@@ -12,7 +12,7 @@ import {
   ChevronRight,
   Search
 } from 'lucide-react';
-import { useTranslation } from '@/lib/i18n';
+import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 
 interface EventSummary {
   id: string;
@@ -183,6 +183,8 @@ export default function LiveStreamerRootPage() {
               <p className="text-xs text-gold-400">Select a Wedding Event to Open its Broadcast Control Studio</p>
             </div>
           </div>
+
+          <LanguageSwitcher />
         </div>
 
         {/* Search Bar & Event Grid */}
