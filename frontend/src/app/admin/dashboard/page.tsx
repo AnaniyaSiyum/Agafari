@@ -202,6 +202,9 @@ export default function SystemAdminDashboardPage() {
   const [editRole, setEditRole] = useState<UserData['role']>('EVENT_ORGANIZER');
   const [editNewPassword, setEditNewPassword] = useState('');
   const [showEditPassword, setShowEditPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [copiedCurrentPassword, setCopiedCurrentPassword] = useState(false);
   const [submittingEdit, setSubmittingEdit] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
@@ -651,6 +654,9 @@ export default function SystemAdminDashboardPage() {
     setEditRole(u.role || 'EVENT_ORGANIZER');
     setEditNewPassword('');
     setShowEditPassword(false);
+    setShowCurrentPassword(false);
+    setIsChangingPassword(false);
+    setCopiedCurrentPassword(false);
     setEditError('');
     setEditSuccess('');
     setEditModalOpen(true);
@@ -2110,47 +2116,120 @@ export default function SystemAdminDashboardPage() {
                   </div>
                 </div>
 
-                {/* SOLE EDITABLE FIELD: New Password */}
+                {/* Existing Password Display & Copy Section */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gold-400 mb-1 flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-gold-400" />
-                    <span>New Password (Editable Password Reset) *</span>
+                  <label className="block text-[11px] font-bold text-amber-400 mb-1 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <KeyRound className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Existing Active Password</span>
+                    </span>
+                    <span className="text-[10px] text-gray-400 font-mono">Current Credential</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showEditPassword ? 'text' : 'password'}
-                      required
-                      value={editNewPassword}
-                      onChange={(e) => setEditNewPassword(e.target.value)}
-                      placeholder="Enter new password to reset..."
-                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border-2 border-gold-500 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-400 shadow-md"
-                    />
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type={showCurrentPassword ? 'text' : 'password'}
+                        readOnly
+                        value={selectedEditUser.temporaryPassword || 'agafari2026'}
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-gold-300 font-mono font-bold focus:outline-none cursor-default"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        title={showCurrentPassword ? 'Hide Password' : 'Show Password'}
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => setShowEditPassword(!showEditPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                      onClick={() => {
+                        const passToCopy = selectedEditUser.temporaryPassword || 'agafari2026';
+                        navigator.clipboard.writeText(passToCopy);
+                        setCopiedCurrentPassword(true);
+                        setTimeout(() => setCopiedCurrentPassword(false), 2500);
+                      }}
+                      className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                     >
-                      {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      <Copy className="w-3.5 h-3.5 text-gold-400" />
+                      <span>{copiedCurrentPassword ? 'Copied ✓' : 'Copy Password'}</span>
                     </button>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-500/20">
-                  <button
-                    type="button"
-                    onClick={() => setEditModalOpen(false)}
-                    className="px-4 py-2.5 rounded-xl border border-gray-700 text-gray-300 font-bold hover:bg-slate-900 transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submittingEdit}
-                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold shadow-md border border-amber-300 transition-all"
-                  >
-                    {submittingEdit ? 'Updating Password...' : 'Save Credentials ✓'}
-                  </button>
-                </div>
+                {/* Change Password Section Toggle Button */}
+                {!isChangingPassword ? (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsChangingPassword(true)}
+                      className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold text-xs shadow-md border border-amber-300 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <KeyRound className="w-4 h-4 text-amber-950" />
+                      <span>Change Password</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border-2 border-gold-500 space-y-3">
+                    <label className="block text-[11px] font-bold text-gold-400 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <KeyRound className="w-4 h-4 text-gold-400" />
+                        <span>Enter New Password *</span>
+                      </span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showEditPassword ? 'text' : 'password'}
+                        required
+                        value={editNewPassword}
+                        onChange={(e) => setEditNewPassword(e.target.value)}
+                        placeholder="Enter new password to assign..."
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/40 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-400"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword(!showEditPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                      >
+                        {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsChangingPassword(false);
+                          setEditNewPassword('');
+                        }}
+                        className="px-3.5 py-2 rounded-xl border border-gray-700 text-gray-300 font-bold hover:bg-slate-900 text-xs transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={submittingEdit}
+                        className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold text-xs shadow-md border border-amber-300 transition-all"
+                      >
+                        {submittingEdit ? 'Updating Password...' : 'Save New Password ✓'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!isChangingPassword && (
+                  <div className="flex items-center justify-end pt-2 border-t border-gold-500/20">
+                    <button
+                      type="button"
+                      onClick={() => setEditModalOpen(false)}
+                      className="px-4 py-2 rounded-xl border border-gray-700 text-gray-300 font-bold hover:bg-slate-900 text-xs transition-colors"
+                    >
+                      Close Modal
+                    </button>
+                  </div>
+                )}
               </form>
             </div>
           </motion.div>
