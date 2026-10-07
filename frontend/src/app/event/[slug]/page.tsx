@@ -763,16 +763,16 @@ function PublicWeddingCelebrationContent({
         <section className="relative z-10 w-full min-h-screen h-[100dvh] flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
 
           {/* Top Header Bar */}
-          <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
-            <Link href="/" className="flex items-center gap-3 shrink-0">
+          <nav className="relative z-20 flex items-center justify-between w-full max-w-full mx-auto py-2 px-1 gap-2">
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <img
                 src="/branding/artboard-15.png"
                 alt="Agafari Logo"
-                className="h-10 sm:h-12 w-auto object-contain filter drop-shadow-md"
+                className="h-8 sm:h-10 w-auto object-contain filter drop-shadow-md"
               />
             </Link>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink min-w-0 justify-end">
               <audio
                 ref={audioRef}
                 autoPlay
@@ -792,7 +792,7 @@ function PublicWeddingCelebrationContent({
 
               <button
                 onClick={toggleAudio}
-                className={`px-3 py-1.5 rounded-full flex items-center gap-1.5 text-xs font-extrabold transition-all cursor-pointer shadow-md border ${isPlayingAudio
+                className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-1 text-[11px] sm:text-xs font-extrabold transition-all cursor-pointer shadow-md border shrink-0 ${isPlayingAudio
                   ? 'bg-gold-500 text-black shadow-gold scale-105 border-gold-300'
                   : 'bg-black/80 text-gold-400 border-gold-500/40 hover:scale-105'
                   }`}
@@ -800,30 +800,25 @@ function PublicWeddingCelebrationContent({
               >
                 {isPlayingAudio ? (
                   <>
-                    <Volume2 className="w-4 h-4 text-black animate-pulse" />
-                    <span>🔊 Music On</span>
+                    <Volume2 className="w-3.5 h-3.5 text-black animate-pulse" />
+                    <span>🔊 Music</span>
                   </>
                 ) : (
                   <>
-                    <VolumeX className="w-4 h-4 text-gold-400" />
-                    <span>🔇 Play Music</span>
+                    <VolumeX className="w-3.5 h-3.5 text-gold-400" />
+                    <span>🔇 Music</span>
                   </>
                 )}
               </button>
 
               <button
                 onClick={() => setCardModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black text-xs font-extrabold shadow-gold transition-all cursor-pointer active:scale-95 hover:scale-105"
+                className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black text-[11px] sm:text-xs font-extrabold shadow-gold transition-all cursor-pointer active:scale-95 hover:scale-105 shrink-0"
                 title="Download Official Invitation Card Pass"
               >
                 <Download className="w-3.5 h-3.5 text-black" />
                 <span>Card Pass</span>
               </button>
-
-              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md text-gold-400 text-xs font-bold border border-gold-500/40 shadow-lg">
-                <Crown className="w-4 h-4 text-gold-400" />
-                <span>Invitation for <strong>{rsvpGuestName || 'Dear Guest'}</strong></span>
-              </div>
 
               <LanguageSwitcher />
             </div>
