@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { 
   Users, 
   QrCode, 
@@ -87,6 +88,7 @@ interface InvitationRecord {
 export default function ScopedCouplePortalPage({ params }: { params: { organizerSlug: string; eventSlug: string } }) {
   const { organizerSlug, eventSlug } = params;
   const { t } = useTranslation();
+  const router = useRouter();
 
   const [event, setEvent] = useState<EventData | null>(null);
   const [mediaAssets, setMediaAssets] = useState<MediaAssetData[]>([]);
@@ -253,8 +255,21 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
   };
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('agafari_user');
+      const token = localStorage.getItem('agafari_token');
+      const role = localStorage.getItem('agafari_role');
+      if (!userStr || !token || (role !== 'BRIDE_GROOM' && role !== 'EVENT_ORGANIZER' && role !== 'SYSTEM_ADMIN')) {
+        localStorage.removeItem('agafari_user');
+        localStorage.removeItem('agafari_role');
+        localStorage.removeItem('agafari_token');
+        document.cookie = 'agafari_token=; path=/; max-age=0';
+        router.push('/couple/login');
+        return;
+      }
+    }
     fetchPortalData();
-  }, [eventSlug]);
+  }, [eventSlug, router]);
 
   // Calculate current quota usage
   const currentTotalGuestsSubmitted = invitations.reduce((sum, inv) => sum + (inv.maxGuests || 1), 0);

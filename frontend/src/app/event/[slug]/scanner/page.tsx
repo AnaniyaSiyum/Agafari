@@ -125,14 +125,15 @@ export default function EventGateScannerPage({ params }: { params: { slug: strin
 
           if (['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'GATE_SCANNER', 'BRIDE_GROOM'].includes(user.role)) {
             setIsAuthorized(true);
+          } else {
+            setIsAuthorized(false);
           }
         } else {
-          // Dev/demo bypass for testing
-          setIsAuthorized(true);
+          setIsAuthorized(false);
         }
       } catch (err) {
         console.error('Failed to verify gate scanner access:', err);
-        setIsAuthorized(true);
+        setIsAuthorized(false);
       } finally {
         setCheckingAuth(false);
       }

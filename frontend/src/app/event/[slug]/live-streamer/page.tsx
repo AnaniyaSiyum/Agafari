@@ -83,6 +83,8 @@ export default function EventLiveStreamerPage({ params }: { params: { slug: stri
         if (authRes.ok) {
           const authJson = await authRes.json();
           setAuthUser(authJson.user);
+        } else {
+          router.push(`/login?redirect=/event/${slug}/live-streamer`);
         }
       } catch (err) {
         console.error('Failed to load live streamer studio data:', err);

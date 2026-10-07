@@ -39,6 +39,7 @@ export default function MediaModerationRootPage() {
         const authRes = await fetch('/api/auth/me');
         if (!authRes.ok) {
           setCheckingAuth(false);
+          router.push('/login?redirect=/moderation');
           return;
         }
         const authJson = await authRes.json();

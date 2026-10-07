@@ -49,6 +49,7 @@ export default function LiveStreamerRootPage() {
         const authRes = await fetch('/api/auth/me');
         if (!authRes.ok) {
           setCheckingAuth(false);
+          router.push('/login?redirect=/live-streamer');
           return;
         }
         const authJson = await authRes.json();

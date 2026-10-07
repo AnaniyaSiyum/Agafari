@@ -51,6 +51,7 @@ export default function GateScannerRootPage() {
         const authRes = await fetch('/api/auth/me');
         if (!authRes.ok) {
           setCheckingAuth(false);
+          router.push('/login?redirect=/scanner');
           return;
         }
         const authJson = await authRes.json();

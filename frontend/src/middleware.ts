@@ -51,15 +51,22 @@ export async function middleware(req: NextRequest) {
   // 1. Verify token signature & expiration if cookie exists
   const user = tokenCookie ? await verifyJwtInMiddleware(tokenCookie) : null;
 
+  // Classify dashboard routes
+  const isSystemAdminRoute = path === '/system-admin' || path.startsWith('/system-admin/');
+  const isAdminRoute = (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/login');
+  const isOrganizerDashboard = path === '/organizer/dashboard' || path.startsWith('/organizer/dashboard/');
+  const isCoupleDashboard = path === '/couple/dashboard' || path.startsWith('/couple/dashboard/') || path.endsWith('/couple');
+  const isScannerRoute = path === '/scanner' || path.startsWith('/scanner/') || path.endsWith('/scanner');
+  const isLiveStreamerRoute = path === '/live-streamer' || path.startsWith('/live-streamer/') || path.endsWith('/live-streamer');
+  const isModerationRoute = path === '/moderation' || path.startsWith('/moderation/') || path.endsWith('/moderation');
+
   // 2. Protect System Admin routes (/system-admin, /system-admin/*)
-  if (path === '/system-admin' || path.startsWith('/system-admin/')) {
+  if (isSystemAdminRoute) {
     if (!user) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', path);
       return NextResponse.redirect(loginUrl);
     }
-
-    // Role check: Only SYSTEM_ADMIN can access system-admin routes
     if (user.role !== 'SYSTEM_ADMIN') {
       const adminUrl = new URL('/admin/dashboard', req.url);
       return NextResponse.redirect(adminUrl);
@@ -67,17 +74,12 @@ export async function middleware(req: NextRequest) {
   }
 
   // 3. Protect General Admin routes (/admin, /admin/* EXCEPT /admin/login)
-  if (
-    (path === '/admin' || path.startsWith('/admin/')) &&
-    !path.startsWith('/admin/login')
-  ) {
+  if (isAdminRoute) {
     if (!user) {
       const loginUrl = new URL('/login', req.url);
       loginUrl.searchParams.set('redirect', path);
       return NextResponse.redirect(loginUrl);
     }
-
-    // Role check: SYSTEM_ADMIN and EVENT_ORGANIZER / ADMIN allowed
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ADMIN'];
     if (!allowedRoles.includes(user.role)) {
       const loginUrl = new URL('/login', req.url);
@@ -85,17 +87,71 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 4. Protect Organizer Dashboard Routes
-  if (path.startsWith('/organizer/dashboard')) {
+  // 4. Protect Organizer Dashboard Routes (/organizer/dashboard, /organizer/dashboard/*)
+  if (isOrganizerDashboard) {
     if (!user) {
+      const loginUrl = new URL('/organizer/login', req.url);
+      loginUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(loginUrl);
+    }
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
+    if (!allowedRoles.includes(user.role)) {
+      const loginUrl = new URL('/organizer/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 5. Protect Couple Dashboard & Portal Routes (/couple/dashboard, */couple)
+  if (isCoupleDashboard) {
+    if (!user) {
+      const loginUrl = new URL('/couple/login', req.url);
+      loginUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(loginUrl);
+    }
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'BRIDE_GROOM'];
+    if (!allowedRoles.includes(user.role)) {
+      const loginUrl = new URL('/couple/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 6. Protect Gate Scanner Control Routes (/scanner, */scanner)
+  if (isScannerRoute) {
+    if (!user) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(loginUrl);
+    }
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'GATE_SCANNER', 'BRIDE_GROOM'];
+    if (!allowedRoles.includes(user.role)) {
       const loginUrl = new URL('/login', req.url);
       return NextResponse.redirect(loginUrl);
     }
   }
 
-  // 5. Protect Couple Dashboard Routes
-  if (path.startsWith('/couple/dashboard')) {
+  // 7. Protect Live Streamer Studio Routes (/live-streamer, */live-streamer)
+  if (isLiveStreamerRoute) {
     if (!user) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(loginUrl);
+    }
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'STREAMER', 'BRIDE_GROOM'];
+    if (!allowedRoles.includes(user.role)) {
+      const loginUrl = new URL('/login', req.url);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 8. Protect Media Moderation Suite Routes (/moderation, */moderation)
+  if (isModerationRoute) {
+    if (!user) {
+      const loginUrl = new URL('/login', req.url);
+      loginUrl.searchParams.set('redirect', path);
+      return NextResponse.redirect(loginUrl);
+    }
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'MODERATOR', 'BRIDE_GROOM'];
+    if (!allowedRoles.includes(user.role)) {
       const loginUrl = new URL('/login', req.url);
       return NextResponse.redirect(loginUrl);
     }
@@ -110,7 +166,24 @@ export const config = {
     '/admin/:path*',
     '/system-admin',
     '/system-admin/:path*',
+    '/organizer/dashboard',
     '/organizer/dashboard/:path*',
+    '/couple/dashboard',
     '/couple/dashboard/:path*',
+    '/scanner',
+    '/scanner/:path*',
+    '/live-streamer',
+    '/live-streamer/:path*',
+    '/moderation',
+    '/moderation/:path*',
+    '/:organizerSlug/:eventSlug/couple',
+    '/:organizerSlug/:eventSlug/scanner',
+    '/:organizerSlug/:eventSlug/live-streamer',
+    '/:organizerSlug/:eventSlug/moderation',
+    '/event/:slug/couple',
+    '/event/:slug/scanner',
+    '/event/:slug/live-streamer',
+    '/event/:slug/moderation',
   ],
 };
+

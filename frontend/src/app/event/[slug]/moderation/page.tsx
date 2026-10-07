@@ -90,10 +90,10 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
           setAuthUser(authJson.user);
           setIsAuthorized(true);
         } else {
-          setIsAuthorized(true);
+          setIsAuthorized(false);
         }
       } catch (err) {
-        setIsAuthorized(true);
+        setIsAuthorized(false);
       } finally {
         setCheckingAuth(false);
       }
