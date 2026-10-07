@@ -735,19 +735,17 @@ function PublicWeddingCelebrationContent({
 
   return (
     <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
-      {/* 1. FIXED/RIGGED FULL-PAGE COVER PHOTO BACKGROUND FOR SCROLLING SECTIONS */}
-      <div className="fixed inset-0 z-0 w-full h-full pointer-events-none overflow-hidden">
+      {/* 1. FIXED FULL-SCREEN 100% COVER PHOTO BACKGROUND (NO DARK OVERLAYS) */}
+      <div className="fixed inset-0 z-0 w-full h-full pointer-events-none overflow-hidden bg-stone-950">
         <img
           src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
           alt={coupleTitle}
-          className="w-full h-full object-cover object-top sm:object-center filter brightness-105 contrast-105 saturate-110"
+          className="w-full h-full object-cover object-top filter brightness-105 contrast-105 saturate-110"
         />
-        {/* Subtle Gradient Overlay: Light top & bottom shadows for text readability without half-black screen */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40" />
       </div>
 
       {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
-      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
+      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/20">
 
         {/* ========================================================================= */}
         {/* 1. 100% HEIGHT HERO BANNER WITH COVER PHOTO FULLY DISPLAYED */}
@@ -839,7 +837,7 @@ function PublicWeddingCelebrationContent({
         </section>
 
         {/* ========================================================================= */}
-        {/* 2. GLASSMORPHISM DESIGN FOR ALL OTHER CONTENTS BELOW THE NAME */}
+        {/* 2. OVERLAY CONTENTS FLOATING DIRECTLY ABOVE THE IMAGE (NO GLASSMORPHISM) */}
         {/* ========================================================================= */}
         <section className="relative z-10 px-4 sm:px-6 py-10 max-w-4xl mx-auto space-y-10">
 
@@ -849,12 +847,12 @@ function PublicWeddingCelebrationContent({
             initial={{ opacity: 0, scale: 0.98 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="p-6 sm:p-8 rounded-3xl bg-black/90 border-2 border-rose-500/60 text-white space-y-4 shadow-2xl relative overflow-hidden"
+            className="p-6 sm:p-8 space-y-4 relative overflow-hidden"
           >
             <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-rose-500/30">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
-                <span className="font-extrabold text-xs text-rose-400 uppercase tracking-wider">
+                <span className="font-extrabold text-xs text-rose-400 uppercase tracking-wider drop-shadow">
                   🔴 Official Live Video Broadcast
                 </span>
               </div>
@@ -877,12 +875,12 @@ function PublicWeddingCelebrationContent({
             </div>
 
             <div className="flex items-center justify-between text-xs text-gray-300 pt-1">
-              <p className="font-serif italic text-gold-300">
+              <p className="font-serif italic text-gold-300 drop-shadow">
                 Live broadcast for {coupleTitle}'s royal wedding celebration.
               </p>
               <Link
                 href={`/event/${slug}/feed?tab=LIVE${queryString ? `&${rawQuery}` : ''}`}
-                className="text-gold-400 hover:underline font-bold text-xs"
+                className="text-gold-400 hover:underline font-bold text-xs drop-shadow"
               >
                 Full Screen Mode & Wishes Feed →
               </Link>
@@ -897,11 +895,11 @@ function PublicWeddingCelebrationContent({
           viewport={{ once: true }}
           className="w-full text-white text-center space-y-5 py-4 relative"
         >
-          <h3 className="font-script text-3xl sm:text-5xl font-bold text-gold-300 drop-shadow-lg">
+          <h3 className="font-script text-3xl sm:text-5xl font-bold text-gold-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
             Dear Families and Friends
           </h3>
 
-          <p className="text-gray-200 text-xs sm:text-sm sm:text-base leading-relaxed font-serif italic max-w-2xl mx-auto px-4 drop-shadow">
+          <p className="text-gray-100 text-xs sm:text-sm sm:text-base leading-relaxed font-serif italic max-w-2xl mx-auto px-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
             "Together with their families, <strong>{coupleTitle}</strong> joyfully invite you to celebrate their wedding day! Join us as we say <em>'I do'</em> on {formattedDateString} at {venueTitle}. {event.welcomeMessage}"
           </p>
 
@@ -917,12 +915,12 @@ function PublicWeddingCelebrationContent({
                 <motion.div
                   key={index}
                   whileHover={{ scale: 1.05 }}
-                  className="p-2.5 sm:p-3.5 rounded-2xl border-2 border-gold-500/60 bg-black/80 backdrop-blur-md text-center shadow-2xl"
+                  className="p-2.5 sm:p-3.5 rounded-2xl border border-gold-500/50 bg-black/40 text-center"
                 >
-                  <div className="font-serif text-xl sm:text-3xl font-extrabold text-gold-400 drop-shadow">
+                  <div className="font-serif text-xl sm:text-3xl font-extrabold text-gold-400 drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
                     {String(unit.value).padStart(2, '0')}
                   </div>
-                  <div className="text-[9px] text-gold-200 uppercase font-bold tracking-wider mt-0.5">
+                  <div className="text-[9px] text-gold-200 uppercase font-bold tracking-wider mt-0.5 drop-shadow">
                     {unit.label}
                   </div>
                 </motion.div>
@@ -934,7 +932,7 @@ function PublicWeddingCelebrationContent({
           <div className="pt-4 border-t border-gold-500/30 flex flex-col sm:flex-row items-center justify-between gap-5 px-2">
             <div className="text-left flex items-center gap-3">
               <MapPin className="w-5 h-5 text-gold-400 shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-200 font-medium drop-shadow">
+              <span className="text-xs sm:text-sm text-gray-100 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
                 {venueTitle}
               </span>
             </div>
@@ -959,14 +957,14 @@ function PublicWeddingCelebrationContent({
         <div className="w-full max-w-4xl text-gold-200 text-xs space-y-4 text-left py-4 border-t border-b border-gold-500/30">
           <div className="pb-2 flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-gold-400 font-bold uppercase tracking-widest block">
+              <span className="text-[10px] text-gold-400 font-bold uppercase tracking-widest block drop-shadow">
                 Official Event Protocol & Details
               </span>
-              <h3 className="font-serif text-lg font-bold text-white mt-0.5 drop-shadow">
+              <h3 className="font-serif text-lg font-bold text-white mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
                 Ceremony & Celebration Guidelines
               </h3>
             </div>
-            <div className="px-3 py-1 rounded-full bg-gold-500/20 text-gold-400 font-bold text-[10px] border border-gold-500/40 backdrop-blur-md">
+            <div className="px-3 py-1 rounded-full bg-gold-500/20 text-gold-400 font-bold text-[10px] border border-gold-500/40">
               VIP RSVP
             </div>
           </div>
@@ -975,42 +973,42 @@ function PublicWeddingCelebrationContent({
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-gold-400 shrink-0" />
               <div>
-                <span className="font-bold text-white">Date: {formattedDateString}</span>
-                <p className="text-[11px] text-gray-300">Gate check-in starts at {event.startTime || '14:00'}</p>
+                <span className="font-bold text-white drop-shadow">Date: {formattedDateString}</span>
+                <p className="text-[11px] text-gray-200 drop-shadow">Gate check-in starts at {event.startTime || '14:00'}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-gold-400 shrink-0" />
               <div>
-                <span className="font-bold text-white">Venue: {venueTitle}</span>
+                <span className="font-bold text-white drop-shadow">Venue: {venueTitle}</span>
               </div>
             </div>
 
             {event.additionalLocations && event.additionalLocations.length > 0 && (
               <div className="sm:col-span-2 border-t border-gold-500/20 pt-3 space-y-2.5">
-                <div className="text-[10px] text-gold-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                <div className="text-[10px] text-gold-400 font-bold uppercase tracking-wider flex items-center gap-1.5 drop-shadow">
                   <Building2 className="w-3.5 h-3.5" />
                   <span>Additional Wedding Locations</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {event.additionalLocations.map((loc) => (
-                    <div key={loc.id} className="p-3 rounded-2xl bg-stone-900/90 border border-gold-500/30 space-y-1">
+                    <div key={loc.id} className="p-3 rounded-2xl bg-black/40 border border-gold-500/30 space-y-1">
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-white text-xs">{loc.label}</span>
+                        <span className="font-bold text-white text-xs drop-shadow">{loc.label}</span>
                         {loc.mapUrl && (
                           <a
                             href={loc.mapUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[10px] text-gold-400 hover:underline flex items-center gap-1 font-bold"
+                            className="text-[10px] text-gold-400 hover:underline flex items-center gap-1 font-bold drop-shadow"
                           >
                             <span>Map</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
                       </div>
-                      <p className="text-[11px] text-gray-300 leading-snug">{loc.description}</p>
+                      <p className="text-[11px] text-gray-200 leading-snug drop-shadow">{loc.description}</p>
                     </div>
                   ))}
                 </div>
@@ -1021,8 +1019,8 @@ function PublicWeddingCelebrationContent({
               <div className="flex items-center gap-3 sm:col-span-2 border-t border-gold-500/20 pt-3">
                 <Shirt className="w-5 h-5 text-gold-400 shrink-0" />
                 <div>
-                  <div className="text-[10px] text-gold-400 font-semibold uppercase">Dress Code</div>
-                  <span className="font-bold text-white text-xs">{event.dressCode}</span>
+                  <div className="text-[10px] text-gold-400 font-semibold uppercase drop-shadow">Dress Code</div>
+                  <span className="font-bold text-white text-xs drop-shadow">{event.dressCode}</span>
                 </div>
               </div>
             )}
@@ -1031,7 +1029,7 @@ function PublicWeddingCelebrationContent({
 
         {/* WATCH LIVE BROADCAST STREAM BANNER (ONLY ON WEDDING DAY OR WHEN LIVE) */}
         {isTodayWeddingDay && (
-          <div className="w-full max-w-4xl p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-rose-950 via-slate-950 to-rose-950 backdrop-blur-xl border-2 border-rose-500/60 text-white flex flex-col sm:flex-row items-center justify-between gap-5 shadow-2xl shadow-rose-950/50">
+          <div className="w-full max-w-4xl p-6 sm:p-7 rounded-3xl bg-black/60 border border-rose-500/60 text-white flex flex-col sm:flex-row items-center justify-between gap-5">
             <div className="flex items-center gap-4 text-left">
               <div className="w-12 h-12 rounded-2xl bg-rose-600/30 text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/40">
                 <Video className="w-6 h-6 text-rose-400 animate-pulse" />
@@ -1043,7 +1041,7 @@ function PublicWeddingCelebrationContent({
                   </span>
                   <span className="text-emerald-400 font-bold text-[10px] animate-pulse">● Today is Wedding Day</span>
                 </div>
-                <h3 className="font-serif font-bold text-lg sm:text-xl text-white mt-1">Watch {coupleTitle}'s Wedding Live</h3>
+                <h3 className="font-serif font-bold text-lg sm:text-xl text-white mt-1 drop-shadow">Watch {coupleTitle}'s Wedding Live</h3>
               </div>
             </div>
 
@@ -1078,7 +1076,7 @@ function PublicWeddingCelebrationContent({
           viewport={{ once: true }}
           className="w-full text-center space-y-6 py-4"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/80 backdrop-blur-md text-gold-400 text-[11px] font-bold shadow-md border border-gold-500/40">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/60 text-gold-400 text-[11px] font-bold border border-gold-500/40">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>
               {invitationSource === 'CARD'
@@ -1088,18 +1086,16 @@ function PublicWeddingCelebrationContent({
           </div>
 
           <div className="space-y-1">
-            <h3 className="font-serif text-2xl sm:text-4xl font-bold text-white tracking-wide drop-shadow-md">
+            <h3 className="font-serif text-2xl sm:text-4xl font-bold text-white tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
               {t('publicEvent.qrPass.title')}
             </h3>
-            <p className="text-xs sm:text-sm text-gray-300 font-light max-w-lg mx-auto leading-relaxed drop-shadow">
+            <p className="text-xs sm:text-sm text-gray-200 font-light max-w-lg mx-auto leading-relaxed drop-shadow">
               {t('publicEvent.qrPass.subtitle')}
             </p>
           </div>
 
           {/* VIP Gate Invitation Card Pass Section */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-stone-900 via-black to-stone-950 border-2 border-gold-500/60 shadow-2xl my-4 text-left space-y-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/10 rounded-full blur-2xl pointer-events-none" />
-
+          <div className="p-6 sm:p-8 rounded-3xl bg-black/40 border border-gold-500/40 my-4 text-left space-y-6 relative overflow-hidden">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               {/* Left Column: QR Code Box */}
               <div className="p-4 bg-white rounded-3xl border-2 border-gold-500 shadow-2xl text-center shrink-0">
@@ -1122,15 +1118,15 @@ function PublicWeddingCelebrationContent({
                 </div>
 
                 <div>
-                  <h4 className="font-serif font-bold text-xl sm:text-2xl text-white">
+                  <h4 className="font-serif font-bold text-xl sm:text-2xl text-white drop-shadow">
                     {rsvpGuestName || 'Honored Guest & Family'}
                   </h4>
-                  <p className="text-xs text-gold-300 font-serif italic mt-0.5">
+                  <p className="text-xs text-gold-300 font-serif italic mt-0.5 drop-shadow">
                     {coupleTitle} • {formattedDateString}
                   </p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-black/60 border border-gold-500/30 text-xs text-stone-300 space-y-1.5">
+                <div className="p-3.5 rounded-2xl bg-black/40 border border-gold-500/30 text-xs text-stone-200 space-y-1.5">
                   <div className="flex items-center gap-2 justify-center md:justify-start">
                     <Users className="w-4 h-4 text-gold-400 shrink-0" />
                     <span>Quota: <strong className="text-white font-bold">{currentQuota} {currentQuota > 1 ? 'Persons' : 'Person'}</strong></span>
@@ -1160,7 +1156,7 @@ function PublicWeddingCelebrationContent({
                       setCopiedPass(true);
                       setTimeout(() => setCopiedPass(false), 3000);
                     }}
-                    className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-black/90 text-stone-200 hover:text-white font-bold text-xs border border-gold-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:scale-105"
+                    className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-black/80 text-stone-200 hover:text-white font-bold text-xs border border-gold-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:scale-105"
                   >
                     {copiedPass ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gold-400" />}
                     <span>{copiedPass ? 'Link Copied!' : 'Copy Link'}</span>
@@ -1185,7 +1181,7 @@ function PublicWeddingCelebrationContent({
               <h3 className="font-serif text-xl sm:text-2xl font-bold text-white drop-shadow">
                 Honored Performers & Music Playlist
               </h3>
-              <p className="text-xs text-gray-300 font-light">
+              <p className="text-xs text-gray-200 font-light drop-shadow">
                 Distinguished musical guests & spiritual choirs performing for {coupleTitle}.
               </p>
             </div>
@@ -1197,21 +1193,21 @@ function PublicWeddingCelebrationContent({
               { name: 'Addis Cultural Habesha Band', role: 'Traditional Eskista & Merekba Dance', type: 'BAND' },
               { name: 'Acoustic Habesha Ensemble', role: 'Dinner & Royal Vows Serenade', type: 'ACOUSTIC' },
             ].map((artist, idx) => (
-              <div key={idx} className="p-5 rounded-2xl bg-black/70 backdrop-blur-md border border-gold-500/30 text-left space-y-1 shadow-md">
+              <div key={idx} className="p-5 rounded-2xl bg-black/40 border border-gold-500/30 text-left space-y-1">
                 <span className="px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-300 font-bold text-[9px] border border-gold-500/30">
                   {artist.type}
                 </span>
                 <div className="font-serif font-bold text-white text-sm mt-1 drop-shadow">{artist.name}</div>
-                <div className="text-[11px] text-gray-300">{artist.role}</div>
+                <div className="text-[11px] text-gray-200 drop-shadow">{artist.role}</div>
               </div>
             ))}
           </div>
 
-          <div className="p-6 rounded-2xl border border-gold-500/30 bg-black/70 backdrop-blur-md text-left shadow-lg">
+          <div className="p-6 rounded-2xl border border-gold-500/30 bg-black/40 text-left">
             <h4 className="font-serif font-bold text-white text-sm mb-1 drop-shadow">
               Recommend a Mezmur or Song to {coupleTitle}
             </h4>
-            <p className="text-xs text-gray-300 font-light mb-4">
+            <p className="text-xs text-gray-200 font-light mb-4 drop-shadow">
               Have a favorite spiritual Mezmur or upbeat Eskista song you'd love to hear at the wedding? Suggest it below!
             </p>
 
@@ -1255,22 +1251,22 @@ function PublicWeddingCelebrationContent({
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-6 sm:p-10 rounded-3xl border-2 border-gold-500/40 bg-stone-950/70 backdrop-blur-xl text-white relative overflow-hidden shadow-2xl space-y-6"
+          className="p-6 sm:p-10 rounded-3xl border border-gold-500/40 bg-black/40 text-white relative overflow-hidden space-y-6"
         >
           <div className="text-center mb-6 relative z-10">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-500 via-amber-300 to-gold-600 text-black mx-auto flex items-center justify-center mb-3 shadow-md">
               <MessageSquareHeart className="w-7 h-7 text-black" />
             </div>
 
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-2 shadow-sm border border-gold-500/40">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-2 border border-gold-500/40">
               <Sparkles className="w-3 h-3 text-gold-400" />
               {t('publicEvent.wishes.badge')}
             </div>
 
-            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-white drop-shadow">
+            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
               Blessing Wishes for {coupleTitle}
             </h3>
-            <p className="text-stone-300 text-xs sm:text-sm mt-1 font-light max-w-lg mx-auto leading-relaxed">
+            <p className="text-stone-200 text-xs sm:text-sm mt-1 font-light max-w-lg mx-auto leading-relaxed drop-shadow">
               Record a video or write a blessing message for the bride and groom.
             </p>
 
