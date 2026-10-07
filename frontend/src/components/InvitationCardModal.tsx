@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Crown, Download, Printer, X, MapPin, Calendar, Users, Sparkles, Heart, ShieldCheck, Check } from 'lucide-react';
 import QRCode from 'qrcode';
+import { useTranslation } from '@/lib/i18n';
 
 export interface InvitationCardData {
   guestName: string;
@@ -44,6 +45,7 @@ export default function InvitationCardModal({
   invitation,
   event,
 }: InvitationCardModalProps) {
+  const { t } = useTranslation();
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [downloading, setDownloading] = useState(false);
 
@@ -411,7 +413,7 @@ export default function InvitationCardModal({
           {/* Header Badge */}
           <div className="inline-flex items-center gap-1.5 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-[11px] font-extrabold uppercase tracking-wider shadow-gold">
             <Crown className="w-4 h-4 text-slate-950" />
-            <span>Official Royal Wedding Invitation Card</span>
+            <span>{t('publicEvent.officialRoyalPass', 'Official Royal Gate Entrance Pass')}</span>
           </div>
 
           {/* TEMPLATE 2: ROMANTIC FLORAL PORTRAIT CARD (Matches Reference Photo Image 2) */}
@@ -423,10 +425,10 @@ export default function InvitationCardModal({
               {/* Top Wording */}
               <div className="pt-2 space-y-0.5">
                 <div className="text-xs text-amber-800 font-bold uppercase tracking-widest">
-                  INVITE YOU TO CELEBRATE
+                  {t('publicEvent.dearFamilies', 'INVITE YOU TO CELEBRATE')}
                 </div>
                 <h3 className="font-serif font-bold text-2xl text-amber-900 tracking-wider uppercase">
-                  SAVE THE DATE
+                  {t('publicEvent.saveTheDate', 'SAVE THE DATE')}
                 </h3>
               </div>
 
@@ -465,7 +467,7 @@ export default function InvitationCardModal({
                 )}
                 {event?.dressCode && (
                   <div className="text-[11px] text-amber-800 font-medium italic pt-1 font-serif">
-                    Dress Code: {event.dressCode}
+                    {t('publicEvent.dressCodeLabel', 'Dress Code')}: {event.dressCode}
                   </div>
                 )}
               </div>
@@ -473,13 +475,13 @@ export default function InvitationCardModal({
               {/* Honored Guest Parchment Pill */}
               <div className="p-3 rounded-2xl bg-amber-100/90 border border-amber-500/40 text-center space-y-0.5 shadow-sm font-sans">
                 <div className="text-[10px] text-amber-800 font-bold uppercase tracking-wider">
-                  Honored Guest & Family
+                  {t('publicEvent.honoredGuestFamily', 'Honored Guest & Family')}
                 </div>
                 <div className="font-serif font-bold text-lg text-amber-950">
                   {invitation.guestName}
                 </div>
                 <div className="text-xs text-stone-800 font-bold">
-                  Admit: {invitation.maxGuests} {invitation.maxGuests === 1 ? 'Person' : 'Persons'}
+                  {t('publicEvent.quotaPrefix', 'Quota:')} {invitation.maxGuests} {invitation.maxGuests === 1 ? t('publicEvent.person', 'Person') : t('publicEvent.persons', 'Persons')}
                   {invitation.tableNumber ? ` • Table #${invitation.tableNumber}` : ''}
                 </div>
               </div>
@@ -497,7 +499,7 @@ export default function InvitationCardModal({
                   <div>
                     <div className="font-mono text-[11px] font-bold text-amber-900">PASS #{invitation.inviteCode}</div>
                     <div className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Official Gate Pass
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> {t('publicEvent.officialRoyalPass', 'Official Gate Pass')}
                     </div>
                   </div>
                 </div>
@@ -515,7 +517,7 @@ export default function InvitationCardModal({
                   />
                 </div>
                 <div className="text-amber-400 text-xs font-serif font-bold pt-1">
-                  ❤ ROYAL WEDDING PASS ❤
+                  ❤ {t('publicEvent.officialRoyalPass', 'ROYAL WEDDING PASS')} ❤
                 </div>
               </div>
 
@@ -527,9 +529,9 @@ export default function InvitationCardModal({
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-black/70 border border-amber-500/40 space-y-1">
-                  <div className="text-[10px] text-amber-400 uppercase font-bold tracking-wider">Honored Guest & Family</div>
+                  <div className="text-[10px] text-amber-400 uppercase font-bold tracking-wider">{t('publicEvent.honoredGuestFamily', 'Honored Guest & Family')}</div>
                   <div className="font-serif font-bold text-lg text-amber-300">{invitation.guestName}</div>
-                  <div className="text-xs text-stone-200 font-medium">Admit: {invitation.maxGuests} {invitation.maxGuests === 1 ? 'Person' : 'Persons'}</div>
+                  <div className="text-xs text-stone-200 font-medium">{t('publicEvent.quotaPrefix', 'Quota:')} {invitation.maxGuests} {invitation.maxGuests === 1 ? t('publicEvent.person', 'Person') : t('publicEvent.persons', 'Persons')}</div>
                 </div>
 
                 <div className="space-y-1 text-xs text-stone-300">
@@ -566,13 +568,13 @@ export default function InvitationCardModal({
               className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60 border border-amber-300"
             >
               <Download className="w-4 h-4 text-slate-950" />
-              <span>{downloading ? 'Generating PNG Card...' : 'Download Designed Card (.PNG)'}</span>
+              <span>{downloading ? t('common.loading', 'Generating PNG Card...') : t('publicEvent.downloadCardPassPng', 'Download Designed Card (.PNG)')}</span>
             </button>
 
             <button
               onClick={handlePrint}
               className="p-3.5 rounded-xl bg-stone-900 hover:bg-stone-800 text-amber-400 border border-amber-500/40 shadow-sm transition-all cursor-pointer"
-              title="Print Invitation Card"
+              title={t('common.print', 'Print Invitation Card')}
             >
               <Printer className="w-4 h-4 text-amber-400" />
             </button>

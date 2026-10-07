@@ -548,7 +548,7 @@ function PublicWeddingCelebrationContent({
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-4 border-gold-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="font-serif text-gold-400 text-sm">{t('common.loading')}</p>
+          <p className="font-serif text-gold-400 text-sm">{t('publicEvent.loadingHub', 'Opening Wedding Hub...')}</p>
         </div>
       </div>
     );
@@ -558,8 +558,8 @@ function PublicWeddingCelebrationContent({
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
         <div className="glass-panel-dark p-8 rounded-3xl text-center max-w-md border-2 border-gold-500/40 shadow-2xl">
-          <h2 className="font-serif text-xl font-bold text-gold-400 mb-2">Wedding Not Found</h2>
-          <p className="text-white/70 text-xs mb-6">The requested wedding link is invalid or expired.</p>
+          <h2 className="font-serif text-xl font-bold text-gold-400 mb-2">{t('publicEvent.notFoundTitle', 'Wedding Not Found')}</h2>
+          <p className="text-white/70 text-xs mb-6">{t('publicEvent.notFoundDesc', 'The requested wedding link is invalid or expired.')}</p>
           <Link href="/" className="px-5 py-2 rounded-full bg-gold-500 text-black font-bold text-xs shadow-md">
             {t('common.back')}
           </Link>
@@ -577,18 +577,18 @@ function PublicWeddingCelebrationContent({
           </div>
           <div>
             <span className="text-[10px] uppercase tracking-widest text-amber-400 font-extrabold px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30">
-              ⏳ Licensing Approval Pending
+              {t('publicEvent.approvalPendingBadge', '⏳ Licensing Approval Pending')}
             </span>
             <h2 className="font-serif text-2xl font-bold text-white mt-3">
-              {event.brideName && event.groomName ? `${event.brideName} & ${event.groomName}'s Wedding` : event.title}
+              {event.brideName && event.groomName ? `${event.brideName} & ${event.groomName}` : event.title}
             </h2>
             <p className="text-stone-300 text-xs sm:text-sm leading-relaxed mt-3">
-              This wedding request was submitted by the organizer and is currently awaiting System Admin review and licensing verification. Public invitation pages, digital passes, and guest services will become active immediately upon approval.
+              {t('publicEvent.approvalPendingDesc', 'This wedding request was submitted by the organizer and is currently awaiting System Admin review and licensing verification.')}
             </p>
           </div>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/" className="w-full sm:w-auto px-6 py-2.5 rounded-full bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs shadow-lg transition-all">
-              Return to Home
+              {t('publicEvent.returnToHome', 'Return to Home')}
             </Link>
           </div>
         </div>
@@ -605,18 +605,18 @@ function PublicWeddingCelebrationContent({
           </div>
           <div>
             <span className="text-[10px] uppercase tracking-widest text-rose-400 font-extrabold px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/30">
-              🔴 Request Rejected
+              {t('publicEvent.requestRejectedBadge', '🔴 Request Rejected')}
             </span>
             <h2 className="font-serif text-2xl font-bold text-white mt-3">
-              Wedding Request Rejected
+              {t('publicEvent.requestRejectedTitle', 'Wedding Request Rejected')}
             </h2>
             <p className="text-stone-300 text-xs sm:text-sm leading-relaxed mt-3">
-              This wedding request was rejected by the System Admin and is not active on Agafari. Access to this invitation page and associated staff portals is blocked.
+              {t('publicEvent.requestRejectedDesc', 'This wedding request was rejected by the System Admin and is not active on Agafari.')}
             </p>
           </div>
           <div className="pt-2 flex items-center justify-center">
             <Link href="/" className="px-6 py-2.5 rounded-full bg-stone-800 hover:bg-stone-700 text-stone-200 font-bold text-xs shadow-md transition-all">
-              Return to Home
+              {t('publicEvent.returnToHome', 'Return to Home')}
             </Link>
           </div>
         </div>
@@ -796,17 +796,17 @@ function PublicWeddingCelebrationContent({
                   ? 'bg-gold-500 text-black shadow-gold scale-105 border-gold-300'
                   : 'bg-black/80 text-gold-400 border-gold-500/40 hover:scale-105'
                   }`}
-                title={isPlayingAudio ? 'Mute Background Audio' : 'Play Background Audio'}
+                title={isPlayingAudio ? t('publicEvent.musicLabelMuted', 'Mute Background Audio') : t('publicEvent.musicLabelActive', 'Play Background Audio')}
               >
                 {isPlayingAudio ? (
                   <>
                     <Volume2 className="w-3.5 h-3.5 text-black animate-pulse" />
-                    <span>🔊 Music</span>
+                    <span>{t('publicEvent.musicLabelActive', '🔊 Music')}</span>
                   </>
                 ) : (
                   <>
                     <VolumeX className="w-3.5 h-3.5 text-gold-400" />
-                    <span>🔇 Music</span>
+                    <span>{t('publicEvent.musicLabelMuted', '🔇 Music')}</span>
                   </>
                 )}
               </button>
@@ -814,10 +814,10 @@ function PublicWeddingCelebrationContent({
               <button
                 onClick={() => setCardModalOpen(true)}
                 className="inline-flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black text-[11px] sm:text-xs font-extrabold shadow-gold transition-all cursor-pointer active:scale-95 hover:scale-105 shrink-0"
-                title="Download Official Invitation Card Pass"
+                title={t('publicEvent.cardPassTooltip', 'Download Official Invitation Card Pass')}
               >
                 <Download className="w-3.5 h-3.5 text-black" />
-                <span>Card Pass</span>
+                <span>{t('publicEvent.cardPassBtn', 'Card Pass')}</span>
               </button>
 
               <LanguageSwitcher />
@@ -827,7 +827,7 @@ function PublicWeddingCelebrationContent({
           {/* COUPLE NAME & DATE OVERLAID DIRECTLY AT THE BOTTOM PART OF THE PHOTO */}
           <div className="relative z-20 text-center max-w-3xl mx-auto mt-auto pb-8 sm:pb-12 space-y-2">
             <h2 className="font-serif text-xs sm:text-base font-bold text-gold-400 tracking-[0.3em] uppercase drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
-              SAVE THE DATE
+              {t('publicEvent.saveTheDate', 'SAVE THE DATE')}
             </h2>
 
             <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-[0_10px_25px_rgba(0,0,0,0.95)] tracking-wide py-1">
@@ -836,7 +836,7 @@ function PublicWeddingCelebrationContent({
 
             <div className="space-y-0.5 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
               <p className="text-gold-300 font-serif">{formattedDateString}</p>
-              <p className="text-[11px] sm:text-xs text-white/95 font-bold">AT {venueTitle.toUpperCase()}</p>
+              <p className="text-[11px] sm:text-xs text-white/95 font-bold">{t('publicEvent.atVenue', 'AT')} {venueTitle.toUpperCase()}</p>
             </div>
           </div>
         </section>
@@ -858,7 +858,7 @@ function PublicWeddingCelebrationContent({
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
                 <span className="font-extrabold text-xs text-rose-400 uppercase tracking-wider drop-shadow">
-                  🔴 Official Live Video Broadcast
+                  {t('publicEvent.liveVideoBroadcast', '🔴 Official Live Video Broadcast')}
                 </span>
               </div>
               <Link
@@ -866,14 +866,14 @@ function PublicWeddingCelebrationContent({
                 className="px-4 py-1.5 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-xs shadow-md transition-all flex items-center gap-1.5"
               >
                 <Radio className="w-3.5 h-3.5 text-white animate-pulse" />
-                <span>Watch Interactive TikTok Live Reel ➔</span>
+                <span>{t('publicEvent.watchLiveReel', 'Watch Interactive TikTok Live Reel ➔')}</span>
               </Link>
             </div>
 
             <div className="aspect-video w-full rounded-2xl overflow-hidden border border-gold-500/40 bg-black shadow-inner relative">
               <iframe
                 src={`https://www.youtube.com/embed/${event.youtubeVideoId || 'vp8WJ-ZbZXw'}?autoplay=0&vq=hd1080&hd=1&modestbranding=1`}
-                title="Official Wedding Live Stream"
+                title={t('publicEvent.officialLiveStream', 'Official Wedding Live Stream')}
                 className="w-full h-full"
                 allowFullScreen
               />
@@ -881,13 +881,13 @@ function PublicWeddingCelebrationContent({
 
             <div className="flex items-center justify-between text-xs text-gray-300 pt-1">
               <p className="font-serif italic text-gold-300 drop-shadow">
-                Live broadcast for {coupleTitle}'s royal wedding celebration.
+                {t('publicEvent.liveBroadcastFor', 'Live broadcast for {couple}\'s royal wedding celebration.').replace('{couple}', coupleTitle)}
               </p>
               <Link
                 href={`/event/${slug}/feed?tab=LIVE${queryString ? `&${rawQuery}` : ''}`}
                 className="text-gold-400 hover:underline font-bold text-xs drop-shadow"
               >
-                Full Screen Mode & Wishes Feed →
+                {t('publicEvent.fullScreenWishes', 'Full Screen Mode & Wishes Feed →')}
               </Link>
             </div>
           </motion.div>
@@ -901,11 +901,11 @@ function PublicWeddingCelebrationContent({
           className="w-full text-white text-center space-y-5 py-4 relative"
         >
           <h3 className="font-script text-3xl sm:text-5xl font-bold text-gold-300 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)]">
-            Dear Families and Friends
+            {t('publicEvent.dearFamilies', 'Dear Families and Friends')}
           </h3>
 
           <p className="text-gray-100 text-xs sm:text-sm sm:text-base leading-relaxed font-serif italic max-w-2xl mx-auto px-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-            "Together with their families, <strong>{coupleTitle}</strong> joyfully invite you to celebrate their wedding day! Join us as we say <em>'I do'</em> on {formattedDateString} at {venueTitle}. {event.welcomeMessage}"
+            "{t('publicEvent.invitationText', 'Together with their families, {couple} joyfully invite you to celebrate their wedding day! Join us as we say \'I do\' on {date} at {venue}. {message}').replace('{couple}', coupleTitle).replace('{date}', formattedDateString).replace('{venue}', venueTitle).replace('{message}', event.welcomeMessage || '')}"
           </p>
 
           {/* 3D COUNTDOWN TIMER TICKER */}
@@ -952,7 +952,7 @@ function PublicWeddingCelebrationContent({
               <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center shrink-0">
                 <MapPin className="w-5 h-5 text-black animate-bounce" />
               </div>
-              <span className="drop-shadow-sm font-black">📍 TAP TO OPEN VENUE MAP & DIRECTIONS</span>
+              <span className="drop-shadow-sm font-black">{t('publicEvent.openVenueMap', '📍 TAP TO OPEN VENUE MAP & DIRECTIONS')}</span>
               <ExternalLink className="w-4 h-4 text-black group-hover:translate-x-1 transition-transform" />
             </a>
           </div>
@@ -963,14 +963,14 @@ function PublicWeddingCelebrationContent({
           <div className="pb-2 flex items-center justify-between">
             <div>
               <span className="text-[10px] text-gold-400 font-bold uppercase tracking-widest block drop-shadow">
-                Official Event Protocol & Details
+                {t('publicEvent.eventProtocolBadge', 'Official Event Protocol & Details')}
               </span>
               <h3 className="font-serif text-lg font-bold text-white mt-0.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                Ceremony & Celebration Guidelines
+                {t('publicEvent.ceremonyGuidelines', 'Ceremony & Celebration Guidelines')}
               </h3>
             </div>
             <div className="px-3 py-1 rounded-full bg-gold-500/20 text-gold-400 font-bold text-[10px] border border-gold-500/40">
-              VIP RSVP
+              {t('publicEvent.vipRsvp', 'VIP RSVP')}
             </div>
           </div>
 
@@ -978,15 +978,15 @@ function PublicWeddingCelebrationContent({
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-gold-400 shrink-0" />
               <div>
-                <span className="font-bold text-white drop-shadow">Date: {formattedDateString}</span>
-                <p className="text-[11px] text-gray-200 drop-shadow">Gate check-in starts at {event.startTime || '14:00'}</p>
+                <span className="font-bold text-white drop-shadow">{t('publicEvent.dateLabel', 'Date:')} {formattedDateString}</span>
+                <p className="text-[11px] text-gray-200 drop-shadow">{t('publicEvent.checkInStartsAt', 'Gate check-in starts at {time}').replace('{time}', event.startTime || '14:00')}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <MapPin className="w-5 h-5 text-gold-400 shrink-0" />
               <div>
-                <span className="font-bold text-white drop-shadow">Venue: {venueTitle}</span>
+                <span className="font-bold text-white drop-shadow">{t('publicEvent.venueLabel', 'Venue:')} {venueTitle}</span>
               </div>
             </div>
 
@@ -994,7 +994,7 @@ function PublicWeddingCelebrationContent({
               <div className="sm:col-span-2 border-t border-gold-500/20 pt-3 space-y-2.5">
                 <div className="text-[10px] text-gold-400 font-bold uppercase tracking-wider flex items-center gap-1.5 drop-shadow">
                   <Building2 className="w-3.5 h-3.5" />
-                  <span>Additional Wedding Locations</span>
+                  <span>{t('publicEvent.additionalLocations', 'Additional Wedding Locations')}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {event.additionalLocations.map((loc) => (
@@ -1008,7 +1008,7 @@ function PublicWeddingCelebrationContent({
                             rel="noreferrer"
                             className="text-[10px] text-gold-400 hover:underline flex items-center gap-1 font-bold drop-shadow"
                           >
-                            <span>Map</span>
+                            <span>{t('common.map', 'Map')}</span>
                             <ExternalLink className="w-3 h-3" />
                           </a>
                         )}
@@ -1024,7 +1024,7 @@ function PublicWeddingCelebrationContent({
               <div className="flex items-center gap-3 sm:col-span-2 border-t border-gold-500/20 pt-3">
                 <Shirt className="w-5 h-5 text-gold-400 shrink-0" />
                 <div>
-                  <div className="text-[10px] text-gold-400 font-semibold uppercase drop-shadow">Dress Code</div>
+                  <div className="text-[10px] text-gold-400 font-semibold uppercase drop-shadow">{t('publicEvent.dressCodeLabel', 'Dress Code')}</div>
                   <span className="font-bold text-white text-xs drop-shadow">{event.dressCode}</span>
                 </div>
               </div>
@@ -1042,11 +1042,11 @@ function PublicWeddingCelebrationContent({
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-rose-400 font-bold uppercase tracking-wider bg-rose-500/20 px-2.5 py-0.5 rounded-full border border-rose-500/30">
-                    Live Broadcast Stream
+                    {t('publicEvent.liveVideoBroadcast', 'Live Broadcast Stream')}
                   </span>
-                  <span className="text-emerald-400 font-bold text-[10px] animate-pulse">● Today is Wedding Day</span>
+                  <span className="text-emerald-400 font-bold text-[10px] animate-pulse">{t('publicEvent.todayIsWeddingDay', '● Today is Wedding Day')}</span>
                 </div>
-                <h3 className="font-serif font-bold text-lg sm:text-xl text-white mt-1 drop-shadow">Watch {coupleTitle}'s Wedding Live</h3>
+                <h3 className="font-serif font-bold text-lg sm:text-xl text-white mt-1 drop-shadow">{t('publicEvent.watchWeddingLive', 'Watch {couple}\'s Wedding Live').replace('{couple}', coupleTitle)}</h3>
               </div>
             </div>
 
@@ -1056,7 +1056,7 @@ function PublicWeddingCelebrationContent({
                 className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-extrabold text-xs shadow-lg transition-all flex items-center justify-center gap-2 border border-rose-400/40 cursor-pointer hover:scale-105 active:scale-95"
               >
                 <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping" />
-                <span>Watch Live Broadcast</span>
+                <span>{t('publicEvent.watchLiveBroadcastBtn', 'Watch Live Broadcast')}</span>
               </Link>
 
               <Link
@@ -1064,7 +1064,7 @@ function PublicWeddingCelebrationContent({
                 className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-black/80 hover:bg-black text-amber-300 font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 border border-amber-500/40 cursor-pointer hover:scale-105 active:scale-95"
               >
                 <Film className="w-4 h-4 text-amber-400" />
-                <span>📱 TikTok-Style Video Feed</span>
+                <span>{t('publicEvent.tiktokVideoFeedBtn', '📱 TikTok-Style Video Feed')}</span>
               </Link>
             </div>
           </div>
@@ -1085,8 +1085,8 @@ function PublicWeddingCelebrationContent({
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span>
               {invitationSource === 'CARD'
-                ? '🏷️ Physical Invitation Card • Pre-Printed QR Verified'
-                : '✨ Direct Link Guest • Dynamic Gate Pass Generated'}
+                ? t('publicEvent.physicalCardVerified', '🏷️ Physical Invitation Card • Pre-Printed QR Verified')
+                : t('publicEvent.directLinkGenerated', '✨ Direct Link Guest • Dynamic Gate Pass Generated')}
             </span>
           </div>
 
@@ -1119,12 +1119,12 @@ function PublicWeddingCelebrationContent({
               <div className="flex-1 space-y-4 text-center md:text-left">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-extrabold uppercase tracking-wider border border-gold-500/40">
                   <Crown className="w-3.5 h-3.5 text-gold-400" />
-                  <span>Official Royal Gate Entrance Pass</span>
+                  <span>{t('publicEvent.officialRoyalPass', 'Official Royal Gate Entrance Pass')}</span>
                 </div>
 
                 <div>
                   <h4 className="font-serif font-bold text-xl sm:text-2xl text-white drop-shadow">
-                    {rsvpGuestName || 'Honored Guest & Family'}
+                    {rsvpGuestName || t('publicEvent.honoredGuestFamily', 'Honored Guest & Family')}
                   </h4>
                   <p className="text-xs text-gold-300 font-serif italic mt-0.5 drop-shadow">
                     {coupleTitle} • {formattedDateString}
@@ -1134,7 +1134,7 @@ function PublicWeddingCelebrationContent({
                 <div className="p-3.5 rounded-2xl bg-black/40 border border-gold-500/30 text-xs text-stone-200 space-y-1.5">
                   <div className="flex items-center gap-2 justify-center md:justify-start">
                     <Users className="w-4 h-4 text-gold-400 shrink-0" />
-                    <span>Quota: <strong className="text-white font-bold">{currentQuota} {currentQuota > 1 ? 'Persons' : 'Person'}</strong></span>
+                    <span>{t('publicEvent.quotaPrefix', 'Quota:')} <strong className="text-white font-bold">{currentQuota} {currentQuota > 1 ? t('publicEvent.persons', 'Persons') : t('publicEvent.person', 'Person')}</strong></span>
                   </div>
                   <div className="flex items-center gap-2 justify-center md:justify-start">
                     <MapPin className="w-4 h-4 text-gold-400 shrink-0" />
@@ -1150,7 +1150,7 @@ function PublicWeddingCelebrationContent({
                     className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
                   >
                     <Download className="w-4 h-4 text-black animate-bounce" />
-                    <span>Download Designed Card Pass (.PNG)</span>
+                    <span>{t('publicEvent.downloadCardPassPng', 'Download Designed Card Pass (.PNG)')}</span>
                   </button>
 
                   <button
@@ -1164,7 +1164,7 @@ function PublicWeddingCelebrationContent({
                     className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-black/80 text-stone-200 hover:text-white font-bold text-xs border border-gold-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:scale-105"
                   >
                     {copiedPass ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gold-400" />}
-                    <span>{copiedPass ? 'Link Copied!' : 'Copy Link'}</span>
+                    <span>{copiedPass ? t('publicEvent.linkCopied', 'Link Copied!') : t('publicEvent.copyLink', 'Copy Link')}</span>
                   </button>
                 </div>
               </div>
@@ -1184,19 +1184,19 @@ function PublicWeddingCelebrationContent({
             </div>
             <div className="text-left">
               <h3 className="font-serif text-xl sm:text-2xl font-bold text-white drop-shadow">
-                Honored Performers & Music Playlist
+                {t('publicEvent.honoredPerformers', 'Honored Performers & Music Playlist')}
               </h3>
               <p className="text-xs text-gray-200 font-light drop-shadow">
-                Distinguished musical guests & spiritual choirs performing for {coupleTitle}.
+                {t('publicEvent.musicalGuestsDesc', 'Distinguished musical guests & spiritual choirs performing for {couple}.').replace('{couple}', coupleTitle)}
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
-              { name: 'Ethiopian Orthodox Wedding Choir', role: 'Spiritual Entrance Mezmurs', type: 'CHOIR' },
-              { name: 'Addis Cultural Habesha Band', role: 'Traditional Eskista & Merekba Dance', type: 'BAND' },
-              { name: 'Acoustic Habesha Ensemble', role: 'Dinner & Royal Vows Serenade', type: 'ACOUSTIC' },
+              { name: t('publicEvent.choirName', 'Ethiopian Orthodox Wedding Choir'), role: t('publicEvent.choirRole', 'Spiritual Entrance Mezmurs'), type: 'CHOIR' },
+              { name: t('publicEvent.bandName', 'Addis Cultural Habesha Band'), role: t('publicEvent.bandRole', 'Traditional Eskista & Merekba Dance'), type: 'BAND' },
+              { name: t('publicEvent.acousticName', 'Acoustic Habesha Ensemble'), role: t('publicEvent.acousticRole', 'Dinner & Royal Vows Serenade'), type: 'ACOUSTIC' },
             ].map((artist, idx) => (
               <div key={idx} className="p-5 rounded-2xl bg-black/40 border border-gold-500/30 text-left space-y-1">
                 <span className="px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-300 font-bold text-[9px] border border-gold-500/30">
@@ -1210,16 +1210,16 @@ function PublicWeddingCelebrationContent({
 
           <div className="p-6 rounded-2xl border border-gold-500/30 bg-black/40 text-left">
             <h4 className="font-serif font-bold text-white text-sm mb-1 drop-shadow">
-              Recommend a Mezmur or Song to {coupleTitle}
+              {t('publicEvent.recommendMezmur', 'Recommend a Mezmur or Song to {couple}').replace('{couple}', coupleTitle)}
             </h4>
             <p className="text-xs text-gray-200 font-light mb-4 drop-shadow">
-              Have a favorite spiritual Mezmur or upbeat Eskista song you'd love to hear at the wedding? Suggest it below!
+              {t('publicEvent.songSuggestDesc', 'Have a favorite spiritual Mezmur or upbeat Eskista song you\'d love to hear at the wedding? Suggest it below!')}
             </p>
 
             {songSubmittedSuccess ? (
               <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-200 text-xs flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Thank you! Your song recommendation has been sent to {coupleTitle}!
+                {t('publicEvent.songSuccessMsg', 'Thank you! Your song recommendation has been sent to {couple}!').replace('{couple}', coupleTitle)}
               </div>
             ) : (
               <form onSubmit={handleSongRecommendation} className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
@@ -1228,21 +1228,21 @@ function PublicWeddingCelebrationContent({
                   required
                   value={guestSongTitle}
                   onChange={(e) => setGuestSongTitle(e.target.value)}
-                  placeholder="Song or Mezmur Title"
+                  placeholder={t('publicEvent.songTitlePlaceholder', 'Song or Mezmur Title')}
                   className="px-3.5 py-2.5 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
                 />
                 <input
                   type="text"
                   value={guestSongArtist}
                   onChange={(e) => setGuestSongArtist(e.target.value)}
-                  placeholder="Choir / Singer (Optional)"
+                  placeholder={t('publicEvent.songArtistPlaceholder', 'Choir / Singer (Optional)')}
                   className="px-3.5 py-2.5 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
                 />
                 <button
                   type="submit"
                   className="py-2.5 rounded-xl bg-gold-500 text-black font-extrabold text-xs hover:bg-gold-400 shadow-gold flex items-center justify-center gap-1.5 border border-gold-300 cursor-pointer"
                 >
-                  <Send className="w-3.5 h-3.5 text-black" /> Send Recommendation
+                  <Send className="w-3.5 h-3.5 text-black" /> {t('publicEvent.sendRecommendation', 'Send Recommendation')}
                 </button>
               </form>
             )}
@@ -1269,10 +1269,10 @@ function PublicWeddingCelebrationContent({
             </div>
 
             <h3 className="font-serif text-3xl sm:text-4xl font-bold text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-              Blessing Wishes for {coupleTitle}
+              {t('publicEvent.blessingWishesFor', 'Blessing Wishes for {couple}').replace('{couple}', coupleTitle)}
             </h3>
             <p className="text-stone-200 text-xs sm:text-sm mt-1 font-light max-w-lg mx-auto leading-relaxed drop-shadow">
-              Record a video or write a blessing message for the bride and groom.
+              {t('publicEvent.recordVideoOrWriteMsg', 'Record a video or write a blessing message for the bride and groom.')}
             </p>
 
             <div className="flex items-center justify-center gap-2.5 mt-5">
@@ -1284,7 +1284,7 @@ function PublicWeddingCelebrationContent({
                   : 'bg-black/60 border border-gold-500/30 text-stone-300'
                   }`}
               >
-                <Camera className="w-3.5 h-3.5" /> 📹 Video Blessing (Default)
+                <Camera className="w-3.5 h-3.5" /> {t('publicEvent.videoBlessingDefault', '📹 Video Blessing (Default)')}
               </button>
               <button
                 type="button"
@@ -1294,7 +1294,7 @@ function PublicWeddingCelebrationContent({
                   : 'bg-black/60 border border-gold-500/30 text-stone-300'
                   }`}
               >
-                <MessageSquareHeart className="w-3.5 h-3.5" /> ✍️ Text Blessing
+                <MessageSquareHeart className="w-3.5 h-3.5" /> {t('publicEvent.textBlessingTab', '✍️ Text Blessing')}
               </button>
             </div>
           </div>
@@ -1306,7 +1306,7 @@ function PublicWeddingCelebrationContent({
                   {t('publicEvent.wishes.senderName')}
                 </label>
                 <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 shadow-2xs">
-                  🔒 Auto-filled from RSVP Guest Pass
+                  {t('publicEvent.autoFilledPass', '🔒 Auto-filled from RSVP Guest Pass')}
                 </span>
               </div>
               <input
@@ -1314,7 +1314,7 @@ function PublicWeddingCelebrationContent({
                 required
                 readOnly
                 disabled
-                value={senderName || rsvpGuestName || invitation?.guestName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : '') || 'Honored Guest'}
+                value={senderName || rsvpGuestName || invitation?.guestName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : '') || t('publicEvent.honoredGuestFamily', 'Honored Guest')}
                 placeholder={t('publicEvent.wishes.senderPlaceholder')}
                 className="w-full px-4 py-3 rounded-xl border-2 border-gold-500/40 bg-gray-100 text-gray-900 font-bold text-xs focus:outline-none cursor-not-allowed shadow-inner"
               />
@@ -1323,7 +1323,7 @@ function PublicWeddingCelebrationContent({
             {wishType === 'VIDEO' ? (
               <div className="space-y-3">
                 <label className="block text-[10px] font-bold text-gray-900 uppercase tracking-wider">
-                  Upload Video Blessing
+                  {t('publicEvent.uploadVideoBlessing', 'Upload Video Blessing')}
                 </label>
 
                 {videoPreviewUrl ? (
@@ -1334,7 +1334,7 @@ function PublicWeddingCelebrationContent({
                       className="w-full max-h-60 rounded-xl mx-auto"
                     />
                     <div className="flex items-center justify-between text-[11px] text-white px-1">
-                      <span>✓ Video ready: {videoFile?.name || 'video_blessing.mp4'}</span>
+                      <span>{t('publicEvent.videoReady', '✓ Video ready:')} {videoFile?.name || 'video_blessing.mp4'}</span>
                       <button
                         type="button"
                         onClick={() => {
@@ -1343,7 +1343,7 @@ function PublicWeddingCelebrationContent({
                         }}
                         className="text-rose-400 hover:text-rose-300 font-bold"
                       >
-                        Remove
+                        {t('common.cancel', 'Remove')}
                       </button>
                     </div>
                   </div>
@@ -1352,8 +1352,8 @@ function PublicWeddingCelebrationContent({
                     <div className="w-14 h-14 rounded-full bg-gold-500/20 text-gray-900 mx-auto flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
                       <Upload className="w-6 h-6 text-gold-600" />
                     </div>
-                    <p className="font-serif font-bold text-sm text-gray-900">Record or Select Video Blessing</p>
-                    <p className="text-[11px] text-gray-500 mt-1 font-light">Supports phone video recording up to 60 seconds (Max 50MB)</p>
+                    <p className="font-serif font-bold text-sm text-gray-900">{t('publicEvent.recordOrSelectVideo', 'Record or Select Video Blessing')}</p>
+                    <p className="text-[11px] text-gray-500 mt-1 font-light">{t('publicEvent.supportsVideoLimits', 'Supports phone video recording up to 60 seconds (Max 50MB)')}</p>
                     <input
                       type="file"
                       accept="video/*"
@@ -1365,13 +1365,13 @@ function PublicWeddingCelebrationContent({
 
                 <div>
                   <label className="block text-[10px] font-bold text-gray-900 uppercase tracking-wider mb-1">
-                    Caption / Personal Message
+                    {t('publicEvent.captionLabel', 'Caption / Personal Message')}
                   </label>
                   <input
                     type="text"
                     value={wishMessage}
                     onChange={(e) => setWishMessage(e.target.value)}
-                    placeholder="e.g. Wishing you endless joy and blessings!"
+                    placeholder={t('publicEvent.captionPlaceholder', 'e.g. Wishing you endless joy and blessings!')}
                     className="w-full px-4 py-2.5 rounded-xl border-2 border-gold-500/30 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gold-500 text-xs font-medium"
                   />
                 </div>
@@ -1432,20 +1432,20 @@ function PublicWeddingCelebrationContent({
           <div className="text-left space-y-1">
             <div className="text-xs text-gold-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
               <CheckCircle className="w-4 h-4 text-emerald-400" />
-              <span>Attendance Confirmation</span>
+              <span>{t('publicEvent.attendanceConfirmation', 'Attendance Confirmation')}</span>
             </div>
             <div className="font-serif font-bold text-lg sm:text-2xl text-white">
               {hasAnsweredRsvp ? (
                 <span className="flex items-center gap-2 text-emerald-400">
-                  ✓ Response Saved: {attendanceChoice === 'ATTENDING' ? 'Attending Celebration' : attendanceChoice === 'DECLINED' ? 'Cannot Attend' : 'Maybe Attending'}
+                  {t('publicEvent.responseSaved', '✓ Response Saved:')} {attendanceChoice === 'ATTENDING' ? t('publicEvent.attendingCelebration', 'Attending Celebration') : attendanceChoice === 'DECLINED' ? t('publicEvent.cannotAttend', 'Cannot Attend') : t('publicEvent.maybeAttending', 'Maybe Attending')}
                 </span>
               ) : (
-                'Will you attend our celebration?'
+                t('publicEvent.willYouAttend', 'Will you attend our celebration?')
               )}
             </div>
             {isRsvpLocked && (
               <p className="text-[11px] text-amber-400 font-medium">
-                🔒 RSVP changes locked (Within 72 hours of wedding ceremony)
+                {t('publicEvent.rsvpLocked72h', '🔒 RSVP changes locked (Within 72 hours of wedding ceremony)')}
               </p>
             )}
           </div>
@@ -1464,7 +1464,7 @@ function PublicWeddingCelebrationContent({
               : 'bg-gradient-to-r from-gold-400 via-amber-400 to-gold-500 hover:from-gold-300 hover:to-gold-400 text-black shadow-gold border-amber-300 cursor-pointer hover:scale-105 active:scale-95'
               }`}
           >
-            {isRsvpLocked ? '🔒 RSVP Locked (Within 72 Hours)' : hasAnsweredRsvp ? 'Update RSVP Response' : 'Submit RSVP Response'}
+            {isRsvpLocked ? t('publicEvent.rsvpLockedBtn', '🔒 RSVP Locked (Within 72 Hours)') : hasAnsweredRsvp ? t('publicEvent.updateRsvpResponse', 'Update RSVP Response') : t('publicEvent.submitRsvpResponse', 'Submit RSVP Response')}
           </button>
         </motion.div>
       </section>
@@ -1514,13 +1514,13 @@ function PublicWeddingCelebrationContent({
             </div>
             <div>
               <div className="text-[10px] text-gold-600 font-bold uppercase tracking-wider">
-                Event Host & Digital Operations
+                {t('publicEvent.eventHostOps', 'Event Host & Digital Operations')}
               </div>
               <h4 className="font-serif font-bold text-gray-900 text-base">
-                Yonas Planners & Hamelmal Creatives
+                {t('publicEvent.hostNames', 'Yonas Planners & Hamelmal Creatives')}
               </h4>
               <p className="text-xs text-gray-500 font-light mt-0.5">
-                Full-service technical event production, digital gate pass security, and live broadcast engineering.
+                {t('publicEvent.fullTechnicalServiceDesc', 'Full-service technical event production, digital gate pass security, and live broadcast engineering.')}
               </p>
             </div>
           </div>
@@ -1532,7 +1532,7 @@ function PublicWeddingCelebrationContent({
             className="px-6 py-3 rounded-full bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs shadow-md transition-all flex items-center gap-2 shrink-0 border border-gold-500/40"
           >
             <Sparkles className="w-3.5 h-3.5 text-gold-400" />
-            <span>Visit Hamelmal Creatives</span>
+            <span>{t('publicEvent.visitHamelmalBtn', 'Visit Hamelmal Creatives')}</span>
             <ExternalLink className="w-3.5 h-3.5 text-gold-400" />
           </a>
         </div>
@@ -1566,13 +1566,13 @@ function PublicWeddingCelebrationContent({
                   <Heart className="w-6 h-6 fill-black text-black" />
                 </div>
                 <span className="text-[10px] text-gold-600 font-bold uppercase tracking-widest block mb-1">
-                  Wedding Attendance Confirmation
+                  {t('publicEvent.attendanceConfirmationModal', 'Wedding Attendance Confirmation')}
                 </span>
                 <h3 className="font-serif text-2xl sm:text-3xl font-bold text-gray-900">
-                  {rsvpGuestName || invitation?.guestName || 'Honored Guest & Family'}
+                  {rsvpGuestName || invitation?.guestName || t('publicEvent.honoredGuestFamily', 'Honored Guest & Family')}
                 </h3>
                 <p className="text-gold-700 text-xs mt-1 font-serif italic font-medium">
-                  {coupleTitle} cordially invite {rsvpGuestName || invitation?.guestName || 'you'} to celebrate our union!
+                  {t('publicEvent.cordiallyInviteMsg', '{couple} cordially invite {guest} to celebrate our union!').replace('{couple}', coupleTitle).replace('{guest}', rsvpGuestName || invitation?.guestName || 'you')}
                 </p>
               </div>
 
