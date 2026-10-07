@@ -383,298 +383,263 @@ export default function HomePage() {
                 return (
                   <div
                     key={`${feat.id}-${idx}`}
-                    className="w-[310px] sm:w-[350px] rounded-3xl overflow-hidden border border-gold-500/30 hover:border-gold-500 hover:shadow-gold transition-all duration-300 group flex flex-col justify-between shrink-0 bg-white text-gray-900 shadow-md"
+                    className="w-[310px] sm:w-[340px] h-[520px] sm:h-[550px] rounded-[36px] border border-gold-500/30 hover:border-gold-500 hover:shadow-[0_0_35px_rgba(212,175,55,0.3)] transition-all duration-500 group relative flex flex-col items-center justify-center p-3.5 bg-slate-950/90 backdrop-blur-xl shrink-0 text-white overflow-hidden shadow-2xl"
                   >
-                    <div>
+                    {/* Layer 0 (z-0): Ambient Glow behind phone */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-gold-500/10 via-amber-500/5 to-transparent rounded-[36px] blur-xl pointer-events-none group-hover:scale-110 transition-transform duration-700 z-0" />
+
+                    {/* Layer 1 (z-10): Realistic Titanium Smartphone Frame */}
+                    <div className="w-[230px] sm:w-[250px] rounded-[36px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-700/80 relative z-10 text-left scale-95 group-hover:scale-100 transition-transform duration-500">
+                      {/* Notch */}
+                      <div className="w-18 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-2 shadow-inner">
+                        <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                        <div className="w-1 h-1 rounded-full bg-blue-900/90" />
+                      </div>
+
+                      {/* Screen Interface */}
                       {feat.id === 'f1' ? (
-                        <div className="h-64 sm:h-72 bg-gradient-to-b from-stone-900 via-amber-950/40 to-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
-                          {/* Realistic Mini Phone Shell */}
-                          <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
-                            {/* Notch */}
-                            <div className="w-16 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                              <div className="w-1 h-1 rounded-full bg-blue-900/80" />
+                        <div className="bg-gradient-to-b from-stone-900 via-stone-950 to-black rounded-[28px] overflow-hidden border border-gold-500/40 text-white font-sans p-3 relative text-xs flex flex-col justify-between h-[415px] sm:h-[435px] shadow-inner">
+                          {/* Top Bar with Agafari Logo & Audio Button */}
+                          <div className="flex items-center justify-between border-b border-gold-500/30 pb-2">
+                            <div className="flex items-center gap-1.5">
+                              <img
+                                src="/branding/artboard-15.png"
+                                alt="Agafari Logo"
+                                className="h-5 w-auto object-contain filter drop-shadow"
+                              />
                             </div>
+                            <div className="flex items-center gap-1 bg-gold-500/20 border border-gold-500/40 px-2 py-0.5 rounded-full text-[9px] text-gold-300">
+                              <Music className="w-2.5 h-2.5 text-gold-400 animate-spin" />
+                              <span className="font-mono font-bold">AUDIO ON</span>
+                            </div>
+                          </div>
 
-                            {/* Screen */}
-                            <div className="bg-gradient-to-b from-stone-900 via-stone-900 to-black rounded-[20px] overflow-hidden border border-gold-500/40 text-white font-sans p-2 relative text-[8px] flex flex-col justify-between h-[230px] shadow-inner">
-                              
-                              {/* Top Bar with Agafari Logo & Audio Button */}
-                              <div className="flex items-center justify-between border-b border-gold-500/30 pb-1">
-                                <div className="flex items-center gap-1">
-                                  <img
-                                    src="/branding/artboard-15.png"
-                                    alt="Agafari Logo"
-                                    className="h-3.5 w-auto object-contain filter drop-shadow"
-                                  />
-                                </div>
-                                <div className="flex items-center gap-1 bg-gold-500/20 border border-gold-500/40 px-1 py-0.5 rounded-full text-[6px] text-gold-300">
-                                  <Music className="w-2 h-2 text-gold-400 animate-spin" />
-                                  <span className="font-mono">AUDIO ON</span>
-                                </div>
+                          {/* Wedding Couple Header Monogram */}
+                          <div className="text-center py-1">
+                            <div className="text-sm text-gold-300 font-serif font-extrabold tracking-wider uppercase drop-shadow">
+                              Sara & Dawit
+                            </div>
+                            <div className="text-[8px] text-gray-400 font-mono tracking-widest uppercase mt-0.5">
+                              MARCH 15, 2026 • ADDIS ABABA
+                            </div>
+                          </div>
+
+                          {/* Real Couple Invitation Photo Banner */}
+                          <div className="relative my-1 rounded-xl overflow-hidden border border-gold-500/40 shadow-lg h-36">
+                            <img
+                              src="/images/feature_countdown.png"
+                              alt="Sara & Dawit Invitation"
+                              className="w-full h-full object-cover filter brightness-95"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent" />
+                            <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between">
+                              <span className="text-gold-300 font-serif font-bold text-xs drop-shadow">
+                                Sara & Dawit
+                              </span>
+                              <span className="text-[7.5px] text-white/90 bg-black/70 px-1.5 py-0.5 rounded border border-white/20 font-semibold">
+                                ROYAL INVITATION
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Real 4-Digit Countdown Display */}
+                          <div className="bg-stone-900/90 p-2 rounded-2xl border border-gold-500/40 text-center shadow-md">
+                            <div className="text-[7px] text-gold-400 font-extrabold uppercase tracking-widest mb-1">
+                              WEDDING COUNTDOWN
+                            </div>
+                            <div className="grid grid-cols-4 gap-1.5 text-xs font-extrabold">
+                              <div className="bg-black/90 rounded-lg p-1 border border-gold-500/30 text-gold-300">
+                                <span className="block text-sm font-mono font-bold">076</span>
+                                <span className="text-[6px] text-gray-400 block tracking-wider">DAYS</span>
                               </div>
-
-                              {/* Wedding Couple Header Monogram */}
-                              <div className="text-center py-0.5">
-                                <div className="text-[9px] text-gold-300 font-serif font-extrabold tracking-wider uppercase drop-shadow-sm">
-                                  Sara & Dawit
-                                </div>
-                                <div className="text-[5.5px] text-gray-300 font-mono tracking-widest uppercase">
-                                  MARCH 15, 2026 • ADDIS ABABA
-                                </div>
+                              <div className="bg-black/90 rounded-lg p-1 border border-gold-500/30 text-gold-300">
+                                <span className="block text-sm font-mono font-bold">14</span>
+                                <span className="text-[6px] text-gray-400 block tracking-wider">HRS</span>
                               </div>
-
-                              {/* Real Couple Invitation Photo Banner */}
-                              <div className="relative my-0.5 rounded-lg overflow-hidden border border-gold-500/40 shadow-md h-22">
-                                <img
-                                  src="/images/feature_countdown.png"
-                                  alt="Sara & Dawit Invitation"
-                                  className="w-full h-full object-cover filter brightness-95"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                                <div className="absolute bottom-1 left-2 right-2 flex items-center justify-between">
-                                  <span className="text-gold-300 font-serif font-bold text-[8.5px] drop-shadow">
-                                    Sara & Dawit
-                                  </span>
-                                  <span className="text-[5.5px] text-white/90 bg-black/60 px-1 py-0.5 rounded border border-white/20">
-                                    ROYAL INVITATION
-                                  </span>
-                                </div>
+                              <div className="bg-black/90 rounded-lg p-1 border border-gold-500/30 text-gold-300">
+                                <span className="block text-sm font-mono font-bold">38</span>
+                                <span className="text-[6px] text-gray-400 block tracking-wider">MIN</span>
                               </div>
-
-                              {/* Real 4-Digit Countdown Display */}
-                              <div className="bg-stone-900/90 p-1 rounded-xl border border-gold-500/40 text-center shadow-sm">
-                                <div className="text-[5.5px] text-gold-400 font-extrabold uppercase tracking-widest mb-0.5">
-                                  WEDDING COUNTDOWN
-                                </div>
-                                <div className="grid grid-cols-4 gap-1 text-[8px] font-extrabold">
-                                  <div className="bg-black/80 rounded p-0.5 border border-gold-500/30 text-gold-300">
-                                    <span className="block text-[8.5px] font-mono">076</span>
-                                    <span className="text-[4.5px] text-gray-400 block tracking-wider">DAYS</span>
-                                  </div>
-                                  <div className="bg-black/80 rounded p-0.5 border border-gold-500/30 text-gold-300">
-                                    <span className="block text-[8.5px] font-mono">14</span>
-                                    <span className="text-[4.5px] text-gray-400 block tracking-wider">HRS</span>
-                                  </div>
-                                  <div className="bg-black/80 rounded p-0.5 border border-gold-500/30 text-gold-300">
-                                    <span className="block text-[8.5px] font-mono">38</span>
-                                    <span className="text-[4.5px] text-gray-400 block tracking-wider">MIN</span>
-                                  </div>
-                                  <div className="bg-black/80 rounded p-0.5 border border-gold-500/30 text-gold-300">
-                                    <span className="block text-[8.5px] font-mono">52</span>
-                                    <span className="text-[4.5px] text-gray-400 block tracking-wider">SEC</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Wish Wall Snippet */}
-                              <div className="bg-stone-900/80 p-1 rounded-lg border border-rose-500/30 text-[6px] text-gray-200 flex items-center gap-1 mt-0.5">
-                                <Heart className="w-2.5 h-2.5 text-rose-500 fill-rose-500 shrink-0" />
-                                <span className="truncate italic">"Wishing Sara & Dawit endless love! 💍✨"</span>
+                              <div className="bg-black/90 rounded-lg p-1 border border-gold-500/30 text-gold-300">
+                                <span className="block text-sm font-mono font-bold">52</span>
+                                <span className="text-[6px] text-gray-400 block tracking-wider">SEC</span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md z-20">
-                            <IconComp className="w-3.5 h-3.5 text-gold-400" />
-                            {feat.badge}
+                          {/* Wish Wall Snippet */}
+                          <div className="bg-stone-900/90 p-1.5 rounded-xl border border-rose-500/30 text-[8px] text-gray-200 flex items-center gap-1.5">
+                            <Heart className="w-3 h-3 text-rose-500 fill-rose-500 shrink-0" />
+                            <span className="truncate italic">"Wishing Sara & Dawit endless love! 💍✨"</span>
                           </div>
                         </div>
                       ) : feat.id === 'f2' ? (
-                        <div className="h-64 sm:h-72 bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
-                          {/* Realistic Mini Phone Shell */}
-                          <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
-                            {/* Notch */}
-                            <div className="w-16 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                              <div className="w-1 h-1 rounded-full bg-blue-900/80" />
+                        <div className="bg-slate-950 rounded-[28px] overflow-hidden border border-gold-500/30 text-white font-sans p-3 relative text-xs flex flex-col justify-between h-[415px] sm:h-[435px]">
+                          {/* Top Bar */}
+                          <div className="flex items-center justify-between font-mono text-slate-400 border-b border-gold-500/20 pb-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                              <span className="text-gold-400 font-bold text-[9px]">GATE SCANNER</span>
+                            </div>
+                            <span className="text-[7.5px] text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                              LIVE • s-and-d-2026
+                            </span>
+                          </div>
+
+                          {/* Camera Viewfinder Box */}
+                          <div className="relative w-full aspect-square rounded-2xl overflow-hidden border border-gold-500/40 bg-black p-2 flex flex-col justify-between my-1">
+                            <div className="absolute inset-0 z-0">
+                              <img
+                                src="/images/feature_qr_pass.png"
+                                alt="Camera QR Scan target"
+                                className="w-full h-full object-cover filter brightness-[0.4] blur-[1px]"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
                             </div>
 
-                            {/* Screen */}
-                            <div className="bg-slate-950 rounded-[20px] overflow-hidden border border-gold-500/30 text-white font-sans p-2 relative text-[8px]">
-                              {/* Top Bar */}
-                              <div className="flex items-center justify-between font-mono text-slate-400 border-b border-gold-500/20 pb-1 mb-1.5">
-                                <div className="flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                  <span className="text-gold-400 font-bold text-[7px]">GATE SCANNER</span>
-                                </div>
-                                <span className="text-[6px] text-slate-400 bg-slate-900 px-1 py-0.5 rounded">
-                                  LIVE • s-and-d-2026
-                                </span>
+                            <div className="relative z-10 flex items-center justify-between">
+                              <span className="px-2 py-0.5 rounded-full bg-black/80 text-[7.5px] text-gold-300 font-bold flex items-center gap-1">
+                                <Camera className="w-2.5 h-2.5 text-gold-400" /> Camera Active
+                              </span>
+                              <span className="px-1.5 py-0.5 rounded-full bg-emerald-950/90 text-[7.5px] text-emerald-400 font-bold border border-emerald-500/30">
+                                GATE READY
+                              </span>
+                            </div>
+
+                            {/* Target Box & Laser Beam */}
+                            <div className="relative z-10 w-28 h-28 mx-auto my-auto rounded-xl border-2 border-gold-400/80 flex items-center justify-center bg-black/30 shadow-2xl">
+                              <motion.div
+                                animate={{ y: [-45, 45, -45] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                className="absolute left-1 right-1 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_12px_#f59e0b] z-20 pointer-events-none"
+                              />
+                              <div className="w-18 h-18 bg-white/95 p-1 rounded-lg shadow flex items-center justify-center">
+                                <img src="/images/feature_qr_pass.png" alt="QR Pass" className="w-full h-full object-cover rounded" />
                               </div>
+                            </div>
 
-                              {/* Camera Viewfinder Box */}
-                              <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-gold-500/40 bg-black p-1.5 flex flex-col justify-between mb-1.5">
-                                <div className="absolute inset-0 z-0">
-                                  <img
-                                    src="/images/feature_qr_pass.png"
-                                    alt="Camera QR Scan target"
-                                    className="w-full h-full object-cover filter brightness-[0.4] blur-[1px]"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
-                                </div>
-
-                                <div className="relative z-10 flex items-center justify-between">
-                                  <span className="px-1.5 py-0.5 rounded-full bg-black/80 text-[6px] text-gold-300 font-bold flex items-center gap-0.5">
-                                    <Camera className="w-2 h-2 text-gold-400" /> Camera Active
-                                  </span>
-                                  <span className="px-1 py-0.5 rounded-full bg-emerald-950/90 text-[6px] text-emerald-400 font-bold">
-                                    GATE READY
-                                  </span>
-                                </div>
-
-                                {/* Target Box & Laser Beam */}
-                                <div className="relative z-10 w-24 h-24 mx-auto my-auto rounded-lg border border-gold-400/80 flex items-center justify-center bg-black/30">
-                                  <motion.div
-                                    animate={{ y: [-35, 35, -35] }}
-                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                                    className="absolute left-0.5 right-0.5 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_8px_#f59e0b] z-20 pointer-events-none"
-                                  />
-                                  <div className="w-14 h-14 bg-white/95 p-1 rounded shadow flex items-center justify-center">
-                                    <img src="/images/feature_qr_pass.png" alt="QR Pass" className="w-full h-full object-cover rounded" />
-                                  </div>
-                                </div>
-
-                                <div className="relative z-10 text-center bg-black/85 py-0.5 px-1.5 rounded text-[7px] text-gold-300">
-                                  Point camera at guest QR pass
-                                </div>
-                              </div>
-
-                              {/* Valid Pass Card */}
-                              <div className="p-1.5 rounded-xl bg-slate-900 border border-emerald-500/40 text-[7px] space-y-1">
-                                <div className="flex items-center gap-1">
-                                  <CheckCircle2 className="w-3 h-3 text-emerald-400 shrink-0" />
-                                  <span className="font-serif font-bold text-white text-[8px]">✓ REAL & VALID PASS</span>
-                                </div>
-                                <div className="flex justify-between text-slate-300 font-mono text-[7px]">
-                                  <span>Guest:</span>
-                                  <strong className="text-white">Abebe Kebede & Family</strong>
-                                </div>
-                                <div className="flex justify-between text-slate-300 font-mono text-[7px]">
-                                  <span>Quota:</span>
-                                  <strong className="text-emerald-400">2 Guests Allowed</strong>
-                                </div>
-                                <div className="flex justify-between text-slate-300 font-mono text-[7px]">
-                                  <span>Table:</span>
-                                  <strong className="text-gold-300">VIP Table #4</strong>
-                                </div>
-                                <div className="w-full py-1 rounded bg-emerald-500 text-black font-extrabold text-[7px] text-center">
-                                  Admit Guest & Open Gate ➔
-                                </div>
-                              </div>
+                            <div className="relative z-10 text-center bg-black/85 py-1 px-2 rounded-lg text-[8px] text-gold-300 font-mono">
+                              Point camera at guest QR pass
                             </div>
                           </div>
 
-                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md z-20">
-                            <IconComp className="w-3.5 h-3.5 text-gold-400" />
-                            {feat.badge}
+                          {/* Valid Pass Card */}
+                          <div className="p-2 rounded-2xl bg-slate-900 border border-emerald-500/40 text-[8px] space-y-1 shadow-md">
+                            <div className="flex items-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span className="font-serif font-bold text-white text-[9.5px]">✓ REAL & VALID PASS</span>
+                            </div>
+                            <div className="flex justify-between text-slate-300 font-mono">
+                              <span>Guest:</span>
+                              <strong className="text-white font-sans">Abebe Kebede & Family</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-300 font-mono">
+                              <span>Quota:</span>
+                              <strong className="text-emerald-400">2 Guests Allowed</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-300 font-mono">
+                              <span>Table:</span>
+                              <strong className="text-gold-300">VIP Table #4</strong>
+                            </div>
+                            <div className="w-full py-1 rounded-lg bg-emerald-500 text-black font-extrabold text-[8px] text-center uppercase tracking-wider">
+                              Admit Guest & Open Gate ➔
+                            </div>
                           </div>
                         </div>
                       ) : (
-                        <div className="h-64 sm:h-72 bg-gradient-to-b from-stone-900 via-rose-950/40 to-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
-                          {/* Realistic Mini Phone Shell */}
-                          <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
-                            {/* Notch */}
-                            <div className="w-16 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                              <div className="w-1 h-1 rounded-full bg-blue-900/80" />
+                        <div className="bg-black rounded-[28px] overflow-hidden border border-rose-500/30 text-white font-sans relative text-xs h-[415px] sm:h-[435px] flex flex-col justify-between p-3">
+                          {/* Background Live Stream Feed */}
+                          <div className="absolute inset-0 z-0">
+                            <img
+                              src="/images/feature_feed_live.png"
+                              alt="TikTok Live Feed"
+                              className="w-full h-full object-cover opacity-90"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/85" />
+                          </div>
+
+                          {/* Top Header: LIVE badge + Viewers */}
+                          <div className="relative z-10 flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded bg-rose-600 font-extrabold text-[8px] tracking-wider text-white flex items-center gap-1 animate-pulse shadow">
+                                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> LIVE
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur text-[7.5px] text-gray-200 font-mono">
+                                👁 1.4K
+                              </span>
+                            </div>
+                            <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur text-[7.5px] text-amber-300 font-bold border border-amber-400/30">
+                              ★ MEMORY FEED
+                            </span>
+                          </div>
+
+                          {/* Floating Right Interaction Bar (TikTok style) */}
+                          <div className="absolute right-3 top-20 z-10 flex flex-col items-center gap-3 text-white">
+                            <div className="flex flex-col items-center">
+                              <div className="w-7 h-7 rounded-full bg-rose-500/80 backdrop-blur flex items-center justify-center shadow-lg">
+                                <Heart className="w-3.5 h-3.5 text-white fill-white" />
+                              </div>
+                              <span className="text-[7px] font-bold mt-0.5">14.2K</span>
                             </div>
 
-                            {/* Screen */}
-                            <div className="bg-black rounded-[20px] overflow-hidden border border-rose-500/30 text-white font-sans relative text-[8px] h-[230px] flex flex-col justify-between p-2">
-                              {/* Background Live Stream Feed */}
-                              <div className="absolute inset-0 z-0">
-                                <img
-                                  src="/images/feature_feed_live.png"
-                                  alt="TikTok Live Feed"
-                                  className="w-full h-full object-cover opacity-90"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
+                            <div className="flex flex-col items-center">
+                              <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/20 shadow-lg">
+                                <MessageCircle className="w-3.5 h-3.5 text-white" />
                               </div>
+                              <span className="text-[7px] font-bold mt-0.5">892</span>
+                            </div>
 
-                              {/* Top Header: LIVE badge + Viewers */}
-                              <div className="relative z-10 flex items-center justify-between">
-                                <div className="flex items-center gap-1">
-                                  <span className="px-1.5 py-0.5 rounded bg-rose-600 font-extrabold text-[7px] tracking-wider text-white flex items-center gap-1 animate-pulse">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> LIVE
-                                  </span>
-                                  <span className="px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur text-[6px] text-gray-200">
-                                    👁 1.4K
-                                  </span>
-                                </div>
-                                <span className="px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur text-[6px] text-amber-300 font-bold border border-amber-400/30">
-                                  ★ MEMORY FEED
-                                </span>
+                            <div className="flex flex-col items-center">
+                              <div className="w-7 h-7 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/20 shadow-lg">
+                                <Share2 className="w-3.5 h-3.5 text-white" />
                               </div>
-
-                              {/* Floating Right Interaction Bar (TikTok style) */}
-                              <div className="absolute right-2 top-14 z-10 flex flex-col items-center gap-2 text-white">
-                                <div className="flex flex-col items-center">
-                                  <div className="w-6 h-6 rounded-full bg-rose-500/80 backdrop-blur flex items-center justify-center shadow">
-                                    <Heart className="w-3 h-3 text-white fill-white" />
-                                  </div>
-                                  <span className="text-[6px] font-bold mt-0.5">14.2K</span>
-                                </div>
-
-                                <div className="flex flex-col items-center">
-                                  <div className="w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/20">
-                                    <MessageCircle className="w-3 h-3 text-white" />
-                                  </div>
-                                  <span className="text-[6px] font-bold mt-0.5">892</span>
-                                </div>
-
-                                <div className="flex flex-col items-center">
-                                  <div className="w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/20">
-                                    <Share2 className="w-3 h-3 text-white" />
-                                  </div>
-                                  <span className="text-[6px] font-bold mt-0.5">Share</span>
-                                </div>
-                              </div>
-
-                              {/* Bottom User Info & Audio Bar */}
-                              <div className="relative z-10 text-left space-y-1 pr-10">
-                                <div className="flex items-center gap-1">
-                                  <div className="w-4 h-4 rounded-full bg-gold-500 border border-white flex items-center justify-center text-black font-extrabold text-[6px]">
-                                    S
-                                  </div>
-                                  <span className="font-bold text-[8px] drop-shadow text-white">@SaraAndDawit2026</span>
-                                </div>
-
-                                <p className="text-[7px] text-gray-200 leading-tight drop-shadow">
-                                  Melse Dance Stream & Live Guest Wishes 🥂💃✨
-                                </p>
-
-                                <div className="flex items-center gap-1 text-[6px] text-amber-300 bg-black/50 p-1 rounded-lg backdrop-blur border border-amber-500/30">
-                                  <Music className="w-2.5 h-2.5 text-amber-400 animate-spin" />
-                                  <span className="truncate font-mono">Original Audio - Ethiopian Wedding Medley</span>
-                                </div>
-                              </div>
+                              <span className="text-[7px] font-bold mt-0.5">Share</span>
                             </div>
                           </div>
 
-                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md z-20">
-                            <IconComp className="w-3.5 h-3.5 text-gold-400" />
-                            {feat.badge}
+                          {/* Bottom User Info & Audio Bar */}
+                          <div className="relative z-10 text-left space-y-1.5 pr-12">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-5 h-5 rounded-full bg-gold-500 border border-white flex items-center justify-center text-black font-extrabold text-[7.5px] shadow">
+                                S
+                              </div>
+                              <span className="font-bold text-[9px] drop-shadow text-white">@SaraAndDawit2026</span>
+                            </div>
+
+                            <p className="text-[8px] text-gray-200 leading-tight drop-shadow font-medium">
+                              Melse Dance Stream & Live Guest Wishes 🥂💃✨
+                            </p>
+
+                            <div className="flex items-center gap-1.5 text-[7px] text-amber-300 bg-black/60 p-1.5 rounded-xl backdrop-blur border border-amber-500/30">
+                              <Music className="w-3 h-3 text-amber-400 animate-spin" />
+                              <span className="truncate font-mono">Original Audio - Ethiopian Wedding Medley</span>
+                            </div>
                           </div>
                         </div>
                       )}
-
-                      <div className="p-6 text-left bg-white">
-                        <h3 className="font-serif text-xl font-bold text-gray-900 mb-2">
-                          {feat.title}
-                        </h3>
-                        <p className="text-gray-600 text-xs leading-relaxed font-light mb-4">
-                          {feat.description}
-                        </p>
-                      </div>
                     </div>
 
-                    <div className="px-6 pb-6 bg-white">
+                    {/* Layer 2 (z-30): Top Floating Badge Pill Overlay */}
+                    <div className="absolute top-4 left-4 z-30 px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-xl">
+                      <IconComp className="w-3.5 h-3.5 text-gold-400" />
+                      {feat.badge}
+                    </div>
+
+                    {/* Layer 3 (z-30): Bottom Floating Transparent Action Bar Overlay */}
+                    <div className="absolute bottom-4 left-4 right-4 z-30 p-3 rounded-2xl bg-black/80 backdrop-blur-xl border border-gold-500/40 shadow-2xl flex items-center justify-between group-hover:border-gold-400 transition-all">
+                      <div className="text-left pr-2">
+                        <h3 className="font-serif text-xs font-bold text-white tracking-wide truncate max-w-[170px] sm:max-w-[190px]">
+                          {feat.title}
+                        </h3>
+                        <p className="text-[9px] text-gold-400 font-medium truncate max-w-[170px] sm:max-w-[190px] mt-0.5">
+                          {feat.btnText}
+                        </p>
+                      </div>
                       <a
                         href={feat.link}
-                        className="w-full py-3 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-amber-400 hover:to-gold-500 text-black text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 shadow-gold border border-gold-400/40"
+                        className="w-8 h-8 rounded-full bg-gradient-to-r from-gold-500 to-amber-500 hover:from-amber-400 hover:to-gold-400 text-black flex items-center justify-center shrink-0 shadow-md transition-transform group-hover:scale-110"
+                        title={feat.title}
                       >
-                        {feat.btnText}
                         <ExternalLink className="w-3.5 h-3.5" />
                       </a>
                     </div>
