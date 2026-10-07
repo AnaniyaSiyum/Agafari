@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   Users, 
   QrCode, 
@@ -85,7 +86,7 @@ interface InvitationRecord {
   createdAt?: string;
 }
 
-export default function ScopedCouplePortalPage({ params }: { params: { organizerSlug: string; eventSlug: string } }) {
+function ScopedCouplePortalContent({ params }: { params: { organizerSlug: string; eventSlug: string } }) {
   const { organizerSlug, eventSlug } = params;
   const { t } = useTranslation();
   const router = useRouter();
@@ -909,5 +910,19 @@ export default function ScopedCouplePortalPage({ params }: { params: { organizer
         </div>
       )}
     </div>
+  );
+}
+
+export default function ScopedCouplePortalPage({ params }: { params: { organizerSlug: string; eventSlug: string } }) {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Bride & Groom Wedding Portal"
+      dashboardId={`couple:${params.eventSlug}`}
+      dashboardType="couple"
+      slug={params.eventSlug}
+      defaultEmail={`couple@${params.eventSlug}.com`}
+    >
+      <ScopedCouplePortalContent params={params} />
+    </DashboardSecurityGate>
   );
 }

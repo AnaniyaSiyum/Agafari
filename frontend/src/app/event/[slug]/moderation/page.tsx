@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   ShieldCheck, 
   CheckCircle2, 
@@ -41,7 +42,7 @@ interface MediaItem {
   createdAt: string;
 }
 
-export default function EventMediaModerationPage({ params }: { params: { slug: string } }) {
+function EventMediaModerationContent({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const { t } = useTranslation();
 
@@ -821,5 +822,19 @@ export default function EventMediaModerationPage({ params }: { params: { slug: s
       )}
 
     </div>
+  );
+}
+
+export default function EventMediaModerationPage({ params }: { params: { slug: string } }) {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Media Content Moderation Suite"
+      dashboardId={`moderator:${params.slug}`}
+      dashboardType="moderator"
+      slug={params.slug}
+      defaultEmail={`moderator@${params.slug}.com`}
+    >
+      <EventMediaModerationContent params={params} />
+    </DashboardSecurityGate>
   );
 }

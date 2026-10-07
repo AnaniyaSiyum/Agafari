@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   ShieldCheck, 
   ArrowLeft, 
@@ -25,7 +26,7 @@ interface EventSummary {
   groom_name?: string;
 }
 
-export default function MediaModerationRootPage() {
+function MediaModerationRootContent() {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -193,5 +194,18 @@ export default function MediaModerationRootPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function MediaModerationRootPage() {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Media Content Moderation Suite"
+      dashboardId="moderation-root"
+      dashboardType="moderator"
+      defaultEmail="moderator@agafari.com"
+    >
+      <MediaModerationRootContent />
+    </DashboardSecurityGate>
   );
 }

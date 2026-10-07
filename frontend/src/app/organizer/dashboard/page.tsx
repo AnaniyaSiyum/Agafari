@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Briefcase, 
@@ -137,7 +138,7 @@ function formatEvent(e: any): EventData {
   };
 }
 
-export default function OrganizerDashboardPage() {
+function OrganizerDashboardContent() {
   const router = useRouter();
   const { t } = useTranslation();
 
@@ -1068,5 +1069,18 @@ export default function OrganizerDashboardPage() {
       </nav>
 
     </div>
+  );
+}
+
+export default function OrganizerDashboardPage() {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Event Organizer Agency Dashboard"
+      dashboardId="organizer-dashboard"
+      dashboardType="organizer"
+      defaultEmail="organizer@agafari.com"
+    >
+      <OrganizerDashboardContent />
+    </DashboardSecurityGate>
   );
 }

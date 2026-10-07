@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   Radio, 
   ShieldCheck, 
@@ -24,7 +25,7 @@ interface EventSummary {
   groom_name?: string;
 }
 
-export default function LiveStreamerRootPage() {
+function LiveStreamerRootContent() {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -247,5 +248,18 @@ export default function LiveStreamerRootPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function LiveStreamerRootPage() {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Live Streamer Broadcast Studio"
+      dashboardId="streamer-root"
+      dashboardType="streamer"
+      defaultEmail="streamer@agafari.com"
+    >
+      <LiveStreamerRootContent />
+    </DashboardSecurityGate>
   );
 }

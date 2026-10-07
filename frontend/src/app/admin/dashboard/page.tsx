@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Crown, 
@@ -170,7 +171,7 @@ const DEFAULT_PLATFORM_USERS: UserData[] = [
   },
 ];
 
-export default function SystemAdminDashboardPage() {
+function SystemAdminDashboardContent() {
   const { t } = useTranslation();
   const router = useRouter();
   // Navigation: 'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS'
@@ -2449,5 +2450,18 @@ export default function SystemAdminDashboardPage() {
       </nav>
 
     </div>
+  );
+}
+
+export default function SystemAdminDashboardPage() {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Platform Super Admin Dashboard"
+      dashboardId="admin-dashboard"
+      dashboardType="admin"
+      defaultEmail="admin@agafari.com"
+    >
+      <SystemAdminDashboardContent />
+    </DashboardSecurityGate>
   );
 }

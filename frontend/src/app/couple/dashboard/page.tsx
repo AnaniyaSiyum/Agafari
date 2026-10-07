@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -84,7 +85,7 @@ interface InvitationRecord {
   createdAt?: string;
 }
 
-export default function CoupleDashboardPage() {
+function CoupleDashboardContent() {
   const { t } = useTranslation();
   const router = useRouter();
   const [event, setEvent] = useState<EventData | null>(null);
@@ -1489,5 +1490,18 @@ export default function CoupleDashboardPage() {
       </nav>
 
     </div>
+  );
+}
+
+export default function CoupleDashboardPage() {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Bride & Groom Wedding Dashboard"
+      dashboardId="couple-dashboard"
+      dashboardType="couple"
+      defaultEmail="couple@agafari.com"
+    >
+      <CoupleDashboardContent />
+    </DashboardSecurityGate>
   );
 }

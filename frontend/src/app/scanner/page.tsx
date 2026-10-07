@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   QrCode, 
   ShieldCheck, 
@@ -26,7 +27,7 @@ interface EventSummary {
   venue_name?: string;
 }
 
-export default function GateScannerRootPage() {
+function GateScannerRootContent() {
   const { t } = useTranslation();
   const router = useRouter();
 
@@ -249,6 +250,19 @@ export default function GateScannerRootPage() {
 
       </div>
     </div>
+  );
+}
+
+export default function GateScannerRootPage() {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Gate QR Security Scanner"
+      dashboardId="scanner-root"
+      dashboardType="scanner"
+      defaultEmail="scanner@agafari.com"
+    >
+      <GateScannerRootContent />
+    </DashboardSecurityGate>
   );
 }
 

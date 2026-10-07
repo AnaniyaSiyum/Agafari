@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   Radio, 
   Play, 
@@ -30,7 +31,7 @@ function extractYouTubeId(input: string): string {
   return trimmed;
 }
 
-export default function EventLiveStreamerPage({ params }: { params: { slug: string } }) {
+function EventLiveStreamerContent({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const { t } = useTranslation();
 
@@ -400,5 +401,19 @@ export default function EventLiveStreamerPage({ params }: { params: { slug: stri
 
       </main>
     </div>
+  );
+}
+
+export default function EventLiveStreamerPage({ params }: { params: { slug: string } }) {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Live Streamer Broadcast Studio"
+      dashboardId={`streamer:${params.slug}`}
+      dashboardType="streamer"
+      slug={params.slug}
+      defaultEmail={`streamer@${params.slug}.com`}
+    >
+      <EventLiveStreamerContent params={params} />
+    </DashboardSecurityGate>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { Html5Qrcode } from 'html5-qrcode';
 import { 
   QrCode, 
@@ -79,7 +80,7 @@ const playBeep = (type: 'detect' | 'success' | 'already' | 'error') => {
   }
 };
 
-export default function EventGateScannerPage({ params }: { params: { slug: string } }) {
+function EventGateScannerContent({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const { t } = useTranslation();
 
@@ -650,5 +651,19 @@ export default function EventGateScannerPage({ params }: { params: { slug: strin
 
       </div>
     </div>
+  );
+}
+
+export default function EventGateScannerPage({ params }: { params: { slug: string } }) {
+  return (
+    <DashboardSecurityGate
+      dashboardTitle="Gate QR Security Scanner"
+      dashboardId={`scanner:${params.slug}`}
+      dashboardType="scanner"
+      slug={params.slug}
+      defaultEmail={`scanner@${params.slug}.com`}
+    >
+      <EventGateScannerContent params={params} />
+    </DashboardSecurityGate>
   );
 }
