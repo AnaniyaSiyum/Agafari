@@ -87,20 +87,10 @@ export default function SystemAdminDashboardPage() {
 
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Load User Info & Admin List
+  // Load User Info & Admin List (Redirect to /admin/dashboard where Credentials Management lives)
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('agafari_user');
-      if (stored) {
-        try {
-          setCurrentUser(JSON.parse(stored));
-        } catch {
-          /* ignore */
-        }
-      }
-    }
-    fetchUsers();
-  }, []);
+    router.replace('/admin/dashboard');
+  }, [router]);
 
   const fetchUsers = async () => {
     setLoadingUsers(true);

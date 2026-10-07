@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
           userId = dbUser.id;
           userEmail = dbUser.email;
           userName = dbUser.full_name || dbUser.email;
-          redirectUrl = userRole === 'SYSTEM_ADMIN' ? '/system-admin' : (userRole === 'EVENT_ORGANIZER' ? '/admin/dashboard' : '/couple/dashboard');
+          redirectUrl = (userRole === 'SYSTEM_ADMIN' || userRole === 'EVENT_ORGANIZER') ? '/admin/dashboard' : '/couple/dashboard';
         }
       }
     } catch (e) {
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
           userId = mockUser.id;
           userEmail = mockUser.email;
           userName = mockUser.fullName || mockUser.email;
-          redirectUrl = userRole === 'SYSTEM_ADMIN' ? '/system-admin' : (userRole === 'EVENT_ORGANIZER' ? '/admin/dashboard' : '/couple/dashboard');
+          redirectUrl = (userRole === 'SYSTEM_ADMIN' || userRole === 'EVENT_ORGANIZER') ? '/admin/dashboard' : '/couple/dashboard';
         }
       }
     }
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
           userId = 'usr_admin_001';
           userEmail = 'admin@agafari.com';
           userName = 'System Super Admin';
-          redirectUrl = '/system-admin';
+          redirectUrl = '/admin/dashboard';
         }
       } else if (identifier === 'organizer' || identifier === 'organizer@agafari.com' || identifier.includes('org')) {
         if (password === 'org123' || password === 'org2026' || password === 'agafari2026') {
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
           userId = 'usr_admin_001';
           userEmail = 'admin@agafari.com';
           userName = 'System Super Admin';
-          redirectUrl = '/system-admin';
+          redirectUrl = '/admin/dashboard';
         } else if (identifier.includes('org')) {
           userRole = 'EVENT_ORGANIZER';
           userId = 'usr_org_001';
