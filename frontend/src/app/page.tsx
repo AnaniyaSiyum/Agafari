@@ -39,7 +39,9 @@ import {
   MessageCircle,
   Camera,
   UserCheck,
-  Zap
+  Zap,
+  Share2,
+  Music
 } from 'lucide-react';
 
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
@@ -384,7 +386,81 @@ export default function HomePage() {
                     className="w-[310px] sm:w-[350px] rounded-3xl overflow-hidden border border-gold-500/30 hover:border-gold-500 hover:shadow-gold transition-all duration-300 group flex flex-col justify-between shrink-0 bg-white text-gray-900 shadow-md"
                   >
                     <div>
-                      {feat.id === 'f2' ? (
+                      {feat.id === 'f1' ? (
+                        <div className="h-64 sm:h-72 bg-gradient-to-b from-stone-900 via-amber-950/40 to-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
+                          {/* Realistic Mini Phone Shell */}
+                          <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
+                            {/* Notch */}
+                            <div className="w-16 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                              <div className="w-1 h-1 rounded-full bg-blue-900/80" />
+                            </div>
+
+                            {/* Screen */}
+                            <div className="bg-amber-50/95 rounded-[20px] overflow-hidden border border-gold-500/40 text-gray-900 font-sans p-2 relative text-[8px] flex flex-col justify-between h-[230px]">
+                              
+                              {/* Invitation Header Monogram */}
+                              <div className="text-center border-b border-amber-300/60 pb-1">
+                                <div className="text-[7px] text-amber-800 font-serif font-extrabold uppercase tracking-widest">
+                                  Abebe & Leta
+                                </div>
+                                <div className="text-[6px] text-amber-700 font-mono">
+                                  MARCH 15, 2026 • ADDIS ABABA
+                                </div>
+                              </div>
+
+                              {/* Royal Couple Photo Card */}
+                              <div className="relative my-1 rounded-xl overflow-hidden border border-amber-400 shadow-md h-24">
+                                <img
+                                  src="/images/feature_countdown.png"
+                                  alt="Real Digital Invitation Card"
+                                  className="w-full h-full object-cover filter brightness-95"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                                <div className="absolute bottom-1 left-2 text-white font-serif font-bold text-[9px] drop-shadow">
+                                  Sara & Dawit
+                                </div>
+                              </div>
+
+                              {/* Live 4-Digit Countdown Display */}
+                              <div className="bg-white/90 p-1.5 rounded-xl border border-amber-300 shadow-sm text-center">
+                                <div className="text-[6px] text-amber-900 font-extrabold uppercase tracking-wider mb-0.5">
+                                  Wedding Countdown
+                                </div>
+                                <div className="grid grid-cols-4 gap-1 text-[8px] font-extrabold text-amber-900">
+                                  <div className="bg-amber-100/90 rounded p-0.5 border border-amber-300">
+                                    <span className="block text-[9px]">076</span>
+                                    <span className="text-[5px] text-amber-700 block">DAYS</span>
+                                  </div>
+                                  <div className="bg-amber-100/90 rounded p-0.5 border border-amber-300">
+                                    <span className="block text-[9px]">14</span>
+                                    <span className="text-[5px] text-amber-700 block">HRS</span>
+                                  </div>
+                                  <div className="bg-amber-100/90 rounded p-0.5 border border-amber-300">
+                                    <span className="block text-[9px]">38</span>
+                                    <span className="text-[5px] text-amber-700 block">MIN</span>
+                                  </div>
+                                  <div className="bg-amber-100/90 rounded p-0.5 border border-amber-300">
+                                    <span className="block text-[9px]">52</span>
+                                    <span className="text-[5px] text-amber-700 block">SEC</span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Wish Wall Snippet */}
+                              <div className="bg-amber-100/80 p-1 rounded-lg border border-amber-300 text-[6.5px] text-amber-950 flex items-center gap-1 mt-1">
+                                <Heart className="w-2.5 h-2.5 text-rose-500 fill-rose-500 shrink-0" />
+                                <span className="truncate">"Wishing endless love and blessings! 💍✨"</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md z-20">
+                            <IconComp className="w-3.5 h-3.5 text-gold-400" />
+                            {feat.badge}
+                          </div>
+                        </div>
+                      ) : feat.id === 'f2' ? (
                         <div className="h-64 sm:h-72 bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
                           {/* Realistic Mini Phone Shell */}
                           <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
@@ -475,13 +551,88 @@ export default function HomePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="h-52 bg-gray-100 relative overflow-hidden">
-                          <img
-                            src={feat.imageUrl}
-                            alt={feat.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
-                          />
-                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                        <div className="h-64 sm:h-72 bg-gradient-to-b from-stone-900 via-rose-950/40 to-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-2.5">
+                          {/* Realistic Mini Phone Shell */}
+                          <div className="w-[200px] sm:w-[220px] rounded-[28px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-800 relative z-10 text-left scale-95 hover:scale-100 transition-transform">
+                            {/* Notch */}
+                            <div className="w-16 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
+                              <div className="w-1 h-1 rounded-full bg-blue-900/80" />
+                            </div>
+
+                            {/* Screen */}
+                            <div className="bg-black rounded-[20px] overflow-hidden border border-rose-500/30 text-white font-sans relative text-[8px] h-[230px] flex flex-col justify-between p-2">
+                              {/* Background Live Stream Feed */}
+                              <div className="absolute inset-0 z-0">
+                                <img
+                                  src="/images/feature_feed_live.png"
+                                  alt="TikTok Live Feed"
+                                  className="w-full h-full object-cover opacity-90"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/80" />
+                              </div>
+
+                              {/* Top Header: LIVE badge + Viewers */}
+                              <div className="relative z-10 flex items-center justify-between">
+                                <div className="flex items-center gap-1">
+                                  <span className="px-1.5 py-0.5 rounded bg-rose-600 font-extrabold text-[7px] tracking-wider text-white flex items-center gap-1 animate-pulse">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> LIVE
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur text-[6px] text-gray-200">
+                                    👁 1.4K
+                                  </span>
+                                </div>
+                                <span className="px-1.5 py-0.5 rounded-full bg-black/60 backdrop-blur text-[6px] text-amber-300 font-bold border border-amber-400/30">
+                                  ★ MEMORY FEED
+                                </span>
+                              </div>
+
+                              {/* Floating Right Interaction Bar (TikTok style) */}
+                              <div className="absolute right-2 top-14 z-10 flex flex-col items-center gap-2 text-white">
+                                <div className="flex flex-col items-center">
+                                  <div className="w-6 h-6 rounded-full bg-rose-500/80 backdrop-blur flex items-center justify-center shadow">
+                                    <Heart className="w-3 h-3 text-white fill-white" />
+                                  </div>
+                                  <span className="text-[6px] font-bold mt-0.5">14.2K</span>
+                                </div>
+
+                                <div className="flex flex-col items-center">
+                                  <div className="w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/20">
+                                    <MessageCircle className="w-3 h-3 text-white" />
+                                  </div>
+                                  <span className="text-[6px] font-bold mt-0.5">892</span>
+                                </div>
+
+                                <div className="flex flex-col items-center">
+                                  <div className="w-6 h-6 rounded-full bg-black/60 backdrop-blur flex items-center justify-center border border-white/20">
+                                    <Share2 className="w-3 h-3 text-white" />
+                                  </div>
+                                  <span className="text-[6px] font-bold mt-0.5">Share</span>
+                                </div>
+                              </div>
+
+                              {/* Bottom User Info & Audio Bar */}
+                              <div className="relative z-10 text-left space-y-1 pr-10">
+                                <div className="flex items-center gap-1">
+                                  <div className="w-4 h-4 rounded-full bg-gold-500 border border-white flex items-center justify-center text-black font-extrabold text-[6px]">
+                                    S
+                                  </div>
+                                  <span className="font-bold text-[8px] drop-shadow text-white">@SaraAndDawit2026</span>
+                                </div>
+
+                                <p className="text-[7px] text-gray-200 leading-tight drop-shadow">
+                                  Melse Dance Stream & Live Guest Wishes 🥂💃✨
+                                </p>
+
+                                <div className="flex items-center gap-1 text-[6px] text-amber-300 bg-black/50 p-1 rounded-lg backdrop-blur border border-amber-500/30">
+                                  <Music className="w-2.5 h-2.5 text-amber-400 animate-spin" />
+                                  <span className="truncate font-mono">Original Audio - Ethiopian Wedding Medley</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md z-20">
                             <IconComp className="w-3.5 h-3.5 text-gold-400" />
                             {feat.badge}
                           </div>
