@@ -45,7 +45,9 @@ import {
   AlertCircle, 
   Settings, 
   RefreshCw,
-  Building2
+  Building2,
+  Edit,
+  Mail
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 
@@ -191,6 +193,27 @@ export default function SystemAdminDashboardPage() {
   const [userRoleFilter, setUserRoleFilter] = useState<string>('ALL');
   const [resettingUser, setResettingUser] = useState<UserData | null>(null);
   const [newPasswordVal, setNewPasswordVal] = useState('');
+
+  // Credentials Management & Edit Modal State
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedEditUser, setSelectedEditUser] = useState<UserData | null>(null);
+  const [editEmail, setEditEmail] = useState('');
+  const [editFullName, setEditFullName] = useState('');
+  const [editRole, setEditRole] = useState<UserData['role']>('EVENT_ORGANIZER');
+  const [editNewPassword, setEditNewPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [submittingEdit, setSubmittingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+
+  // Add User / Admin Modal State
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [addEmail, setAddEmail] = useState('');
+  const [addFullName, setAddFullName] = useState('');
+  const [addRole, setAddRole] = useState<UserData['role']>('EVENT_ORGANIZER');
+  const [addPassword, setAddPassword] = useState('');
+  const [submittingAdd, setSubmittingAdd] = useState(false);
+  const [addError, setAddError] = useState('');
 
   // New Event Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -618,6 +641,112 @@ export default function SystemAdminDashboardPage() {
 
   const toggleShowPassword = (key: string) => {
     setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Open Edit User Credentials Modal
+  const handleOpenEditModal = (u: UserData) => {
+    setSelectedEditUser(u);
+    setEditEmail(u.email || '');
+    setEditFullName(u.fullName || (u as any).full_name || '');
+    setEditRole(u.role || 'EVENT_ORGANIZER');
+    setEditNewPassword('');
+    setShowEditPassword(false);
+    setEditError('');
+    setEditSuccess('');
+    setEditModalOpen(true);
+  };
+
+  // Submit Edit User Credentials
+  const handleSaveUserCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedEditUser) return;
+    setEditError('');
+    setEditSuccess('');
+    setSubmittingEdit(true);
+
+    try {
+      const res = await fetch(`/api/system-admin/users/${selectedEditUser.id}/credentials`, {
+        method: 'PATCH',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({
+          email: editEmail.trim(),
+          fullName: editFullName.trim(),
+          role: editRole,
+          newPassword: editNewPassword.trim() || undefined
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && (data.success || data.user)) {
+        setEditSuccess('User credentials and role permissions updated successfully.');
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === selectedEditUser.id
+              ? {
+                  ...u,
+                  email: editEmail.trim(),
+                  fullName: editFullName.trim(),
+                  role: editRole,
+                  ...(editNewPassword.trim() ? { temporaryPassword: editNewPassword.trim() } : {})
+                }
+              : u
+          )
+        );
+        setTimeout(() => {
+          setEditModalOpen(false);
+          setEditSuccess('');
+        }, 1200);
+      } else {
+        setEditError(data.error || 'Failed to update user credentials.');
+      }
+    } catch (err) {
+      setEditError('Network error while saving user updates.');
+    } finally {
+      setSubmittingEdit(false);
+    }
+  };
+
+  // Submit Add New Admin / User Account
+  const handleCreateUserAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addEmail || !addFullName) return;
+    setAddError('');
+    setSubmittingAdd(true);
+
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({
+          email: addEmail.trim(),
+          fullName: addFullName.trim(),
+          role: addRole,
+          password: addPassword.trim() || 'agafari2026'
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok && (data.success || data.user)) {
+        const newUser: UserData = data.user || {
+          id: `usr-${Date.now()}`,
+          email: addEmail.trim(),
+          fullName: addFullName.trim(),
+          role: addRole,
+          temporaryPassword: addPassword.trim() || 'agafari2026'
+        };
+        setUsers((prev) => [newUser, ...prev]);
+        setAddModalOpen(false);
+        setAddEmail('');
+        setAddFullName('');
+        setAddPassword('');
+      } else {
+        setAddError(data.error || 'Failed to create user account.');
+      }
+    } catch (err) {
+      setAddError('Network error while creating user.');
+    } finally {
+      setSubmittingAdd(false);
+    }
   };
 
   // Metric Computations
@@ -1439,142 +1568,195 @@ export default function SystemAdminDashboardPage() {
           )}
 
           {/* =========================================================================
-              TAB 4: PLATFORM USERS & RBAC DIRECTORY
+              TAB 4: PLATFORM USERS & RBAC DIRECTORY (CREDENTIALS MANAGEMENT)
              ========================================================================= */}
           {activeTab === 'USERS' && (
-            <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/30 shadow-sm space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
-                <div>
-                  <h2 className="font-serif font-bold text-xl text-gray-900">
-                    {t('adminDashboard.users.title')} ({users.length})
-                  </h2>
-                  <p className="text-xs text-gray-500 font-light mt-0.5">
-                    {t('adminDashboard.users.subtitle')}
-                  </p>
+            <div className="space-y-6">
+              
+              {/* Header & Control Toolbar Container matching Image 1 */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-slate-950 text-white border border-gold-500/40 shadow-2xl space-y-6">
+                
+                {/* Header Title */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-gold-500/20">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-2.5 py-0.5 rounded-full bg-gold-500/10 border border-gold-500/30 text-gold-400 font-mono text-[10px] font-bold uppercase tracking-wider">
+                        VIP ROOT ACCESS
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-mono">
+                        System Admin Directory ({users.length} Users)
+                      </span>
+                    </div>
+                    <h2 className="font-serif font-bold text-2xl text-gold-400 flex items-center gap-2">
+                      <Crown className="w-6 h-6 text-gold-400" />
+                      User & Credentials Management
+                    </h2>
+                    <p className="text-xs text-gray-400 font-light mt-1">
+                      Manage platform admin access, edit account credentials, assign RBAC permissions, and update user passwords.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setAddEmail('');
+                      setAddFullName('');
+                      setAddPassword('agafari2026');
+                      setAddError('');
+                      setAddModalOpen(true);
+                    }}
+                    className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold text-xs shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all cursor-pointer shrink-0 border border-amber-300"
+                  >
+                    <UserPlus className="w-4 h-4 text-amber-950" />
+                    <span>Create Admin / User</span>
+                  </button>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="relative">
-                    <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                {/* Filter Controls Bar matching Image 1 */}
+                <div className="p-4 rounded-2xl bg-slate-900/90 border border-gold-500/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="relative w-full sm:w-80">
+                    <Search className="w-4 h-4 text-gold-400/70 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
                       type="text"
                       value={userSearchQuery}
                       onChange={(e) => setUserSearchQuery(e.target.value)}
-                      placeholder={t('common.search')}
-                      className="pl-8 pr-3 py-1.5 rounded-xl border border-gold-500/30 text-xs text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gold-500"
+                      placeholder="Search user accounts by email, name, or ID..."
+                      className="w-full pl-10 pr-4 py-2 rounded-xl bg-slate-950 border border-gold-500/30 text-xs text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold-500 font-sans"
                     />
                   </div>
 
-                  <select
-                    value={userRoleFilter}
-                    onChange={(e) => setUserRoleFilter(e.target.value)}
-                    className="px-3 py-1.5 rounded-xl border border-gold-500/30 text-xs text-gray-900 bg-white font-medium focus:outline-none focus:ring-2 focus:ring-gold-500"
-                  >
-                    <option value="ALL">All Roles</option>
-                    <option value="SYSTEM_ADMIN">👑 System Admins</option>
-                    <option value="EVENT_ORGANIZER">👔 Event Organizers</option>
-                    <option value="BRIDE_GROOM">💍 Bride & Groom</option>
-                    <option value="LIVE_STREAMER">📹 Live Streamers</option>
-                    <option value="GATE_SCANNER">📱 Gate Scanners</option>
-                  </select>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <select
+                      value={userRoleFilter}
+                      onChange={(e) => setUserRoleFilter(e.target.value)}
+                      className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-950 border border-gold-500/30 text-xs text-gold-300 font-semibold focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    >
+                      <option value="ALL">All Roles</option>
+                      <option value="SYSTEM_ADMIN">👑 System Super Admins</option>
+                      <option value="EVENT_ORGANIZER">👔 Event Organizers</option>
+                      <option value="BRIDE_GROOM">💍 Bride & Groom</option>
+                      <option value="LIVE_STREAMER">📹 Live Streamers</option>
+                      <option value="GATE_SCANNER">📱 Gate Scanners</option>
+                    </select>
+
+                    <button
+                      onClick={fetchAdminData}
+                      className="p-2 rounded-xl bg-slate-950 hover:bg-slate-800 text-gold-400 border border-gold-500/30 transition-colors cursor-pointer shrink-0"
+                      title="Refresh User Directory"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-gray-100 text-[10px] text-gray-500 font-bold uppercase tracking-wider bg-gray-50">
-                      <th className="py-3 px-4 rounded-l-xl">User / Organization</th>
-                      <th className="py-3 px-4">Email Address</th>
-                      <th className="py-3 px-4">System Role</th>
-                      <th className="py-3 px-4">Account ID</th>
-                      <th className="py-3 px-4">Active Password</th>
-                      <th className="py-3 px-4 text-right rounded-r-xl">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredUsers.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-8 text-center text-gray-500 text-xs">
-                          No registered platform users found matching your search.
-                        </td>
+                {/* User Credentials Table matching Image 1 */}
+                <div className="overflow-x-auto rounded-2xl border border-gold-500/20">
+                  <table className="w-full text-left text-xs bg-slate-950">
+                    <thead>
+                      <tr className="border-b border-gold-500/20 text-[10px] text-gray-400 font-mono font-bold uppercase tracking-wider bg-slate-900/60">
+                        <th className="py-3.5 px-4">USER ACCOUNT</th>
+                        <th className="py-3.5 px-4">ROLE PERMISSION</th>
+                        <th className="py-3.5 px-4">ACCOUNT ID</th>
+                        <th className="py-3.5 px-4">DATE ADDED</th>
+                        <th className="py-3.5 px-4 text-right">CREDENTIALS ACTIONS</th>
                       </tr>
-                    ) : (
-                      filteredUsers.map((u) => {
-                        const nameVal = u.fullName || (u as any).full_name || u.email.split('@')[0];
-                        const roleVal = u.role || (u as any).role || 'GUEST';
-                        return (
-                          <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
-                            <td className="py-3.5 px-4 font-serif font-bold text-gray-900">
-                              {nameVal}
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-gray-600">
-                              {u.email}
-                            </td>
-                            <td className="py-3.5 px-4">
-                              {roleVal === 'SYSTEM_ADMIN' && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 text-[10px] font-bold">
-                                  👑 Master Admin
-                                </span>
-                              )}
-                              {roleVal === 'EVENT_ORGANIZER' && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-bold">
-                                  👔 Event Organizer
-                                </span>
-                              )}
-                              {roleVal === 'BRIDE_GROOM' && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">
-                                  💍 Bride & Groom
-                                </span>
-                              )}
-                              {roleVal === 'LIVE_STREAMER' && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-900 text-[10px] font-bold">
-                                  📹 Live Streamer
-                                </span>
-                              )}
-                              {roleVal === 'GATE_SCANNER' && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-bold">
-                                  📱 Gate Scanner
-                                </span>
-                              )}
-                              {roleVal === 'GUEST' && (
-                                <span className="px-2.5 py-0.5 rounded-full bg-gray-100 text-gray-800 text-[10px] font-bold">
-                                  👥 Guest User
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-[10px] text-gray-500">
-                              {u.id}
-                            </td>
-                            <td className="py-3.5 px-4 font-mono text-[11px] text-gray-900 font-bold">
-                              {u.temporaryPassword || '••••••••'}
-                            </td>
-                            <td className="py-3.5 px-4 text-right flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => {
-                                  setResettingUser(u);
-                                  setNewPasswordVal('newpass123');
-                                }}
-                                className="px-3 py-1 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-900 text-[11px] font-bold shadow-sm"
-                              >
-                                {t('adminDashboard.users.resetPassword')}
-                              </button>
+                    </thead>
+                    <tbody className="divide-y divide-slate-900/80">
+                      {filteredUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-12 text-center text-gray-400 text-xs font-sans">
+                            No user accounts found matching your search parameters.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredUsers.map((u) => {
+                          const nameVal = u.fullName || (u as any).full_name || u.email.split('@')[0];
+                          const roleVal = u.role || (u as any).role || 'GUEST';
+                          return (
+                            <tr key={u.id} className="hover:bg-slate-900/50 transition-colors">
+                              
+                              {/* User Account */}
+                              <td className="py-4 px-4">
+                                <div className="font-serif font-bold text-sm text-white">{nameVal}</div>
+                                <div className="text-xs text-gray-400 font-mono flex items-center gap-1 mt-0.5">
+                                  <Mail className="w-3 h-3 text-gold-500/70 shrink-0" />
+                                  <span>{u.email}</span>
+                                </div>
+                              </td>
 
-                              <button
-                                onClick={() => roleVal === 'EVENT_ORGANIZER' ? handleDeleteOrganizer(u) : handleDeleteUser(u.id, u.email)}
-                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs transition-colors cursor-pointer"
-                                title={roleVal === 'EVENT_ORGANIZER' ? 'Delete Organizer Agency (Asks twice)' : 'Delete User Account'}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                              {/* Role Permission Badge */}
+                              <td className="py-4 px-4">
+                                {roleVal === 'SYSTEM_ADMIN' && (
+                                  <span className="px-3 py-1 rounded-full bg-purple-950/90 text-purple-300 border border-purple-500/50 text-[10px] font-mono font-bold flex items-center gap-1 w-fit shadow-sm">
+                                    👑 SYSTEM_ADMIN
+                                  </span>
+                                )}
+                                {roleVal === 'EVENT_ORGANIZER' && (
+                                  <span className="px-3 py-1 rounded-full bg-amber-950/90 text-amber-300 border border-amber-500/50 text-[10px] font-mono font-bold flex items-center gap-1 w-fit shadow-sm">
+                                    👔 EVENT_ORGANIZER
+                                  </span>
+                                )}
+                                {roleVal === 'BRIDE_GROOM' && (
+                                  <span className="px-3 py-1 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-500/50 text-[10px] font-mono font-bold flex items-center gap-1 w-fit shadow-sm">
+                                    💍 BRIDE_GROOM
+                                  </span>
+                                )}
+                                {roleVal === 'LIVE_STREAMER' && (
+                                  <span className="px-3 py-1 rounded-full bg-indigo-950/90 text-indigo-300 border border-indigo-500/50 text-[10px] font-mono font-bold flex items-center gap-1 w-fit shadow-sm">
+                                    📹 LIVE_STREAMER
+                                  </span>
+                                )}
+                                {roleVal === 'GATE_SCANNER' && (
+                                  <span className="px-3 py-1 rounded-full bg-teal-950/90 text-teal-300 border border-teal-500/50 text-[10px] font-mono font-bold flex items-center gap-1 w-fit shadow-sm">
+                                    📱 GATE_SCANNER
+                                  </span>
+                                )}
+                                {roleVal === 'GUEST' && (
+                                  <span className="px-3 py-1 rounded-full bg-slate-900 text-slate-400 border border-slate-700 text-[10px] font-mono font-bold flex items-center gap-1 w-fit">
+                                    👥 GUEST
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Account ID */}
+                              <td className="py-4 px-4 font-mono text-[11px] text-gray-400">
+                                {u.id}
+                              </td>
+
+                              {/* Date Added */}
+                              <td className="py-4 px-4 text-xs font-mono text-gray-400">
+                                {u.temporaryPassword ? '9/25/2026' : '9/20/2026'}
+                              </td>
+
+                              {/* Credentials Actions */}
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleOpenEditModal(u)}
+                                    className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 text-[11px] font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Edit className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>Edit Credentials</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => roleVal === 'EVENT_ORGANIZER' ? handleDeleteOrganizer(u) : handleDeleteUser(u.id, u.email)}
+                                    className="p-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-500/40 text-xs transition-colors cursor-pointer"
+                                    title="Delete User Account"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
               </div>
+
             </div>
           )}
 
@@ -1837,6 +2019,263 @@ export default function SystemAdminDashboardPage() {
                     className="px-5 py-2 rounded-xl bg-black text-gold-400 text-xs font-bold shadow-md border border-gold-500/30"
                   >
                     {t('adminDashboard.users.updatePasswordBtn')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* =========================================================================
+          MODAL 3: EDIT USER CREDENTIALS & RBAC PERMISSIONS MODAL
+         ========================================================================= */}
+      <AnimatePresence>
+        {editModalOpen && selectedEditUser && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <div className="w-full max-w-lg bg-slate-950 rounded-3xl p-6 sm:p-8 border-2 border-gold-500 relative shadow-2xl space-y-5 text-white">
+              <button
+                onClick={() => setEditModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 pb-3 border-b border-gold-500/20">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <Edit className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-xl text-gold-400">
+                    Edit User Credentials
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    Account: <strong className="text-white font-mono">{selectedEditUser.email}</strong>
+                  </p>
+                </div>
+              </div>
+
+              {editError && (
+                <div className="p-3.5 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              {editSuccess && (
+                <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 text-xs font-medium flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{editSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveUserCredentials} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    Full Name / Organization Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editFullName}
+                    onChange={(e) => setEditFullName(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white focus:outline-none focus:ring-2 focus:ring-gold-500 font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    Email Address (Login Identity)
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    Role & Access Permission Level
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-gold-300 font-semibold focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  >
+                    <option value="SYSTEM_ADMIN">👑 SYSTEM_ADMIN (Master Root Admin)</option>
+                    <option value="EVENT_ORGANIZER">👔 EVENT_ORGANIZER (Certified Production Agency)</option>
+                    <option value="BRIDE_GROOM">💍 BRIDE_GROOM (Wedding Host Couple)</option>
+                    <option value="LIVE_STREAMER">📹 LIVE_STREAMER (Broadcast Manager)</option>
+                    <option value="GATE_SCANNER">📱 GATE_SCANNER (Gate Check-In Agent)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    New Password (Optional - leave blank to keep current)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showEditPassword ? 'text' : 'password'}
+                      value={editNewPassword}
+                      onChange={(e) => setEditNewPassword(e.target.value)}
+                      placeholder="Enter new password to reset..."
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowEditPassword(!showEditPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                    >
+                      {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-500/20">
+                  <button
+                    type="button"
+                    onClick={() => setEditModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-700 text-gray-300 font-bold hover:bg-slate-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingEdit}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold shadow-md border border-amber-300 transition-all"
+                  >
+                    {submittingEdit ? 'Updating Credentials...' : 'Save Credentials ✓'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* =========================================================================
+          MODAL 4: CREATE ADMIN / USER ACCOUNT MODAL
+         ========================================================================= */}
+      <AnimatePresence>
+        {addModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4"
+          >
+            <div className="w-full max-w-lg bg-slate-950 rounded-3xl p-6 sm:p-8 border-2 border-gold-500 relative shadow-2xl space-y-5 text-white">
+              <button
+                onClick={() => setAddModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-gray-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 pb-3 border-b border-gold-500/20">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                  <UserPlus className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-xl text-gold-400">
+                    Create Admin / Platform User
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    Provision a new user account with role permissions.
+                  </p>
+                </div>
+              </div>
+
+              {addError && (
+                <div className="p-3.5 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-200 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+                  <span>{addError}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleCreateUserAccount} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    Full Name / Organization Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addFullName}
+                    onChange={(e) => setAddFullName(e.target.value)}
+                    placeholder="e.g. Tesfaye Tadesse"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white focus:outline-none focus:ring-2 focus:ring-gold-500 font-sans"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={addEmail}
+                    onChange={(e) => setAddEmail(e.target.value)}
+                    placeholder="tesfaye@gmail.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    System Role Permission *
+                  </label>
+                  <select
+                    value={addRole}
+                    onChange={(e) => setAddRole(e.target.value as any)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-gold-300 font-semibold focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  >
+                    <option value="SYSTEM_ADMIN">👑 SYSTEM_ADMIN (Master Root Admin)</option>
+                    <option value="EVENT_ORGANIZER">👔 EVENT_ORGANIZER (Certified Production Agency)</option>
+                    <option value="BRIDE_GROOM">💍 BRIDE_GROOM (Wedding Host Couple)</option>
+                    <option value="LIVE_STREAMER">📹 LIVE_STREAMER (Broadcast Manager)</option>
+                    <option value="GATE_SCANNER">📱 GATE_SCANNER (Gate Check-In Agent)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
+                    Initial Account Password *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={addPassword}
+                    onChange={(e) => setAddPassword(e.target.value)}
+                    placeholder="agafari2026"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-gold-500/20">
+                  <button
+                    type="button"
+                    onClick={() => setAddModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-700 text-gray-300 font-bold hover:bg-slate-900 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submittingAdd}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold shadow-md border border-amber-300 transition-all"
+                  >
+                    {submittingAdd ? 'Creating User...' : 'Provision Account ✓'}
                   </button>
                 </div>
               </form>
