@@ -656,12 +656,18 @@ export default function SystemAdminDashboardPage() {
     setEditModalOpen(true);
   };
 
-  // Submit Edit User Credentials
+  // Submit Edit User Credentials (Password Only Editable)
   const handleSaveUserCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEditUser) return;
     setEditError('');
     setEditSuccess('');
+
+    if (!editNewPassword.trim()) {
+      setEditError('Please enter a new password to update account credentials.');
+      return;
+    }
+
     setSubmittingEdit(true);
 
     try {
@@ -669,25 +675,19 @@ export default function SystemAdminDashboardPage() {
         method: 'PATCH',
         headers: getAdminAuthHeaders(),
         body: JSON.stringify({
-          email: editEmail.trim(),
-          fullName: editFullName.trim(),
-          role: editRole,
-          newPassword: editNewPassword.trim() || undefined
+          newPassword: editNewPassword.trim()
         })
       });
 
       const data = await res.json();
       if (res.ok && (data.success || data.user)) {
-        setEditSuccess('User credentials and role permissions updated successfully.');
+        setEditSuccess('User password updated successfully!');
         setUsers((prev) =>
           prev.map((u) =>
             u.id === selectedEditUser.id
               ? {
                   ...u,
-                  email: editEmail.trim(),
-                  fullName: editFullName.trim(),
-                  role: editRole,
-                  ...(editNewPassword.trim() ? { temporaryPassword: editNewPassword.trim() } : {})
+                  temporaryPassword: editNewPassword.trim()
                 }
               : u
           )
@@ -697,10 +697,10 @@ export default function SystemAdminDashboardPage() {
           setEditSuccess('');
         }, 1200);
       } else {
-        setEditError(data.error || 'Failed to update user credentials.');
+        setEditError(data.error || 'Failed to update user password.');
       }
     } catch (err) {
-      setEditError('Network error while saving user updates.');
+      setEditError('Network error while saving user password update.');
     } finally {
       setSubmittingEdit(false);
     }
@@ -2058,60 +2058,72 @@ export default function SystemAdminDashboardPage() {
               )}
 
               <form onSubmit={handleSaveUserCredentials} className="space-y-4 text-xs">
+                {/* Fixed Read-Only Field: Full Name */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    Full Name / Organization Name
+                  <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
+                    <span>Full Name / Organization Name</span>
+                    <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-gray-500" />
+                      (Fixed)
+                    </span>
                   </label>
-                  <input
-                    type="text"
-                    required
-                    value={editFullName}
-                    onChange={(e) => setEditFullName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white focus:outline-none focus:ring-2 focus:ring-gold-500 font-sans"
-                  />
+                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gray-300 font-sans font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
+                    <span>{editFullName}</span>
+                    <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  </div>
                 </div>
 
+                {/* Fixed Read-Only Field: Email Address */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    Email Address (Login Identity)
+                  <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
+                    <span>Email Address (Login Identity)</span>
+                    <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-gray-500" />
+                      (Fixed)
+                    </span>
                   </label>
-                  <input
-                    type="email"
-                    required
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
-                  />
+                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gray-300 font-mono font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
+                    <span>{editEmail}</span>
+                    <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  </div>
                 </div>
 
+                {/* Fixed Read-Only Field: System Role */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    Role & Access Permission Level
+                  <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
+                    <span>Role & Access Permission Level</span>
+                    <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
+                      <Lock className="w-3 h-3 text-gray-500" />
+                      (Fixed)
+                    </span>
                   </label>
-                  <select
-                    value={editRole}
-                    onChange={(e) => setEditRole(e.target.value as any)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-gold-300 font-semibold focus:outline-none focus:ring-2 focus:ring-gold-500"
-                  >
-                    <option value="SYSTEM_ADMIN">👑 SYSTEM_ADMIN (Master Root Admin)</option>
-                    <option value="EVENT_ORGANIZER">👔 EVENT_ORGANIZER (Certified Production Agency)</option>
-                    <option value="BRIDE_GROOM">💍 BRIDE_GROOM (Wedding Host Couple)</option>
-                    <option value="LIVE_STREAMER">📹 LIVE_STREAMER (Broadcast Manager)</option>
-                    <option value="GATE_SCANNER">📱 GATE_SCANNER (Gate Check-In Agent)</option>
-                  </select>
+                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gold-300 font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
+                    <span>
+                      {editRole === 'SYSTEM_ADMIN' && '👑 SYSTEM_ADMIN (Master Super Admin)'}
+                      {editRole === 'EVENT_ORGANIZER' && '👔 EVENT_ORGANIZER (Certified Production Agency)'}
+                      {editRole === 'BRIDE_GROOM' && '💍 BRIDE_GROOM (Wedding Host Couple)'}
+                      {editRole === 'LIVE_STREAMER' && '📹 LIVE_STREAMER (Broadcast Manager)'}
+                      {editRole === 'GATE_SCANNER' && '📱 GATE_SCANNER (Gate Check-In Agent)'}
+                      {editRole === 'GUEST' && '👥 GUEST (Guest User)'}
+                    </span>
+                    <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
+                  </div>
                 </div>
 
+                {/* SOLE EDITABLE FIELD: New Password */}
                 <div>
-                  <label className="block text-[11px] font-bold text-gray-300 mb-1">
-                    New Password (Optional - leave blank to keep current)
+                  <label className="block text-[11px] font-bold text-gold-400 mb-1 flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-gold-400" />
+                    <span>New Password (Editable Password Reset) *</span>
                   </label>
                   <div className="relative">
                     <input
                       type={showEditPassword ? 'text' : 'password'}
+                      required
                       value={editNewPassword}
                       onChange={(e) => setEditNewPassword(e.target.value)}
                       placeholder="Enter new password to reset..."
-                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-500"
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border-2 border-gold-500 text-white font-mono focus:outline-none focus:ring-2 focus:ring-gold-400 shadow-md"
                     />
                     <button
                       type="button"
@@ -2136,7 +2148,7 @@ export default function SystemAdminDashboardPage() {
                     disabled={submittingEdit}
                     className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-amber-950 font-extrabold shadow-md border border-amber-300 transition-all"
                   >
-                    {submittingEdit ? 'Updating Credentials...' : 'Save Credentials ✓'}
+                    {submittingEdit ? 'Updating Password...' : 'Save Credentials ✓'}
                   </button>
                 </div>
               </form>
