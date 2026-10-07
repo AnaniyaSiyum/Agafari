@@ -48,9 +48,12 @@ import {
   RefreshCw,
   Building2,
   Edit,
-  Mail
+  Mail,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
+import { inspectImageFile, IMAGE_SPECS } from '@/lib/imageInspector';
 
 interface EventCredential {
   fullName: string;
@@ -231,6 +234,14 @@ function SystemAdminDashboardContent() {
   const [creatingEvent, setCreatingEvent] = useState(false);
   const [createdAdminControlUrl, setCreatedAdminControlUrl] = useState<string | null>(null);
   const [createdOrgCreds, setCreatedOrgCreds] = useState<{ id: string; email: string; password?: string; url: string } | null>(null);
+
+  // Couple Photo Upload & Size Validation State (Strict Rejection handling)
+  const [couplePhotoFile, setCouplePhotoFile] = useState<File | null>(null);
+  const [couplePhotoPreview, setCouplePhotoPreview] = useState<string | null>(null);
+  const [photoValidationError, setPhotoValidationError] = useState<string>('');
+  const [photoValidationSuccess, setPhotoValidationSuccess] = useState<string>('');
+  const [isInspectingPhoto, setIsInspectingPhoto] = useState<boolean>(false);
+  const [savingPhotoUpdate, setSavingPhotoUpdate] = useState<boolean>(false);
 
   // New Organizer Agency Onboarding State
   const [orgAgencyName, setOrgAgencyName] = useState('');
@@ -531,6 +542,108 @@ function SystemAdminDashboardContent() {
     }
   };
 
+  // Couple Photo Upload & Size Inspection (Strict Rejection handling)
+  const handleCouplePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhotoValidationError('');
+    setPhotoValidationSuccess('');
+
+    const file = e.target.files?.[0];
+    if (!file) {
+      setCouplePhotoFile(null);
+      setCouplePhotoPreview(null);
+      return;
+    }
+
+    setIsInspectingPhoto(true);
+
+    try {
+      const inspection = await inspectImageFile(file, 'COUPLE_PORTRAIT');
+
+      // Appropriate Size & Resolution Validation Rules:
+      // Max file size: 5MB
+      // Minimum resolution: 400x400 px
+      // Maximum resolution: 4000x4000 px
+      const maxMb = 5;
+      const minWidth = 400;
+      const minHeight = 400;
+      const maxWidth = 4000;
+      const maxHeight = 4000;
+
+      let rejectionReason = '';
+
+      if (inspection.fileSizeMb > maxMb) {
+        rejectionReason = `File size is ${inspection.fileSizeMb}MB, which exceeds the maximum allowed limit of ${maxMb}MB.`;
+      } else if (inspection.width < minWidth || inspection.height < minHeight) {
+        rejectionReason = `Image resolution is ${inspection.width}×${inspection.height}px, which is smaller than the minimum required ${minWidth}×${minHeight}px.`;
+      } else if (inspection.width > maxWidth || inspection.height > maxHeight) {
+        rejectionReason = `Image dimensions (${inspection.width}×${inspection.height}px) exceed the maximum allowed ${maxWidth}×${maxHeight}px limit.`;
+      }
+
+      if (rejectionReason) {
+        // REJECT THE UPLOADING IMAGE COMPLETELY!
+        e.target.value = ''; // Reset input element so file is not attached
+        setCouplePhotoFile(null);
+        setCouplePhotoPreview(null);
+        setPhotoValidationError(
+          `🔴 Upload Rejected: ${rejectionReason} Please fix the issue and upload an image of appropriate size (Recommended: 800×800 px square or 800×1000 px portrait, Max 5MB).`
+        );
+      } else {
+        // ACCEPT THE IMAGE
+        setCouplePhotoFile(file);
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          setCouplePhotoPreview(evt.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+
+        setPhotoValidationSuccess(
+          `✓ Image Approved! Appropriate size and resolution verified (${inspection.width}×${inspection.height}px, ${inspection.fileSizeMb}MB).`
+        );
+      }
+    } catch (err) {
+      e.target.value = '';
+      setCouplePhotoFile(null);
+      setCouplePhotoPreview(null);
+      setPhotoValidationError('🔴 Failed to inspect image file. Please upload a valid image file (JPG, PNG, WebP).');
+    } finally {
+      setIsInspectingPhoto(false);
+    }
+  };
+
+  // Handler to update photo for selected event
+  const handleSaveSelectedEventPhoto = async () => {
+    if (!selectedEvent || !couplePhotoPreview) return;
+    setSavingPhotoUpdate(true);
+    try {
+      const res = await fetch('/api/admin/events', {
+        method: 'PATCH',
+        headers: getAdminAuthHeaders(),
+        body: JSON.stringify({
+          eventId: selectedEvent.id,
+          coverImageUrl: couplePhotoPreview,
+        }),
+      });
+
+      if (res.ok) {
+        setEvents((prev) =>
+          prev.map((evt) =>
+            evt.id === selectedEvent.id ? { ...evt, coverImageUrl: couplePhotoPreview } : evt
+          )
+        );
+        setSelectedEvent((prev) => (prev ? { ...prev, coverImageUrl: couplePhotoPreview } : null));
+        setPhotoValidationSuccess('✓ Couple photo saved and updated for wedding event!');
+        setTimeout(() => setPhotoValidationSuccess(''), 3500);
+      } else {
+        setPhotoValidationError('Failed to save couple photo on server.');
+      }
+    } catch (err) {
+      console.error('Failed to update event photo:', err);
+      setPhotoValidationError('Network error while saving couple photo.');
+    } finally {
+      setSavingPhotoUpdate(false);
+    }
+  };
+
   // Direct Admin Creation of a Wedding
   const handleCreateWeddingEvent = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -553,6 +666,7 @@ function SystemAdminDashboardContent() {
           venueAddress: newVenueAddress,
           coupleEmail: newCoupleEmail,
           expectedGuests: Number(newExpectedGuests),
+          coverImageUrl: couplePhotoPreview || undefined,
           managedBy: 'ADMIN',
         }),
       });
@@ -573,6 +687,10 @@ function SystemAdminDashboardContent() {
         setNewVenueName('');
         setNewCoupleEmail('');
         setNewExpectedGuests(300);
+        setCouplePhotoFile(null);
+        setCouplePhotoPreview(null);
+        setPhotoValidationError('');
+        setPhotoValidationSuccess('');
       }
     } catch (err) {
       console.error('Failed to create wedding:', err);
@@ -1387,6 +1505,155 @@ function SystemAdminDashboardContent() {
                 </div>
               )}
 
+              {/* Selected Event Command Room & Couple Photo Editor */}
+              {selectedEvent && (
+                <div className="p-6 sm:p-8 rounded-3xl bg-white border-2 border-gold-500 shadow-lg space-y-6 mt-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-black text-gold-400 flex items-center justify-center font-bold text-lg border border-gold-500/30 shrink-0">
+                        <Crown className="w-6 h-6 text-gold-400" />
+                      </div>
+                      <div>
+                        <span className="px-2.5 py-0.5 rounded-full bg-gold-100 text-gold-900 text-[10px] font-bold uppercase tracking-wider">
+                          SELECTED EVENT COMMAND ROOM
+                        </span>
+                        <h3 className="font-serif font-bold text-xl text-gray-900 mt-0.5">
+                          {selectedEvent.title}
+                        </h3>
+                        <p className="text-xs text-gray-500 font-mono">
+                          ID: evt-{selectedEvent.slug} • Venue: {selectedEvent.venueName}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleToggleLiveStream(selectedEvent.id, selectedEvent.isLive || false)}
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm ${
+                          selectedEvent.isLive
+                            ? 'bg-rose-600 text-white animate-pulse'
+                            : 'bg-black text-gold-400 border border-gold-500/40'
+                        }`}
+                      >
+                        <Radio className="w-4 h-4" />
+                        <span>{selectedEvent.isLive ? '🔴 LIVE STREAMING ACTIVE' : 'Start Live Stream'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Couple Photo Inspector & Upload Panel */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                    <div className="space-y-3">
+                      <h4 className="font-serif font-bold text-base text-gray-900 flex items-center gap-2">
+                        <ImageIcon className="w-5 h-5 text-gold-500" />
+                        <span>Active Couple Photo Banner</span>
+                      </h4>
+                      <div className="h-56 rounded-2xl overflow-hidden border-2 border-gold-500/30 bg-black/10 relative shadow-sm">
+                        {selectedEvent.coverImageUrl ? (
+                          <img
+                            src={selectedEvent.coverImageUrl}
+                            alt={selectedEvent.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gray-900 text-gold-400 text-center font-serif">
+                            <ImageIcon className="w-10 h-10 mb-2 text-gold-500/60" />
+                            <span>No Couple Photo Uploaded Yet</span>
+                            <span className="text-[11px] text-gray-400 mt-1 font-sans">Use the uploader to add an appropriate size photo.</span>
+                          </div>
+                        )}
+                        {selectedEvent.coverImageUrl && (
+                          <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] text-gold-400 font-mono font-bold border border-gold-500/30">
+                            ✓ Active Couple Photo
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Upload & Size Validation Form */}
+                    <div className="space-y-4 p-5 rounded-2xl bg-gray-50 border border-gold-500/30">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-serif font-bold text-base text-gray-900 flex items-center gap-2">
+                          <Upload className="w-4 h-4 text-gold-600" />
+                          <span>Upload / Replace Couple Photo</span>
+                        </h4>
+                        <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gold-100 text-gold-900 font-bold font-mono">
+                          Appropriate Size Required
+                        </span>
+                      </div>
+
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 space-y-1 font-sans">
+                        <div className="font-bold flex items-center gap-1 text-amber-950">
+                          <span>📐 Image Size & Dimension Requirements:</span>
+                        </div>
+                        <ul className="list-disc list-inside space-y-0.5 text-amber-900/90 text-[10px]">
+                          <li>Recommended: <strong>800 × 800 px</strong> (1:1 square) or <strong>800 × 1000 px</strong> (4:5 portrait)</li>
+                          <li>Maximum File Size: <strong>5 MB</strong></li>
+                          <li>Minimum Resolution: <strong>400 × 400 px</strong></li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-gray-900 mb-1">
+                          Select Couple Photo File:
+                        </label>
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={handleCouplePhotoSelect}
+                          className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-black file:text-gold-400 hover:file:bg-gray-800 cursor-pointer border border-gray-300 rounded-xl p-1 bg-white"
+                        />
+                      </div>
+
+                      {/* Loading Inspection Indicator */}
+                      {isInspectingPhoto && (
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2 animate-pulse">
+                          <RefreshCw className="w-4 h-4 animate-spin text-amber-700" />
+                          <span>Inspecting image dimensions & file size...</span>
+                        </div>
+                      )}
+
+                      {/* Rejection Alert Banner */}
+                      {photoValidationError && (
+                        <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-950 text-xs font-bold space-y-1 shadow-md">
+                          <div className="flex items-center gap-2 text-rose-800 text-sm font-extrabold">
+                            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                            <span>Upload Rejected</span>
+                          </div>
+                          <p className="text-rose-900 font-sans leading-relaxed text-[11px]">
+                            {photoValidationError}
+                          </p>
+                          <div className="text-[10px] text-rose-700 font-mono pt-1.5 border-t border-rose-200">
+                            💡 Action Required: Please fix the image size and upload an appropriate size image.
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Success Approval Badge */}
+                      {photoValidationSuccess && (
+                        <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs font-bold flex items-center gap-2">
+                          <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                          <span>{photoValidationSuccess}</span>
+                        </div>
+                      )}
+
+                      {/* Save Photo Button */}
+                      {couplePhotoPreview && !photoValidationError && (
+                        <div className="flex items-center gap-3 pt-2">
+                          <button
+                            onClick={handleSaveSelectedEventPhoto}
+                            disabled={savingPhotoUpdate}
+                            className="px-6 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs shadow-md border border-gold-500/40 flex items-center gap-2 cursor-pointer"
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-gold-400" />
+                            <span>{savingPhotoUpdate ? 'Saving Couple Photo...' : 'Save & Publish Couple Photo'}</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
             </div>
           )}
@@ -1928,6 +2195,74 @@ function SystemAdminDashboardContent() {
                       placeholder="Sheraton Addis Luxury Ballroom"
                       className="w-full px-3 py-2 rounded-xl border border-gold-500/30 bg-gray-50 text-xs focus:outline-none focus:ring-2 focus:ring-gold-500"
                     />
+                  </div>
+
+                  {/* Couple Photo Upload with Strict Size Validation & Rejection */}
+                  <div className="space-y-2 p-3.5 rounded-2xl bg-gray-50 border border-gold-500/30">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-[11px] font-bold text-gray-900 flex items-center gap-1.5">
+                        <ImageIcon className="w-4 h-4 text-gold-600" />
+                        <span>Couple Photo (Optional Banner)</span>
+                      </label>
+                      <span className="text-[10px] text-gray-500 font-mono">
+                        800×800 px • Max 5MB
+                      </span>
+                    </div>
+
+                    <input
+                      type="file"
+                      accept="image/png, image/jpeg, image/webp"
+                      onChange={handleCouplePhotoSelect}
+                      className="w-full text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-black file:text-gold-400 hover:file:bg-gray-800 cursor-pointer border border-gray-300 rounded-xl p-1 bg-white"
+                    />
+
+                    {/* Inspection Loading Indicator */}
+                    {isInspectingPhoto && (
+                      <div className="p-2 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2 animate-pulse">
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-700" />
+                        <span>Inspecting image dimensions...</span>
+                      </div>
+                    )}
+
+                    {/* Rejection Alert Banner */}
+                    {photoValidationError && (
+                      <div className="p-3 rounded-xl bg-rose-50 border-2 border-rose-500 text-rose-950 text-xs font-bold space-y-1 shadow-sm">
+                        <div className="flex items-center gap-1.5 text-rose-800 text-xs font-extrabold">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Upload Rejected</span>
+                        </div>
+                        <p className="text-rose-900 font-sans leading-relaxed text-[11px]">
+                          {photoValidationError}
+                        </p>
+                        <div className="text-[10px] text-rose-700 font-mono pt-1 border-t border-rose-200">
+                          💡 Please fix the image size and upload an image of appropriate size.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Success Approval Badge */}
+                    {photoValidationSuccess && (
+                      <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs font-bold flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{photoValidationSuccess}</span>
+                      </div>
+                    )}
+
+                    {/* Image Preview Thumbnail */}
+                    {couplePhotoPreview && !photoValidationError && (
+                      <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-gold-500 shadow-sm mt-1">
+                        <img
+                          src={couplePhotoPreview}
+                          alt="Couple Photo Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/40 flex items-end p-1">
+                          <span className="text-[8px] font-mono text-white bg-black/80 px-1 py-0.5 rounded font-bold">
+                            Validated ✓
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>

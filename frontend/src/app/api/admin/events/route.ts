@@ -267,7 +267,7 @@ export async function PATCH(req: NextRequest) {
   if (!auth.ok) return auth.response;
 
   try {
-    const { eventId, adminApprovalStatus, status, isLive, youtubeVideoId } = await req.json();
+    const { eventId, adminApprovalStatus, status, isLive, youtubeVideoId, coverImageUrl } = await req.json();
     if (!eventId) return NextResponse.json({ error: 'eventId is required.' }, { status: 400 });
 
     try {
@@ -280,9 +280,10 @@ export async function PATCH(req: NextRequest) {
            admin_approval_status = COALESCE($2, admin_approval_status),
            status = COALESCE($3, status),
            is_live = COALESCE($4, is_live),
-           youtube_video_id = COALESCE($5, youtube_video_id)
+           youtube_video_id = COALESCE($5, youtube_video_id),
+           cover_image_url = COALESCE($8, cover_image_url)
          WHERE id = $1 OR slug = $1 OR id = $6 OR slug = $7`,
-        [eventId, adminApprovalStatus ?? null, status ?? null, isLiveVal, youtubeVideoId ?? null, cleanId, cleanSlug]
+        [eventId, adminApprovalStatus ?? null, status ?? null, isLiveVal, youtubeVideoId ?? null, cleanId, cleanSlug, coverImageUrl ?? null]
       );
 
       const event = await queryOne('SELECT * FROM events WHERE id = $1 OR slug = $1 OR id = $2 OR slug = $3', [eventId, cleanId, cleanSlug]);
@@ -314,6 +315,10 @@ export async function PATCH(req: NextRequest) {
           }
           if (status) mockStore.events[idx].status = status as any;
           if (isLive !== undefined) mockStore.events[idx].isLive = isLive;
+          if (coverImageUrl !== undefined) {
+            mockStore.events[idx].coverImageUrl = coverImageUrl;
+            (mockStore.events[idx] as any).cover_image_url = coverImageUrl;
+          }
         }
 
         const formatted = formatEvent(event);
