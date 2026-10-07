@@ -735,31 +735,31 @@ function PublicWeddingCelebrationContent({
 
   return (
     <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
-      {/* Fixed/Rigged Outer Background for Desktop */}
+      {/* 1. FIXED/RIGGED FULL-PAGE COVER PHOTO BACKGROUND FOR SCROLLING SECTIONS */}
       <div className="fixed inset-0 z-0 w-full h-full pointer-events-none overflow-hidden">
         <img
           src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
           alt={coupleTitle}
-          className="w-full h-full object-cover object-center filter brightness-95 contrast-105 saturate-110"
+          className="w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110"
         />
-        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-stone-950/50 to-stone-950/90" />
       </div>
 
-      {/* Main Centered Frame (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
-      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] bg-stone-950/90">
+      {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
+      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
 
         {/* ========================================================================= */}
-        {/* 1. 100% HEIGHT HERO BANNER WITH COUPLE PHOTO & OVERLAID NAME AT BOTTOM */}
+        {/* 1. 100% HEIGHT HERO BANNER WITH COVER PHOTO FULLY DISPLAYED */}
         {/* ========================================================================= */}
-        <section className="relative w-full min-h-screen h-screen flex flex-col justify-between p-4 sm:p-6 overflow-hidden shadow-2xl">
+        <section className="relative w-full min-h-screen h-[100dvh] flex flex-col justify-between p-4 sm:p-6 overflow-hidden shadow-2xl">
           {/* Dynamic 100% Height Cover Photo */}
           <img
             src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
             alt={coupleTitle}
-            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
+            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110 z-0 pointer-events-none"
           />
           {/* Subtle Contrast Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-stone-950/95 z-0 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent to-black/75 z-0 pointer-events-none" />
 
           {/* Top Header Bar */}
           <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
@@ -828,17 +828,17 @@ function PublicWeddingCelebrationContent({
             </div>
           </nav>
 
-          {/* COUPLE NAME & DATE OVERLAID AT THE BOTTOM PART OF THE PHOTO */}
-          <div className="relative z-20 text-center max-w-3xl mx-auto mt-auto pb-10 sm:pb-14 space-y-2">
-            <h2 className="font-serif text-xs sm:text-base font-bold text-gold-400 tracking-[0.3em] uppercase drop-shadow-lg">
+          {/* COUPLE NAME & DATE OVERLAID DIRECTLY AT THE BOTTOM PART OF THE PHOTO */}
+          <div className="relative z-20 text-center max-w-3xl mx-auto mt-auto pb-8 sm:pb-12 space-y-2">
+            <h2 className="font-serif text-xs sm:text-base font-bold text-gold-400 tracking-[0.3em] uppercase drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
               SAVE THE DATE
             </h2>
 
-            <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.9)] tracking-wide py-1">
+            <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-[0_10px_25px_rgba(0,0,0,0.95)] tracking-wide py-1">
               {coupleTitle}
             </h1>
 
-            <div className="space-y-0.5 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow-md">
+            <div className="space-y-0.5 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)]">
               <p className="text-gold-300 font-serif">{formattedDateString}</p>
               <p className="text-[11px] sm:text-xs text-white/95 font-bold">AT {venueTitle.toUpperCase()}</p>
             </div>
