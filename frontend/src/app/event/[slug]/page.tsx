@@ -748,16 +748,19 @@ function PublicWeddingCelebrationContent({
       {/* 2. MAIN CENTERED ENLARGED 9:16 PORTRAIT FRAME (100% Mobile, 60% Width / max-w-[580px] Centered on Desktop) */}
       <div className="relative z-10 w-full lg:w-[60vw] max-w-[580px] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 bg-stone-950 shadow-[0_0_100px_rgba(0,0,0,0.95)]">
 
-        {/* ========================================================================= */}
-        {/* 1. 100% HEIGHT HERO BANNER WITH 9:16 COVER PHOTO FULLY DISPLAYED */}
-        {/* ========================================================================= */}
-        <section className="relative w-full min-h-screen h-[100dvh] flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
-          {/* Cover Photo inside 9:16 Centered Frame */}
+        {/* RIGGED (FIXED) 9:16 COVER PHOTO BACKGROUND INSIDE THE CENTERED FRAME */}
+        <div className="fixed top-0 z-0 w-full lg:w-[60vw] max-w-[580px] h-screen h-[100dvh] pointer-events-none overflow-hidden">
           <img
             src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
             alt={coupleTitle}
-            className="absolute inset-0 w-full h-full object-cover object-top filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
+            className="w-full h-full object-cover object-top filter brightness-105 contrast-105 saturate-110"
           />
+        </div>
+
+        {/* ========================================================================= */}
+        {/* 1. 100% HEIGHT HERO BANNER WITH 9:16 COVER PHOTO FULLY DISPLAYED */}
+        {/* ========================================================================= */}
+        <section className="relative z-10 w-full min-h-screen h-[100dvh] flex flex-col justify-between p-4 sm:p-6 overflow-hidden">
 
           {/* Top Header Bar */}
           <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
