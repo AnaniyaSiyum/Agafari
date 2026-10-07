@@ -82,6 +82,9 @@ import { mockStore } from '@/lib/mockData';
 
 // GET: every wedding event on the platform, with organizer/couple names and stats
 export async function GET(req: NextRequest) {
+  const auth = requireRole(req, ['SYSTEM_ADMIN', 'EVENT_ORGANIZER']);
+  if (!auth.ok) return auth.response;
+
   let rawEvents: any[] = [];
   let dbSuccess = false;
   try {
@@ -114,7 +117,7 @@ export async function GET(req: NextRequest) {
 
 // POST: create a new wedding event — provisions specific Event Organizer credentials for the wedding
 export async function POST(req: NextRequest) {
-  const auth = requireRole(req, ['SYSTEM_ADMIN']);
+  const auth = requireRole(req, ['SYSTEM_ADMIN', 'EVENT_ORGANIZER']);
   if (!auth.ok) return auth.response;
 
   try {

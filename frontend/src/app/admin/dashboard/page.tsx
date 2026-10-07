@@ -243,12 +243,13 @@ export default function SystemAdminDashboardPage() {
       const userStr = localStorage.getItem('agafari_user');
       const token = localStorage.getItem('agafari_token');
       const role = localStorage.getItem('agafari_role');
-      if (!userStr || !token || role !== 'SYSTEM_ADMIN') {
+      const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ADMIN'];
+      if (!userStr || !token || !allowedRoles.includes(role || '')) {
         localStorage.removeItem('agafari_user');
         localStorage.removeItem('agafari_role');
         localStorage.removeItem('agafari_token');
         document.cookie = 'agafari_token=; path=/; max-age=0';
-        router.push('/admin/login');
+        router.push('/login');
         return;
       }
     }
@@ -781,6 +782,18 @@ export default function SystemAdminDashboardPage() {
                 {users.length}
               </span>
             </button>
+
+            {/* 5. System Admin Credentials Panel Link */}
+            <Link
+              href="/system-admin"
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all text-gold-300 bg-gold-500/10 hover:bg-gold-500/20 border border-gold-500/30 font-bold"
+            >
+              <div className="flex items-center gap-3">
+                <Crown className="w-4 h-4 text-gold-400" />
+                <span>System Admin Control Panel</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-gold-400" />
+            </Link>
           </nav>
         </div>
 
