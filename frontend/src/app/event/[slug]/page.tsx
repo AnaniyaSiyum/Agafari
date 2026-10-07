@@ -742,8 +742,8 @@ function PublicWeddingCelebrationContent({
           alt={coupleTitle}
           className="w-full h-full object-cover object-top sm:object-center filter brightness-105 contrast-105 saturate-110"
         />
-        {/* Subtle Gradient Overlay: Top dark for header readability, middle transparent for photo, bottom for smooth glass transition */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-transparent via-55% to-stone-950/90" />
+        {/* Subtle Gradient Overlay: Light top & bottom shadows for text readability without half-black screen */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/40" />
       </div>
 
       {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
