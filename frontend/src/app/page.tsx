@@ -325,15 +325,7 @@ export default function HomePage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-              <motion.a
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-                href="#demo"
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-metallic hover:bg-metallic-hover text-sage-dark font-extrabold text-xs sm:text-sm shadow-accent transition-all flex items-center justify-center gap-2"
-              >
-                <Play className="w-4 h-4 fill-sage-dark" />
-                {t('landing.hero.ctaDemo')}
-              </motion.a>
+
               <motion.a
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
