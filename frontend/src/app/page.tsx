@@ -346,161 +346,203 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          {/* Interactive Dual-Device Mockup Preview */}
+          {/* Sleek Royal Glassmorphic Feature Showcase */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 35 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.8 }}
-            className="mt-14 w-full max-w-4xl relative"
+            className="mt-12 w-full max-w-5xl relative z-10"
           >
-            {/* Ambient Halo behind phones */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[320px] bg-gradient-to-r from-amber-400/20 via-gold-500/30 to-amber-500/20 rounded-full blur-3xl pointer-events-none" />
+            {/* Soft Ambient Golden Radial Halo */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[85%] h-[280px] bg-gradient-to-r from-amber-300/25 via-gold-500/30 to-amber-500/25 rounded-full blur-[90px] pointer-events-none" />
 
-            {/* Dual Device Grid Shell */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-
-              {/* Phone 1: Envelope & Gate Pass QR */}
-              <motion.div
-                whileHover={{ y: -6, scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-                className="p-5 sm:p-6 rounded-3xl bg-slate-950 border-2 border-gold-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl relative overflow-hidden group text-left"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-gold-500/10 rounded-full blur-2xl" />
-
-                {/* Status Bar */}
-                <div className="flex items-center justify-between border-b border-gold-500/20 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                    <span className="text-[10px] text-gold-400 font-extrabold uppercase tracking-widest">
-                      Agafari Gate Pass
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">100% Anti-Passback</span>
-                </div>
-
-                {/* Pass Preview Card */}
-                <div className="bg-gradient-to-b from-slate-900 to-black p-4 rounded-2xl border border-gold-500/30 text-center relative overflow-hidden shadow-inner">
-                  {/* Laser Beam effect */}
-                  <motion.div
-                    animate={{ y: [0, 130, 0] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                    className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_15px_#f59e0b] z-20 pointer-events-none"
-                  />
-
-                  <div className="text-[10px] text-amber-400 font-serif uppercase tracking-widest mb-1">
-                    Sara & Dawit's Wedding
-                  </div>
-                  <div className="font-serif font-bold text-white text-lg mb-2">
-                    Abebe Kebede & Family
-                  </div>
-
-                  {/* QR Image Graphic Container */}
-                  <div className="w-36 h-36 mx-auto bg-white p-2 rounded-2xl shadow-lg relative flex items-center justify-center border-2 border-gold-400">
-                    <img
-                      src="/images/feature_qr_pass.png"
-                      alt="Gate Pass QR"
-                      className="w-full h-full object-cover rounded-xl"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-9 h-9 rounded-xl bg-black/90 p-1 flex items-center justify-center shadow-lg border border-gold-400">
-                        <QrCode className="w-5 h-5 text-gold-400" />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Pass Details Info */}
-                  <div className="mt-3 flex items-center justify-between text-[11px] bg-slate-900/90 px-3 py-2 rounded-xl border border-gold-500/20 text-slate-300">
-                    <div>
-                      <span className="text-slate-400 block text-[9px] uppercase">Table</span>
-                      <strong className="text-gold-300">VIP Table #4</strong>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-slate-400 block text-[9px] uppercase">Seats</span>
-                      <strong className="text-emerald-400">2 Guests Allowed</strong>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold text-[11px]">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" /> Verified Pass
+            {/* Main Showcase Container */}
+            <div className="relative z-10 p-2 sm:p-3 rounded-[32px] bg-gradient-to-b from-white/90 via-amber-50/50 to-white/95 backdrop-blur-xl border border-gold-500/30 shadow-[0_25px_60px_rgba(212,175,55,0.15)]">
+              
+              {/* Header Tab Bar */}
+              <div className="flex items-center justify-between px-4 py-2.5 rounded-2xl bg-white/80 border border-gold-500/20 mb-3 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
                   </span>
-                  <span className="text-[10px] text-amber-400 font-semibold uppercase">Scan & Enter Gate</span>
+                  <span className="text-[11px] font-extrabold uppercase tracking-widest text-gray-900">
+                    Agafari Royal Experience
+                  </span>
                 </div>
-              </motion.div>
-
-              {/* Phone 2: TikTok Memory Feed & Wishes */}
-              <motion.div
-                whileHover={{ y: -6, scale: 1.02 }}
-                transition={{ duration: 0.3 }}
-                className="p-5 sm:p-6 rounded-3xl bg-slate-950 border-2 border-gold-500/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl relative overflow-hidden group text-left"
-              >
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl" />
-
-                {/* Status Bar */}
-                <div className="flex items-center justify-between border-b border-gold-500/20 pb-3 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" />
-                    <span className="text-[10px] text-gold-400 font-extrabold uppercase tracking-widest">
-                      TikTok Memory Feed
-                    </span>
-                  </div>
-                  <span className="text-[10px] text-slate-400 font-mono">Live Guest Feed</span>
+                <div className="flex items-center gap-3 text-[10px] font-bold text-amber-700 bg-amber-100/80 px-3 py-1 rounded-full border border-amber-300/60">
+                  <Sparkles className="w-3 h-3 text-amber-600 animate-spin" style={{ animationDuration: '6s' }} />
+                  <span>Interactive Ecosystem</span>
                 </div>
+              </div>
 
-                {/* Feed Card Preview */}
-                <div className="h-56 bg-slate-900 rounded-2xl overflow-hidden border border-gold-500/30 relative group/feed">
-                  <img
-                    src="/images/feature_feed_live.png"
-                    alt="Memory Feed Preview"
-                    className="w-full h-full object-cover filter brightness-90 group-hover/feed:scale-105 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-
-                  {/* Play Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-12 h-12 rounded-full bg-gold-500/90 text-black flex items-center justify-center shadow-2xl border border-white/50 backdrop-blur-md">
-                      <Play className="w-5 h-5 fill-black ml-0.5" />
-                    </div>
-                  </div>
-
-                  {/* Reaction Heart Animation */}
-                  <div className="absolute right-3 bottom-12 flex flex-col items-center gap-3">
-                    <motion.div
-                      animate={{ scale: [1, 1.25, 1] }}
-                      transition={{ duration: 1.5, repeat: Infinity }}
-                      className="w-8 h-8 rounded-full bg-black/60 border border-white/30 backdrop-blur-md flex items-center justify-center text-rose-400 shadow-md"
-                    >
-                      <Heart className="w-4 h-4 fill-rose-500" />
-                    </motion.div>
-                    <span className="text-[10px] font-bold text-white drop-shadow">1.2k</span>
-                  </div>
-
-                  {/* Caption Snippet */}
-                  <div className="absolute bottom-3 left-3 right-14 text-left">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-5 h-5 rounded-full bg-gold-400 text-black text-[9px] font-bold flex items-center justify-center">
-                        H
+              {/* Showcase Grid: 3 Interactive Feature Highlight Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                
+                {/* Card 1: Gate Pass & Anti-Passback */}
+                <motion.div
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  transition={{ duration: 0.25 }}
+                  className="p-5 rounded-2xl bg-slate-950 text-white border border-gold-500/40 relative overflow-hidden group shadow-lg flex flex-col justify-between"
+                >
+                  <div className="absolute top-0 right-0 w-28 h-28 bg-gold-500/10 rounded-full blur-xl pointer-events-none" />
+                  
+                  <div>
+                    <div className="flex items-center justify-between border-b border-gold-500/20 pb-2.5 mb-3">
+                      <div className="flex items-center gap-1.5 text-gold-400 text-[10px] font-extrabold uppercase tracking-wider">
+                        <QrCode className="w-3.5 h-3.5 text-gold-400" />
+                        <span>VIP Gate Pass</span>
                       </div>
-                      <span className="text-white text-xs font-bold drop-shadow">Hellen T.</span>
-                      <span className="text-[9px] text-amber-300 bg-black/60 px-2 py-0.5 rounded-full border border-amber-400/30">
-                        🎤 Voice Wish
+                      <span className="text-[9px] text-emerald-400 font-bold bg-emerald-950/80 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                        Anti-Passback
                       </span>
                     </div>
-                    <p className="text-[11px] text-slate-200 line-clamp-1 font-light drop-shadow">
-                      "Wishing Sara & Dawit endless love and blessings! 💍✨"
-                    </p>
+
+                    <div className="bg-gradient-to-b from-slate-900 to-black p-3.5 rounded-xl border border-gold-500/30 text-center relative">
+                      <div className="text-[9px] text-amber-300 font-serif tracking-wider uppercase mb-0.5">
+                        Sara & Dawit's Wedding
+                      </div>
+                      <div className="font-serif font-bold text-white text-sm mb-2">
+                        Abebe Kebede & Family
+                      </div>
+
+                      <div className="w-24 h-24 mx-auto bg-white p-1.5 rounded-xl shadow-md relative flex items-center justify-center border border-gold-400 mb-2">
+                        <img
+                          src="/images/feature_qr_pass.png"
+                          alt="Gate Pass QR"
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-7 h-7 rounded-lg bg-black/90 p-1 flex items-center justify-center shadow-md border border-gold-400">
+                            <QrCode className="w-4 h-4 text-gold-400" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[10px] text-gold-300 font-semibold bg-slate-900/90 py-1 px-2 rounded-lg border border-gold-500/20">
+                        Table VIP #4 • 2 Guests
+                      </div>
+                    </div>
                   </div>
-                </div>
 
-                <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-                  <span className="flex items-center gap-1.5 text-amber-400 font-bold text-[11px]">
-                    <Video className="w-4 h-4 text-amber-400" /> 1-Click Guest Upload
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-semibold uppercase">Telegram Synced</span>
-                </div>
-              </motion.div>
+                  <div className="mt-3 flex items-center justify-between text-[10px] text-slate-300 pt-2 border-t border-slate-800">
+                    <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Instant Check-in
+                    </span>
+                    <span className="text-amber-400 font-bold">Gate Verified</span>
+                  </div>
+                </motion.div>
 
+                {/* Card 2: Memory Feed & Guests Wish */}
+                <motion.div
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  transition={{ duration: 0.25 }}
+                  className="p-5 rounded-2xl bg-slate-950 text-white border border-gold-500/40 relative overflow-hidden group shadow-lg flex flex-col justify-between"
+                >
+                  <div className="absolute top-0 right-0 w-28 h-28 bg-rose-500/10 rounded-full blur-xl pointer-events-none" />
+
+                  <div>
+                    <div className="flex items-center justify-between border-b border-gold-500/20 pb-2.5 mb-3">
+                      <div className="flex items-center gap-1.5 text-rose-400 text-[10px] font-extrabold uppercase tracking-wider">
+                        <Heart className="w-3.5 h-3.5 text-rose-500 fill-rose-500 animate-pulse" />
+                        <span>TikTok Memory Feed</span>
+                      </div>
+                      <span className="text-[9px] text-rose-300 font-bold bg-rose-950/80 border border-rose-500/30 px-2 py-0.5 rounded-full">
+                        Live Moments
+                      </span>
+                    </div>
+
+                    <div className="h-36 rounded-xl overflow-hidden border border-gold-500/30 relative group/feed">
+                      <img
+                        src="/images/feature_feed_live.png"
+                        alt="Memory Feed Preview"
+                        className="w-full h-full object-cover filter brightness-90 group-hover/feed:scale-105 transition-transform duration-700"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-full bg-gold-500/90 text-black flex items-center justify-center shadow-xl border border-white/50 backdrop-blur-md">
+                          <Play className="w-4 h-4 fill-black ml-0.5" />
+                        </div>
+                      </div>
+
+                      <div className="absolute bottom-2 left-2 right-2 text-left">
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className="w-4 h-4 rounded-full bg-gold-400 text-black text-[8px] font-extrabold flex items-center justify-center">
+                            H
+                          </span>
+                          <span className="text-white text-[11px] font-bold drop-shadow">Hellen T.</span>
+                          <span className="text-[8px] text-amber-300 bg-black/70 px-1.5 py-0.5 rounded-full border border-amber-400/30">
+                            🎤 Voice Wish
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-slate-200 line-clamp-1 font-light">
+                          "Wishing Sara & Dawit endless love! 💍✨"
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between text-[10px] text-slate-300 pt-2 border-t border-slate-800">
+                    <span className="flex items-center gap-1 text-amber-400 font-semibold">
+                      <Video className="w-3.5 h-3.5 text-amber-400" /> Guest Video Upload
+                    </span>
+                    <span className="text-rose-400 font-bold">1.2k Likes</span>
+                  </div>
+                </motion.div>
+
+                {/* Card 3: Live Broadcast & Telegram Sync */}
+                <motion.div
+                  whileHover={{ y: -4, scale: 1.01 }}
+                  transition={{ duration: 0.25 }}
+                  className="p-5 rounded-2xl bg-slate-950 text-white border border-gold-500/40 relative overflow-hidden group shadow-lg flex flex-col justify-between"
+                >
+                  <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 rounded-full blur-xl pointer-events-none" />
+
+                  <div>
+                    <div className="flex items-center justify-between border-b border-gold-500/20 pb-2.5 mb-3">
+                      <div className="flex items-center gap-1.5 text-gold-400 text-[10px] font-extrabold uppercase tracking-wider">
+                        <Radio className="w-3.5 h-3.5 text-rose-400 animate-pulse" />
+                        <span>Live Broadcast</span>
+                      </div>
+                      <span className="text-[9px] text-amber-300 font-bold bg-amber-950/80 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                        Telegram Synced
+                      </span>
+                    </div>
+
+                    <div className="bg-gradient-to-b from-slate-900 to-black p-3.5 rounded-xl border border-gold-500/30 text-center relative h-36 flex flex-col justify-between">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white font-extrabold flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> LIVE
+                        </span>
+                        <span className="text-slate-400 text-[9px]">HD 1080p</span>
+                      </div>
+
+                      <div className="my-auto py-2">
+                        <div className="text-amber-400 text-xs font-bold font-serif mb-1">
+                          Global Family Stream
+                        </div>
+                        <p className="text-slate-300 text-[10px] font-light leading-snug">
+                          Watch from anywhere in the world with zero buffering.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-center gap-2 text-[10px] text-gold-300 bg-slate-900/90 py-1 px-2 rounded-lg border border-gold-500/20">
+                        <Send className="w-3 h-3 text-sky-400" />
+                        <span>Instant Telegram Sync Bot</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between text-[10px] text-slate-300 pt-2 border-t border-slate-800">
+                    <span className="flex items-center gap-1 text-sky-400 font-semibold">
+                      <Globe className="w-3.5 h-3.5 text-sky-400" /> Global Access
+                    </span>
+                    <span className="text-emerald-400 font-bold">100% Reliable</span>
+                  </div>
+                </motion.div>
+
+              </div>
             </div>
           </motion.div>
 
