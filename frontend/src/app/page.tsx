@@ -383,22 +383,25 @@ export default function HomePage() {
                 return (
                   <div
                     key={`${feat.id}-${idx}`}
-                    className="w-[310px] sm:w-[340px] h-[520px] sm:h-[550px] rounded-[36px] border border-gold-500/30 hover:border-gold-500 hover:shadow-[0_0_35px_rgba(212,175,55,0.3)] transition-all duration-500 group relative flex flex-col items-center justify-center p-3.5 bg-slate-950/90 backdrop-blur-xl shrink-0 text-white overflow-hidden shadow-2xl"
+                    className="w-[280px] sm:w-[310px] h-[550px] sm:h-[580px] shrink-0 relative group cursor-pointer transition-all duration-500 hover:-translate-y-3 hover:scale-105 hover:rotate-1"
                   >
-                    {/* Layer 0 (z-0): Ambient Glow behind phone */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-gold-500/10 via-amber-500/5 to-transparent rounded-[36px] blur-xl pointer-events-none group-hover:scale-110 transition-transform duration-700 z-0" />
+                    {/* 3D Realistic Smartphone Body */}
+                    <div className="w-full h-full rounded-[48px] bg-slate-950 p-2.5 relative flex flex-col justify-between border-[4px] border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_30px_rgba(212,175,55,0.25),inset_0_1px_2px_rgba(255,255,255,0.3)] group-hover:border-gold-500/70 group-hover:shadow-[0_35px_70px_rgba(0,0,0,0.98),0_0_50px_rgba(212,175,55,0.45)] transition-all duration-500 overflow-hidden">
+                      
+                      {/* 3D Hardware Side Buttons */}
+                      <div className="absolute -right-[6px] top-24 w-[5px] h-12 bg-slate-700/90 rounded-r border-r border-slate-500 shadow-md z-40" />
+                      <div className="absolute -left-[6px] top-20 w-[5px] h-10 bg-slate-700/90 rounded-l border-l border-slate-500 shadow-md z-40" />
+                      <div className="absolute -left-[6px] top-34 w-[5px] h-10 bg-slate-700/90 rounded-l border-l border-slate-500 shadow-md z-40" />
 
-                    {/* Layer 1 (z-10): Realistic Titanium Smartphone Frame */}
-                    <div className="w-[230px] sm:w-[250px] rounded-[36px] bg-slate-950 p-2 shadow-2xl border-[3px] border-slate-700/80 relative z-10 text-left scale-95 group-hover:scale-100 transition-transform duration-500">
-                      {/* Notch */}
-                      <div className="w-18 h-2.5 bg-black rounded-full mx-auto mb-1 flex items-center justify-between px-2 shadow-inner">
-                        <div className="w-1.5 h-1.5 rounded-full bg-slate-900" />
-                        <div className="w-1 h-1 rounded-full bg-blue-900/90" />
+                      {/* Dynamic Island Notch */}
+                      <div className="w-22 h-3.5 bg-black rounded-full mx-auto mb-1.5 flex items-center justify-between px-2.5 shadow-inner border border-slate-900/90 z-30 shrink-0">
+                        <div className="w-2 h-2 rounded-full bg-slate-900 border border-slate-800" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-blue-900/90 shadow-sm" />
                       </div>
 
                       {/* Screen Interface */}
                       {feat.id === 'f1' ? (
-                        <div className="bg-gradient-to-b from-stone-900 via-stone-950 to-black rounded-[28px] overflow-hidden border border-gold-500/40 text-white font-sans p-3 relative text-xs flex flex-col justify-between h-[415px] sm:h-[435px] shadow-inner">
+                        <div className="bg-gradient-to-b from-stone-900 via-stone-950 to-black rounded-[38px] overflow-hidden border border-gold-500/40 text-white font-sans p-3.5 relative text-xs flex flex-col justify-between h-full shadow-inner z-10">
                           {/* Top Bar with Agafari Logo & Audio Button */}
                           <div className="flex items-center justify-between border-b border-gold-500/30 pb-2">
                             <div className="flex items-center gap-1.5">
@@ -474,7 +477,7 @@ export default function HomePage() {
                           </div>
                         </div>
                       ) : feat.id === 'f2' ? (
-                        <div className="bg-slate-950 rounded-[28px] overflow-hidden border border-gold-500/30 text-white font-sans p-3 relative text-xs flex flex-col justify-between h-[415px] sm:h-[435px]">
+                        <div className="bg-slate-950 rounded-[38px] overflow-hidden border border-gold-500/30 text-white font-sans p-3.5 relative text-xs flex flex-col justify-between h-full shadow-inner z-10">
                           {/* Top Bar */}
                           <div className="flex items-center justify-between font-mono text-slate-400 border-b border-gold-500/20 pb-1.5">
                             <div className="flex items-center gap-1.5">
@@ -547,7 +550,7 @@ export default function HomePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-black rounded-[28px] overflow-hidden border border-rose-500/30 text-white font-sans relative text-xs h-[415px] sm:h-[435px] flex flex-col justify-between p-3">
+                        <div className="bg-black rounded-[38px] overflow-hidden border border-rose-500/30 text-white font-sans relative text-xs h-full flex flex-col justify-between p-3.5 z-10">
                           {/* Background Live Stream Feed */}
                           <div className="absolute inset-0 z-0">
                             <img
@@ -617,31 +620,31 @@ export default function HomePage() {
                           </div>
                         </div>
                       )}
-                    </div>
 
-                    {/* Layer 2 (z-30): Top Floating Badge Pill Overlay */}
-                    <div className="absolute top-4 left-4 z-30 px-3.5 py-1.5 rounded-full bg-black/85 backdrop-blur-md border border-gold-500/40 text-gold-300 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-xl">
-                      <IconComp className="w-3.5 h-3.5 text-gold-400" />
-                      {feat.badge}
-                    </div>
-
-                    {/* Layer 3 (z-30): Bottom Floating Transparent Action Bar Overlay */}
-                    <div className="absolute bottom-4 left-4 right-4 z-30 p-3 rounded-2xl bg-black/80 backdrop-blur-xl border border-gold-500/40 shadow-2xl flex items-center justify-between group-hover:border-gold-400 transition-all">
-                      <div className="text-left pr-2">
-                        <h3 className="font-serif text-xs font-bold text-white tracking-wide truncate max-w-[170px] sm:max-w-[190px]">
-                          {feat.title}
-                        </h3>
-                        <p className="text-[9px] text-gold-400 font-medium truncate max-w-[170px] sm:max-w-[190px] mt-0.5">
-                          {feat.btnText}
-                        </p>
+                      {/* Floating Top Badge Pill Overlay */}
+                      <div className="absolute top-6 left-6 z-30 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md border border-gold-500/50 text-gold-300 text-[9.5px] font-extrabold uppercase tracking-widest flex items-center gap-1.5 shadow-2xl">
+                        <IconComp className="w-3.5 h-3.5 text-gold-400" />
+                        {feat.badge}
                       </div>
-                      <a
-                        href={feat.link}
-                        className="w-8 h-8 rounded-full bg-gradient-to-r from-gold-500 to-amber-500 hover:from-amber-400 hover:to-gold-400 text-black flex items-center justify-center shrink-0 shadow-md transition-transform group-hover:scale-110"
-                        title={feat.title}
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+
+                      {/* Floating Bottom Transparent Action Bar Overlay */}
+                      <div className="absolute bottom-6 left-6 right-6 z-30 p-3 rounded-2xl bg-black/85 backdrop-blur-xl border border-gold-500/40 shadow-2xl flex items-center justify-between group-hover:border-gold-300 transition-all">
+                        <div className="text-left pr-2">
+                          <h3 className="font-serif text-xs font-bold text-white tracking-wide truncate max-w-[150px] sm:max-w-[170px]">
+                            {feat.title}
+                          </h3>
+                          <p className="text-[8.5px] text-gold-400 font-medium truncate max-w-[150px] sm:max-w-[170px] mt-0.5">
+                            {feat.btnText}
+                          </p>
+                        </div>
+                        <a
+                          href={feat.link}
+                          className="w-8 h-8 rounded-full bg-gradient-to-r from-gold-500 to-amber-500 hover:from-amber-400 hover:to-gold-400 text-black flex items-center justify-center shrink-0 shadow-md transition-transform group-hover:scale-110"
+                          title={feat.title}
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
                     </div>
                   </div>
                 );
