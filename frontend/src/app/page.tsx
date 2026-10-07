@@ -550,15 +550,15 @@ export default function HomePage() {
                           </div>
                         </div>
                       ) : (
-                        <div className="bg-gradient-to-b from-amber-50 via-amber-100/50 to-stone-900 rounded-[38px] overflow-hidden border border-amber-300/80 text-gray-900 font-sans relative text-xs h-full flex flex-col justify-between p-3.5 z-10">
-                          {/* Background Live Stream Feed */}
+                        <div className="bg-black rounded-[38px] overflow-hidden border border-amber-300/80 text-white font-sans relative text-xs h-full flex flex-col justify-between p-3.5 z-10">
+                          {/* Full-Bleed Live Wedding Stream Background (No nested phone graphic) */}
                           <div className="absolute inset-0 z-0">
                             <img
-                              src="/images/feature_feed_live.png"
-                              alt="TikTok Live Feed"
-                              className="w-full h-full object-cover opacity-90"
+                              src="/images/hero_couple_bg.png"
+                              alt="TikTok Wedding Live Stream"
+                              className="w-full h-full object-cover filter brightness-105 contrast-105"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-transparent to-black/85" />
+                            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/85" />
                           </div>
 
                           {/* Top Header: LIVE badge + Viewers */}
@@ -567,7 +567,7 @@ export default function HomePage() {
                               <span className="px-2 py-0.5 rounded bg-rose-600 font-extrabold text-[8px] tracking-wider text-white flex items-center gap-1 animate-pulse shadow">
                                 <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" /> LIVE
                               </span>
-                              <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur text-[7.5px] text-gray-200 font-mono">
+                              <span className="px-2 py-0.5 rounded-full bg-black/65 backdrop-blur text-[7.5px] text-gray-200 font-mono">
                                 👁 1.4K
                               </span>
                             </div>
@@ -597,6 +597,18 @@ export default function HomePage() {
                                 <Share2 className="w-3.5 h-3.5 text-white" />
                               </div>
                               <span className="text-[7.5px] font-bold mt-0.5 drop-shadow">Share</span>
+                            </div>
+                          </div>
+
+                          {/* Live Floating Comment Bubbles */}
+                          <div className="relative z-10 text-left space-y-1.5 my-auto max-w-[170px] pointer-events-none">
+                            <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-xl border border-white/20 text-[7.5px] text-white flex items-center gap-1 shadow">
+                              <span className="font-bold text-amber-300">@Bethlehem:</span>
+                              <span className="truncate">Beautiful couple! ❤️✨</span>
+                            </div>
+                            <div className="bg-black/60 backdrop-blur-md px-2 py-1 rounded-xl border border-white/20 text-[7.5px] text-white flex items-center gap-1 shadow">
+                              <span className="font-bold text-amber-300">@Yonas_K:</span>
+                              <span className="truncate">Dance floor is lit! 🔥🕺</span>
                             </div>
                           </div>
 
