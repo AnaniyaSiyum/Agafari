@@ -400,21 +400,21 @@ function TikTokMemoryFeedContent({ params }: { params: { slug: string } }) {
 
   return (
     <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
-      {/* Ambient Blurred Outer Background for Widescreen Desktop */}
-      <div className="fixed inset-0 z-0 opacity-30 blur-3xl pointer-events-none scale-110">
+      {/* Fixed/Rigged 100% Height Cover Background Photo Layer */}
+      <div className="fixed inset-0 z-0 w-full h-full pointer-events-none overflow-hidden">
         <img
           src="/images/hero_couple_bg.png"
           alt=""
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110"
         />
-        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/75 via-black/45 to-stone-950/90" />
       </div>
 
-      {/* Main Centered Phone-View Frame (100% on Mobile, ~60% Width / max-w-[620px] Centered on Desktop) */}
+      {/* Main Centered Frame (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
       <div 
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="relative z-10 w-full md:w-[60vw] md:max-w-[580px] lg:max-w-[620px] h-[100dvh] bg-black border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col font-sans relative overflow-hidden select-none"
+        className="relative z-10 w-full lg:w-[60vw] h-[100dvh] bg-black border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col font-sans relative overflow-hidden select-none"
       >
       
       {/* 1. TIKTOK-STYLE TOP NAVIGATION HEADER */}

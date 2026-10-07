@@ -735,34 +735,22 @@ function PublicWeddingCelebrationContent({
 
   return (
     <div className="min-h-screen w-full bg-stone-950 text-white flex justify-center selection:bg-gold-500 selection:text-black font-sans relative overflow-x-hidden">
-      {/* Ambient Blurred Outer Background for Widescreen Desktop */}
-      <div className="fixed inset-0 z-0 opacity-30 blur-3xl pointer-events-none scale-110">
+      {/* 1. FIXED/RIGGED 100% HEIGHT COVER PHOTO BACKGROUND */}
+      <div className="fixed inset-0 z-0 w-full h-full pointer-events-none overflow-hidden">
         <img
           src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
-          alt=""
-          className="w-full h-full object-cover object-center"
+          alt={coupleTitle}
+          className="w-full h-full object-cover object-center filter brightness-100 contrast-105 saturate-110"
         />
-        <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-3xl" />
+        {/* Dark Contrast Gradient Overlay for Glassmorphism Text Readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-stone-950/70 via-black/40 to-stone-950/90" />
       </div>
 
-      {/* Main Centered Phone-View Frame (100% on Mobile, ~60% Width / max-w-[620px] Centered on Desktop) */}
-      <div className="relative z-10 w-full md:w-[60vw] md:max-w-[580px] lg:max-w-[620px] min-h-screen bg-stone-950 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)] flex flex-col pb-28">
-
-        {/* ========================================================================= */}
-        {/* 1. FULL-SCREEN HERO BANNER (PORTRAIT PHONE FRAME ON DESKTOP) */}
-        {/* ========================================================================= */}
-        <section className="relative w-full min-h-screen h-screen bg-stone-950 text-white flex flex-col justify-between p-4 sm:p-6 overflow-hidden shadow-2xl">
-          {/* Dynamic Cover Background Image for THIS Specific Event */}
-          <img
-            src={event?.coverImageUrl || '/images/hero_couple_bg.png'}
-            alt={coupleTitle}
-            className="absolute inset-0 w-full h-full object-cover object-center filter brightness-105 contrast-105 saturate-110 z-0 pointer-events-none"
-          />
-          {/* Soft Contrast Gradient Overlay for Text Readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-stone-950/95 z-0 pointer-events-none" />
+      {/* 2. MAIN CENTERED FRAME (100% Mobile, 60% Width Centered on Desktop with 20% Left/Right Margins) */}
+      <div className="relative z-10 w-full lg:w-[60vw] min-h-screen flex flex-col pb-28 border-x border-gold-500/30 shadow-[0_0_80px_rgba(0,0,0,0.9)]">
 
         {/* Top Header Bar */}
-        <nav className="relative z-20 flex items-center justify-between w-full max-w-7xl mx-auto py-2">
+        <nav className="relative z-20 flex items-center justify-between w-full px-4 sm:px-6 py-4 bg-stone-950/50 backdrop-blur-xl border-b border-gold-500/30">
           <Link href="/" className="flex items-center gap-3 shrink-0">
             <img
               src="/branding/artboard-15.png"
@@ -828,29 +816,31 @@ function PublicWeddingCelebrationContent({
           </div>
         </nav>
 
-        {/* DYNAMIC HERO TYPOGRAPHY FOR THIS SPECIFIC EVENT */}
-        <div className="relative z-20 text-center max-w-3xl mx-auto mt-auto pb-8 sm:pb-12 space-y-2">
-          <h2 className="font-serif text-sm sm:text-lg font-bold text-gold-400 tracking-[0.25em] uppercase drop-shadow-md">
-            SAVE THE DATE
-          </h2>
+        {/* 3. HERO GLASSMORPHISM SAVE THE DATE CARD */}
+        <section className="relative w-full py-12 sm:py-16 px-4 sm:px-6 flex flex-col items-center justify-center text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="w-full max-w-2xl bg-stone-950/60 backdrop-blur-xl border-2 border-gold-500/40 rounded-3xl p-6 sm:p-10 shadow-[0_16px_40px_rgba(0,0,0,0.6)] space-y-4"
+          >
+            <h2 className="font-serif text-xs sm:text-base font-bold text-gold-400 tracking-[0.3em] uppercase drop-shadow-md">
+              SAVE THE DATE
+            </h2>
 
-          {/* DYNAMIC COUPLE NAMES */}
-          <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-2xl tracking-wide py-1">
-            {coupleTitle}
-          </h1>
+            <h1 className="font-script text-5xl sm:text-7xl lg:text-8xl font-bold text-white drop-shadow-2xl tracking-wide py-1">
+              {coupleTitle}
+            </h1>
 
-          {/* DYNAMIC EVENT DATE & VENUE */}
-          <div className="space-y-0.5 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow">
-            <p>{formattedDateString}</p>
-            <p className="text-[11px] sm:text-xs text-white/90 font-bold">AT {venueTitle.toUpperCase()}</p>
-          </div>
-        </div>
-      </section>
+            <div className="space-y-1 text-xs sm:text-sm font-extrabold uppercase tracking-widest text-gold-200 drop-shadow">
+              <p className="text-gold-300 font-serif">{formattedDateString}</p>
+              <p className="text-[11px] sm:text-xs text-white/90 font-bold">AT {venueTitle.toUpperCase()}</p>
+            </div>
+          </motion.div>
+        </section>
 
-      {/* ========================================================================= */}
-      {/* 2. MAIN INVITATION LETTER & DETAILS SECTIONS BELOW HERO */}
-      {/* ========================================================================= */}
-      <section className="relative z-10 px-4 sm:px-6 py-10 max-w-4xl mx-auto space-y-10">
+        {/* 4. MAIN INVITATION DETAILS SECTIONS */}
+        <section className="relative z-10 px-4 sm:px-6 py-4 max-w-4xl mx-auto space-y-10">
 
         {/* LIVE BROADCAST BANNER & PLAYER EMBED */}
         {(event.youtubeVideoId && event.status !== 'ENDED') && (
@@ -1264,22 +1254,22 @@ function PublicWeddingCelebrationContent({
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 sm:p-12 rounded-3xl border border-gold-500/30 hover:border-gold-500 transition-all duration-300 bg-white text-gray-900 relative overflow-hidden shadow-sm"
+          className="p-6 sm:p-10 rounded-3xl border-2 border-gold-500/40 bg-stone-950/70 backdrop-blur-xl text-white relative overflow-hidden shadow-2xl space-y-6"
         >
-          <div className="text-center mb-8 relative z-10">
+          <div className="text-center mb-6 relative z-10">
             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gold-500 via-amber-300 to-gold-600 text-black mx-auto flex items-center justify-center mb-3 shadow-md">
               <MessageSquareHeart className="w-7 h-7 text-black" />
             </div>
 
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-2 shadow-sm border border-gold-500/30">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-bold uppercase tracking-widest mb-2 shadow-sm border border-gold-500/40">
               <Sparkles className="w-3 h-3 text-gold-400" />
               {t('publicEvent.wishes.badge')}
             </div>
 
-            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900">
+            <h3 className="font-serif text-3xl sm:text-4xl font-bold text-white drop-shadow">
               Blessing Wishes for {coupleTitle}
             </h3>
-            <p className="text-gray-600 text-xs sm:text-sm mt-1 font-light max-w-lg mx-auto leading-relaxed">
+            <p className="text-stone-300 text-xs sm:text-sm mt-1 font-light max-w-lg mx-auto leading-relaxed">
               Record a video or write a blessing message for the bride and groom.
             </p>
 
@@ -1288,8 +1278,8 @@ function PublicWeddingCelebrationContent({
                 type="button"
                 onClick={() => setWishType('VIDEO')}
                 className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${wishType === 'VIDEO'
-                  ? 'bg-black text-gold-400 shadow-md border border-gold-500/40 scale-105'
-                  : 'bg-gray-50 border border-gold-500/30 text-gray-900'
+                  ? 'bg-gold-500 text-black shadow-md border border-gold-300 scale-105'
+                  : 'bg-black/60 border border-gold-500/30 text-stone-300'
                   }`}
               >
                 <Camera className="w-3.5 h-3.5" /> 📹 Video Blessing (Default)
@@ -1298,8 +1288,8 @@ function PublicWeddingCelebrationContent({
                 type="button"
                 onClick={() => setWishType('TEXT')}
                 className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${wishType === 'TEXT'
-                  ? 'bg-black text-gold-400 shadow-md border border-gold-500/40 scale-105'
-                  : 'bg-gray-50 border border-gold-500/30 text-gray-900'
+                  ? 'bg-gold-500 text-black shadow-md border border-gold-300 scale-105'
+                  : 'bg-black/60 border border-gold-500/30 text-stone-300'
                   }`}
               >
                 <MessageSquareHeart className="w-3.5 h-3.5" /> ✍️ Text Blessing
