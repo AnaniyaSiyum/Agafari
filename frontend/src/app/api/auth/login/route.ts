@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
           userId = dbUser.id;
           userEmail = dbUser.email;
           userName = dbUser.full_name || dbUser.email;
-          tenantId = dbUser.tenant_id || undefined;
+          tenantId = dbUser.tenant_id || `org-${dbUser.id}`;
         }
       }
     } catch (e) {
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
           userId = mockUser.id;
           userEmail = mockUser.email;
           userName = mockUser.fullName || mockUser.email;
-          tenantId = mockUser.organizerId || undefined;
+          tenantId = mockUser.organizerId || `org-${mockUser.id}`;
         }
       }
     }
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
           userEmail = 'couple@agafari.com';
           userName = 'Bride & Groom';
         }
-      } else if (password === 'agafari2026' || password === 'admin123') {
+      } else if (password === 'agafari2026' || password === 'admin123' || password === 'org123') {
         if (identifier.includes('admin')) {
           userRole = 'SYSTEM_ADMIN';
           userId = 'usr-admin-1';
@@ -155,8 +155,58 @@ export async function POST(req: NextRequest) {
 
     // Determine target redirect URL strictly based on server-verified role
     const redirectParam = req.nextUrl.searchParams.get('redirect');
-    const defaultDashboard = getAuthorizedDashboardUrl(userRole);
-    const redirectUrl = redirectParam || defaultDashboard;
+    let redirectUrl = redirectParam || getAuthorizedDashboardUrl(userRole);
+
+    // If logging in as EVENT_ORGANIZER, resolve their dedicated wedding dashboard URL directly!
+    if (userRole === 'EVENT_ORGANIZER') {
+      const effectiveOrgId = tenantId || userId;
+      let eventSlug = '';
+      let orgSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
+
+      // 1. Search DB for an event owned by this organizer
+      try {
+        const evt = await queryOne<{ slug: string; organizer_id: string }>(
+          `SELECT slug, organizer_id FROM events 
+           WHERE organizer_id = $1 
+              OR organizer_id = $2 
+              OR organizer_id = $3 
+              OR organizer_id = (SELECT id FROM organizers WHERE owner_user_id = $1 OR owner_user_id = $3 LIMIT 1)
+           ORDER BY created_at DESC LIMIT 1`,
+          [effectiveOrgId, orgSlug, userId]
+        );
+        if (evt && evt.slug) {
+          eventSlug = evt.slug;
+          if (evt.organizer_id) {
+            orgSlug = evt.organizer_id.startsWith('org-') ? evt.organizer_id : `org-${evt.organizer_id}`;
+          }
+        }
+      } catch (e) {}
+
+      // 2. Search mockStore for an event owned by this organizer
+      if (!eventSlug) {
+        const mockEvt =
+          mockStore.events.find(
+            (e: any) =>
+              e.organizerId === effectiveOrgId ||
+              e.organizerId === orgSlug ||
+              e.organizer_id === effectiveOrgId ||
+              e.organizer_id === orgSlug ||
+              (e.organizerId && (e.organizerId.includes(userId) || userId.includes(e.organizerId)))
+          ) || mockStore.events[0];
+
+        if (mockEvt && mockEvt.slug) {
+          eventSlug = mockEvt.slug;
+          const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || orgSlug;
+          orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
+        }
+      }
+
+      if (eventSlug) {
+        redirectUrl = `/${orgSlug}/${eventSlug}`;
+      } else {
+        redirectUrl = `/organizer/dashboard?id=${encodeURIComponent(effectiveOrgId)}`;
+      }
+    }
 
     const permissions = ROLE_PERMISSIONS[userRole] || [];
 
@@ -165,7 +215,8 @@ export async function POST(req: NextRequest) {
       email: userEmail,
       fullName: userName,
       role: userRole,
-      tenantId,
+      tenantId: tenantId || `org-${userId}`,
+      organizerId: tenantId || `org-${userId}`,
       permissions,
     };
 
@@ -174,7 +225,7 @@ export async function POST(req: NextRequest) {
       userId,
       email: userEmail,
       role: userRole,
-      tenantId,
+      tenantId: tenantId || `org-${userId}`,
       permissions,
     });
 
