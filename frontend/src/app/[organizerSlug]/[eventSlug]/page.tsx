@@ -51,6 +51,7 @@ import {
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 import InvitationCardModal from '@/components/InvitationCardModal';
 import { inspectImageFile, IMAGE_SPECS, ImageInspectionResult } from '@/lib/imageInspector';
+import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 
 interface RoleCredential {
   fullName: string;
@@ -675,7 +676,13 @@ export default function DedicatedEventControlPage({
   const moderatorPass = event?.credentials?.moderator?.temporaryPassword || 'mod123';
 
   return (
-    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-950">
+    <DashboardSecurityGate
+      dashboardTitle={formState.title || 'Wedding Event Control Hub'}
+      dashboardId={`organizer:${organizerSlug}:${eventSlug}`}
+      dashboardType="organizer"
+      slug={eventSlug}
+    >
+      <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-950">
       
       {/* Top Mobile App Header */}
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
@@ -2184,5 +2191,6 @@ export default function DedicatedEventControlPage({
       />
       </main>
     </div>
+    </DashboardSecurityGate>
   );
 }

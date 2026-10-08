@@ -87,15 +87,6 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(targetUrl, req.url));
   }
 
-  // Classify dashboard routes
-  const isSystemAdminRoute = path === '/system-admin' || path.startsWith('/system-admin/');
-  const isAdminRoute = (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/login');
-  const isOrganizerDashboard = path === '/organizer/dashboard' || path.startsWith('/organizer/dashboard/');
-  const isCoupleDashboard = path === '/couple/dashboard' || path.startsWith('/couple/dashboard/') || path.endsWith('/couple');
-  const isScannerRoute = path === '/scanner' || path.startsWith('/scanner/') || path.endsWith('/scanner');
-  const isLiveStreamerRoute = path === '/live-streamer' || path.startsWith('/live-streamer/') || path.endsWith('/live-streamer');
-  const isModerationRoute = path === '/moderation' || path.startsWith('/moderation/') || path.endsWith('/moderation');
-
   // Helper function to build standard unauthenticated redirect
   const redirectToLogin = () => {
     const loginUrl = new URL('/login', req.url);
@@ -110,7 +101,36 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL(authorizedHome, req.url));
   };
 
-  // 3. Protect System Admin routes (/system-admin, /system-admin/*)
+  // Skip auth checks for public guest feeds (e.g. /:organizerSlug/:eventSlug/feed)
+  if (path.endsWith('/feed')) {
+    return NextResponse.next();
+  }
+
+  // Classify dashboard routes
+  const isSystemAdminRoute = path === '/system-admin' || path.startsWith('/system-admin/');
+  const isAdminRoute = (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/login');
+  const isOrganizerDashboard = path === '/organizer/dashboard' || path.startsWith('/organizer/dashboard/');
+  const isCoupleDashboard = path === '/couple/dashboard' || path.startsWith('/couple/dashboard/') || path.endsWith('/couple') || path.endsWith('/couple-portal');
+  const isScannerRoute = path === '/scanner' || path.startsWith('/scanner/') || path.endsWith('/scanner');
+  const isLiveStreamerRoute = path === '/live-streamer' || path.startsWith('/live-streamer/') || path.endsWith('/live-streamer');
+  const isModerationRoute = path === '/moderation' || path.startsWith('/moderation/') || path.endsWith('/moderation');
+
+  // Detect Dedicated Organizer Event Control Dashboard: /[organizerSlug]/[eventSlug]
+  const pathSegments = path.split('/').filter(Boolean);
+  const isDedicatedOrganizerControlPage =
+    pathSegments.length === 2 &&
+    !['admin', 'system-admin', 'organizer', 'login', 'api', 'event', '_next', 'branding', 'images', 'favicon.ico'].includes(pathSegments[0].toLowerCase());
+
+  // 3. Protect Dedicated Organizer Event Control Pages (e.g., /[organizerSlug]/[eventSlug])
+  if (isDedicatedOrganizerControlPage) {
+    if (!user) return redirectToLogin();
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
+    if (!allowedRoles.includes(user.role)) {
+      return redirectToAuthorizedHome();
+    }
+  }
+
+  // 4. Protect System Admin routes (/system-admin, /system-admin/*)
   if (isSystemAdminRoute) {
     if (!user) return redirectToLogin();
     if (user.role !== 'SYSTEM_ADMIN') {
@@ -118,7 +138,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 4. Protect General Admin routes (/admin, /admin/*)
+  // 5. Protect General Admin routes (/admin, /admin/*)
   if (isAdminRoute) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
@@ -127,7 +147,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 5. Protect Organizer Dashboard Routes (/organizer/dashboard, /organizer/dashboard/*)
+  // 6. Protect Organizer Dashboard Routes (/organizer/dashboard, /organizer/dashboard/*)
   if (isOrganizerDashboard) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
@@ -136,7 +156,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 6. Protect Couple Dashboard & Portal Routes (/couple/dashboard, */couple)
+  // 7. Protect Couple Dashboard & Portal Routes (/couple/dashboard, */couple, */couple-portal)
   if (isCoupleDashboard) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'BRIDE_GROOM'];
@@ -145,7 +165,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 7. Protect Gate Scanner Control Routes (/scanner, */scanner)
+  // 8. Protect Gate Scanner Control Routes (/scanner, */scanner)
   if (isScannerRoute) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'GATE_SCANNER', 'BRIDE_GROOM'];
@@ -154,7 +174,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 8. Protect Live Streamer Studio Routes (/live-streamer, */live-streamer)
+  // 9. Protect Live Streamer Studio Routes (/live-streamer, */live-streamer)
   if (isLiveStreamerRoute) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'LIVE_STREAMER', 'BRIDE_GROOM'];
@@ -163,7 +183,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 9. Protect Media Moderation Suite Routes (/moderation, */moderation)
+  // 10. Protect Media Moderation Suite Routes (/moderation, */moderation)
   if (isModerationRoute) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'MODERATOR', 'BRIDE_GROOM'];
@@ -203,11 +223,10 @@ export const config = {
     '/live-streamer/:path*',
     '/moderation',
     '/moderation/:path*',
-    '/:organizerSlug/:eventSlug/couple',
-    '/:organizerSlug/:eventSlug/scanner',
-    '/:organizerSlug/:eventSlug/live-streamer',
-    '/:organizerSlug/:eventSlug/moderation',
+    '/:organizerSlug/:eventSlug',
+    '/:organizerSlug/:eventSlug/:path*',
     '/event/:slug/couple',
+    '/event/:slug/couple-portal',
     '/event/:slug/scanner',
     '/event/:slug/live-streamer',
     '/event/:slug/moderation',
