@@ -4,10 +4,11 @@ interface JwtPayload {
   userId: string;
   email: string;
   role: string;
+  permissions?: string[];
   exp?: number;
 }
 
-// Edge-compatible JWT verification helper using Web Crypto API
+// Edge-compatible Web Crypto JWT verification
 async function verifyJwtInMiddleware(token: string): Promise<JwtPayload | null> {
   try {
     const parts = token.split('.');
@@ -26,7 +27,7 @@ async function verifyJwtInMiddleware(token: string): Promise<JwtPayload | null> 
 
     const data = encoder.encode(`${encodedHeader}.${encodedPayload}`);
     const sigBase64 = signature.replace(/-/g, '+').replace(/_/g, '/');
-    const sigPad = sigBase64.padEnd(sigBase64.length + (4 - (sigBase64.length % 4)) % 4, '=');
+    const sigPad = sigBase64.padEnd(sigBase64.length + ((4 - (sigBase64.length % 4)) % 4), '=');
     const sigBytes = Uint8Array.from(atob(sigPad), (c) => c.charCodeAt(0));
 
     const isValid = await crypto.subtle.verify('HMAC', key, sigBytes, data);
@@ -44,12 +45,47 @@ async function verifyJwtInMiddleware(token: string): Promise<JwtPayload | null> 
   }
 }
 
+function getHomeDashboardForRole(role: string): string {
+  switch (role) {
+    case 'SYSTEM_ADMIN':
+      return '/system-admin';
+    case 'EVENT_ORGANIZER':
+      return '/organizer/dashboard';
+    case 'BRIDE_GROOM':
+      return '/couple/dashboard';
+    case 'GATE_SCANNER':
+      return '/scanner';
+    case 'LIVE_STREAMER':
+      return '/live-streamer';
+    case 'MODERATOR':
+      return '/moderation';
+    default:
+      return '/login';
+  }
+}
+
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const tokenCookie = req.cookies.get('agafari_token')?.value;
 
-  // 1. Verify token signature & expiration if cookie exists
+  // Verify JWT session cookie
   const user = tokenCookie ? await verifyJwtInMiddleware(tokenCookie) : null;
+
+  // 1. Legacy Login Page Redirects to Unified Gateway
+  if (path === '/admin/login' || path === '/organizer/login' || path === '/couple/login') {
+    const loginUrl = new URL('/login', req.url);
+    if (req.nextUrl.searchParams.has('redirect')) {
+      loginUrl.searchParams.set('redirect', req.nextUrl.searchParams.get('redirect')!);
+    }
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // 2. Already Authenticated User Visiting /login
+  if (path === '/login' && user) {
+    const redirectParam = req.nextUrl.searchParams.get('redirect');
+    const targetUrl = redirectParam || getHomeDashboardForRole(user.role);
+    return NextResponse.redirect(new URL(targetUrl, req.url));
+  }
 
   // Classify dashboard routes
   const isSystemAdminRoute = path === '/system-admin' || path.startsWith('/system-admin/');
@@ -60,108 +96,99 @@ export async function middleware(req: NextRequest) {
   const isLiveStreamerRoute = path === '/live-streamer' || path.startsWith('/live-streamer/') || path.endsWith('/live-streamer');
   const isModerationRoute = path === '/moderation' || path.startsWith('/moderation/') || path.endsWith('/moderation');
 
-  // 2. Protect System Admin routes (/system-admin, /system-admin/*)
+  // Helper function to build standard unauthenticated redirect
+  const redirectToLogin = () => {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('redirect', path);
+    return NextResponse.redirect(loginUrl);
+  };
+
+  // Helper function to handle unauthorized role access (redirect to user's authorized home)
+  const redirectToAuthorizedHome = () => {
+    if (!user) return redirectToLogin();
+    const authorizedHome = getHomeDashboardForRole(user.role);
+    return NextResponse.redirect(new URL(authorizedHome, req.url));
+  };
+
+  // 3. Protect System Admin routes (/system-admin, /system-admin/*)
   if (isSystemAdminRoute) {
-    if (!user) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
-    }
+    if (!user) return redirectToLogin();
     if (user.role !== 'SYSTEM_ADMIN') {
-      const adminUrl = new URL('/admin/dashboard', req.url);
-      return NextResponse.redirect(adminUrl);
+      return redirectToAuthorizedHome();
     }
   }
 
-  // 3. Protect General Admin routes (/admin, /admin/* EXCEPT /admin/login)
+  // 4. Protect General Admin routes (/admin, /admin/*)
   if (isAdminRoute) {
-    if (!user) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
-    }
-    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ADMIN'];
-    if (!allowedRoles.includes(user.role)) {
-      const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
-    }
-  }
-
-  // 4. Protect Organizer Dashboard Routes (/organizer/dashboard, /organizer/dashboard/*)
-  if (isOrganizerDashboard) {
-    if (!user) {
-      const loginUrl = new URL('/organizer/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
-    }
+    if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
     if (!allowedRoles.includes(user.role)) {
-      const loginUrl = new URL('/organizer/login', req.url);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuthorizedHome();
     }
   }
 
-  // 5. Protect Couple Dashboard & Portal Routes (/couple/dashboard, */couple)
-  if (isCoupleDashboard) {
-    if (!user) {
-      const loginUrl = new URL('/couple/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
+  // 5. Protect Organizer Dashboard Routes (/organizer/dashboard, /organizer/dashboard/*)
+  if (isOrganizerDashboard) {
+    if (!user) return redirectToLogin();
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
+    if (!allowedRoles.includes(user.role)) {
+      return redirectToAuthorizedHome();
     }
+  }
+
+  // 6. Protect Couple Dashboard & Portal Routes (/couple/dashboard, */couple)
+  if (isCoupleDashboard) {
+    if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'BRIDE_GROOM'];
     if (!allowedRoles.includes(user.role)) {
-      const loginUrl = new URL('/couple/login', req.url);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuthorizedHome();
     }
   }
 
-  // 6. Protect Gate Scanner Control Routes (/scanner, */scanner)
+  // 7. Protect Gate Scanner Control Routes (/scanner, */scanner)
   if (isScannerRoute) {
-    if (!user) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
-    }
+    if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'GATE_SCANNER', 'BRIDE_GROOM'];
     if (!allowedRoles.includes(user.role)) {
-      const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuthorizedHome();
     }
   }
 
-  // 7. Protect Live Streamer Studio Routes (/live-streamer, */live-streamer)
+  // 8. Protect Live Streamer Studio Routes (/live-streamer, */live-streamer)
   if (isLiveStreamerRoute) {
-    if (!user) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
-    }
-    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'STREAMER', 'BRIDE_GROOM'];
+    if (!user) return redirectToLogin();
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'LIVE_STREAMER', 'BRIDE_GROOM'];
     if (!allowedRoles.includes(user.role)) {
-      const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuthorizedHome();
     }
   }
 
-  // 8. Protect Media Moderation Suite Routes (/moderation, */moderation)
+  // 9. Protect Media Moderation Suite Routes (/moderation, */moderation)
   if (isModerationRoute) {
-    if (!user) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('redirect', path);
-      return NextResponse.redirect(loginUrl);
-    }
+    if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'MODERATOR', 'BRIDE_GROOM'];
     if (!allowedRoles.includes(user.role)) {
-      const loginUrl = new URL('/login', req.url);
-      return NextResponse.redirect(loginUrl);
+      return redirectToAuthorizedHome();
     }
   }
 
-  return NextResponse.next();
+  const response = NextResponse.next();
+
+  // Inject user identity headers for downstream API processing if authenticated
+  if (user) {
+    response.headers.set('X-User-Id', user.userId);
+    response.headers.set('X-User-Role', user.role);
+  }
+
+  return response;
 }
 
 export const config = {
   matcher: [
+    '/login',
+    '/admin/login',
+    '/organizer/login',
+    '/couple/login',
     '/admin',
     '/admin/:path*',
     '/system-admin',
@@ -186,4 +213,3 @@ export const config = {
     '/event/:slug/moderation',
   ],
 };
-

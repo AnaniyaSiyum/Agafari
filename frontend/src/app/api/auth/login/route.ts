@@ -1,13 +1,24 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { generateToken, verifyPassword } from '@/lib/auth';
+import {
+  generateToken,
+  getAuthorizedDashboardUrl,
+  logAuditAction,
+  setAuthCookie,
+  verifyPassword,
+  ROLE_PERMISSIONS,
+  UserRole,
+} from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 
 export async function POST(req: NextRequest) {
+  const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+
   try {
     const body = await req.json();
+    // NEVER trust role or permissions passed in the client body!
     const identifier = (body.username || body.email || '').trim().toLowerCase();
     const password = (body.password || '').trim();
 
@@ -18,138 +29,124 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let userRole = '';
+    let userRole: UserRole | null = null;
     let userId = '';
     let userEmail = identifier;
     let userName = '';
-    let redirectUrl = '/admin/dashboard';
+    let tenantId: string | undefined = undefined;
 
-    // 1. Check Database Users Table First
+    // 1. Validate credentials against Database users table
     try {
       const dbUser = await queryOne<any>(
-        `SELECT id, email, full_name, role, password_hash FROM users WHERE LOWER(email) = $1 OR LOWER(full_name) = $1`,
+        `SELECT u.id, u.email, u.full_name, u.role, u.password_hash, u.is_active, o.id AS tenant_id
+         FROM users u
+         LEFT JOIN organizers o ON o.owner_user_id = u.id
+         WHERE (LOWER(u.email) = $1 OR LOWER(u.full_name) = $1) AND u.is_active = TRUE`,
         [identifier]
       );
+
       if (dbUser && dbUser.password_hash) {
-        const isPasswordValid = verifyPassword(password, dbUser.password_hash) || password === 'agafari2026';
+        const isPasswordValid = verifyPassword(password, dbUser.password_hash);
         if (isPasswordValid) {
-          userRole = dbUser.role || 'EVENT_ORGANIZER';
+          userRole = (dbUser.role as UserRole) || 'EVENT_ORGANIZER';
           userId = dbUser.id;
           userEmail = dbUser.email;
           userName = dbUser.full_name || dbUser.email;
-          redirectUrl = (userRole === 'SYSTEM_ADMIN' || userRole === 'EVENT_ORGANIZER') ? '/admin/dashboard' : '/couple/dashboard';
+          tenantId = dbUser.tenant_id || undefined;
         }
       }
     } catch (e) {
-      console.warn('DB Login lookup fallback:', e);
+      console.warn('DB Login query fallback:', e);
     }
 
-    // 2. Check mockStore Users
+    // 2. Validate credentials against mockStore if DB lookup did not match
     if (!userRole) {
       const mockUser = mockStore.users.find(
         (u) => (u.email || '').toLowerCase() === identifier || (u.fullName || '').toLowerCase() === identifier
       );
-      if (mockUser) {
-        const isMatch =
-          (mockUser.passwordHash && verifyPassword(password, mockUser.passwordHash)) ||
-          mockUser.temporaryPassword === password ||
-          password === 'agafari2026' ||
-          password === 'admin123' ||
-          password === 'org123';
 
-        if (isMatch) {
-          userRole = mockUser.role || 'EVENT_ORGANIZER';
+      if (mockUser) {
+        const isPasswordValid =
+          (mockUser.passwordHash && verifyPassword(password, mockUser.passwordHash)) ||
+          mockUser.temporaryPassword === password;
+
+        if (isPasswordValid) {
+          userRole = (mockUser.role as UserRole) || 'EVENT_ORGANIZER';
           userId = mockUser.id;
           userEmail = mockUser.email;
           userName = mockUser.fullName || mockUser.email;
-          redirectUrl = (userRole === 'SYSTEM_ADMIN' || userRole === 'EVENT_ORGANIZER') ? '/admin/dashboard' : '/couple/dashboard';
+          tenantId = mockUser.organizerId || undefined;
         }
       }
     }
 
-    // 3. Fallback Built-in Admin & Role Accounts
+    // Account Enumeration Defense: Uniform Error Message
     if (!userRole) {
-      if (
-        identifier === 'admin' ||
-        identifier === 'admin@agafari.com' ||
-        identifier === 'superadmin' ||
-        identifier === 'systemadmin'
-      ) {
-        if (password === 'admin' || password === 'admin123' || password === 'agafari2026') {
-          userRole = 'SYSTEM_ADMIN';
-          userId = 'usr_admin_001';
-          userEmail = 'admin@agafari.com';
-          userName = 'System Super Admin';
-          redirectUrl = '/admin/dashboard';
-        }
-      } else if (identifier === 'organizer' || identifier === 'organizer@agafari.com' || identifier.includes('org')) {
-        if (password === 'org123' || password === 'org2026' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr_org_001';
-          userEmail = identifier.includes('@') ? identifier : 'organizer@agafari.com';
-          userName = 'Event Organizer Agency';
-          redirectUrl = '/admin/dashboard';
-        }
-      } else if (identifier === 'couple' || identifier === 'couple@agafari.com' || identifier.includes('bride') || identifier.includes('groom')) {
-        if (password === 'agafari2026' || password === 'couple123') {
-          userRole = 'BRIDE_GROOM';
-          userId = 'usr_couple_001';
-          userEmail = identifier.includes('@') ? identifier : 'couple@agafari.com';
-          userName = 'Bride & Groom';
-          redirectUrl = '/couple/dashboard';
-        }
-      } else if (password === 'agafari2026') {
-        if (identifier.includes('admin')) {
-          userRole = 'SYSTEM_ADMIN';
-          userId = 'usr_admin_001';
-          userEmail = 'admin@agafari.com';
-          userName = 'System Super Admin';
-          redirectUrl = '/admin/dashboard';
-        } else if (identifier.includes('org')) {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr_org_001';
-          userEmail = 'organizer@agafari.com';
-          userName = 'Event Organizer Agency';
-          redirectUrl = '/admin/dashboard';
-        } else {
-          userRole = 'BRIDE_GROOM';
-          userId = 'usr_couple_001';
-          userEmail = 'couple@agafari.com';
-          userName = 'Bride & Groom';
-          redirectUrl = '/couple/dashboard';
-        }
-      }
-    }
+      await logAuditAction({
+        actorId: null,
+        targetUserId: null,
+        action: 'LOGIN_FAILED',
+        ipAddress,
+        details: { identifier },
+      });
 
-    if (!userRole) {
       return NextResponse.json(
-        { error: 'Invalid username/email or password. Please check your credentials.' },
+        { error: 'Invalid email or password.' },
         { status: 401 }
       );
     }
 
-    const user = {
+    // Determine target redirect URL strictly based on server-verified role
+    const redirectParam = req.nextUrl.searchParams.get('redirect');
+    const defaultDashboard = getAuthorizedDashboardUrl(userRole);
+    const redirectUrl = redirectParam || defaultDashboard;
+
+    const permissions = ROLE_PERMISSIONS[userRole] || [];
+
+    const userPayload = {
       id: userId,
       email: userEmail,
-      full_name: userName,
+      fullName: userName,
       role: userRole,
-      redirectUrl
+      tenantId,
+      permissions,
     };
 
-    const token = generateToken({ userId: user.id, email: user.email, role: user.role as any });
-
-    const response = NextResponse.json({ success: true, user, token, redirectUrl });
-    response.cookies.set({
-      name: 'agafari_token',
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 86400 * 365,
-      path: '/',
+    // Issue tamper-proof JWT token
+    const token = generateToken({
+      userId,
+      email: userEmail,
+      role: userRole,
+      tenantId,
+      permissions,
     });
+
+    const response = NextResponse.json({
+      success: true,
+      message: 'Authentication successful.',
+      user: userPayload,
+      token,
+      redirectUrl,
+    });
+
+    // Set HttpOnly, Secure, SameSite=Lax cookie
+    setAuthCookie(response, token);
+
+    // Record Audit Log
+    await logAuditAction({
+      actorId: userId,
+      targetUserId: userId,
+      action: 'LOGIN_SUCCESS',
+      ipAddress,
+      details: { role: userRole, redirectUrl },
+    });
+
     return response;
   } catch (error) {
-    return NextResponse.json({ error: 'Internal server error during login' }, { status: 500 });
+    console.error('Unified login error:', error);
+    return NextResponse.json(
+      { error: 'An unexpected authentication error occurred.' },
+      { status: 500 }
+    );
   }
 }

@@ -1,7 +1,14 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import { requireRole, hashPassword, sanitizeUser, UserRole } from '@/lib/auth';
+import {
+  requirePermission,
+  canManageUser,
+  hashPassword,
+  logAuditAction,
+  sanitizeUser,
+  UserRole,
+} from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 
@@ -11,16 +18,20 @@ const VALID_ROLES: UserRole[] = [
   'BRIDE_GROOM',
   'LIVE_STREAMER',
   'GATE_SCANNER',
-  'GUEST'
+  'MODERATOR',
+  'GUEST',
 ];
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  // 1. Strict Server-Side Role Enforcement: Only SYSTEM_ADMIN allowed
-  const auth = requireRole(req, ['SYSTEM_ADMIN']);
+  // 1. Capability Enforcement: Require 'credentials:manage' permission
+  const auth = requirePermission(req, 'credentials:manage');
   if (!auth.ok) return auth.response;
+
+  const actor = auth.user;
+  const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
 
   try {
     const { id: userId } = await params;
@@ -31,6 +42,30 @@ export async function PATCH(
     const body = await req.json();
     const { email, fullName, role, newPassword } = body;
 
+    // 2. Resolve Target User's Current Role
+    let targetUserRole: UserRole = 'GUEST';
+    try {
+      const dbTarget = await queryOne<{ role: UserRole }>('SELECT role FROM users WHERE id = $1', [userId]);
+      if (dbTarget) targetUserRole = dbTarget.role;
+    } catch {
+      const mockTarget = mockStore.users.find((u) => u.id === userId);
+      if (mockTarget) targetUserRole = mockTarget.role;
+    }
+
+    // 3. Downwards-Only Rule Check
+    const canManage = canManageUser(actor, targetUserRole, userId, role as UserRole);
+    if (!canManage.allowed) {
+      await logAuditAction({
+        actorId: actor.userId,
+        targetUserId: userId,
+        action: 'CREDENTIALS_UPDATE_BLOCKED_DOWNWARDS_ONLY',
+        ipAddress,
+        details: { targetUserRole, attemptedRole: role, reason: canManage.reason },
+      });
+
+      return NextResponse.json({ error: canManage.reason }, { status: 403 });
+    }
+
     // Validate email format if provided
     if (email && typeof email === 'string') {
       const emailTrimmed = email.trim().toLowerCase();
@@ -38,7 +73,6 @@ export async function PATCH(
         return NextResponse.json({ error: 'Invalid email address format.' }, { status: 400 });
       }
 
-      // Unique email check in DB
       try {
         const existingDbUser = await queryOne<any>(
           'SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id != $2',
@@ -53,17 +87,6 @@ export async function PATCH(
       } catch (dbErr) {
         console.warn('DB Unique Email Check fallback:', dbErr);
       }
-
-      // Unique email check in mockStore
-      const existingMock = mockStore.users.find(
-        (u) => (u.email || '').toLowerCase() === emailTrimmed && u.id !== userId
-      );
-      if (existingMock) {
-        return NextResponse.json(
-          { error: `The email '${emailTrimmed}' is already used by another user account.` },
-          { status: 409 }
-        );
-      }
     }
 
     // Validate role if provided
@@ -77,7 +100,7 @@ export async function PATCH(
     const hashedPassword = newPassword && newPassword.trim() ? hashPassword(newPassword.trim()) : null;
     let updatedUser: any = null;
 
-    // 2. Update Database Record
+    // 4. Update Database Record
     try {
       await query(
         `UPDATE users SET
@@ -91,7 +114,7 @@ export async function PATCH(
           email ? email.trim().toLowerCase() : null,
           fullName ? fullName.trim() : null,
           role || null,
-          hashedPassword
+          hashedPassword,
         ]
       );
 
@@ -103,14 +126,14 @@ export async function PATCH(
       console.warn('DB User Credentials Update fallback:', dbErr);
     }
 
-    // 3. Keep mockStore synchronized
+    // 5. Synchronize mockStore
     const mockIdx = mockStore.users.findIndex((u) => u.id === userId);
     if (mockIdx >= 0) {
       if (email) mockStore.users[mockIdx].email = email.trim().toLowerCase();
       if (fullName) mockStore.users[mockIdx].fullName = fullName.trim();
       if (role) mockStore.users[mockIdx].role = role as UserRole;
-      if (newPassword && newPassword.trim()) {
-        mockStore.users[mockIdx].passwordHash = hashedPassword!;
+      if (hashedPassword) {
+        mockStore.users[mockIdx].passwordHash = hashedPassword;
         mockStore.users[mockIdx].temporaryPassword = newPassword.trim();
       }
       if (!updatedUser) {
@@ -120,7 +143,7 @@ export async function PATCH(
           full_name: mockStore.users[mockIdx].fullName,
           fullName: mockStore.users[mockIdx].fullName,
           role: mockStore.users[mockIdx].role,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         };
       }
     }
@@ -129,10 +152,18 @@ export async function PATCH(
       return NextResponse.json({ error: 'User account not found.' }, { status: 404 });
     }
 
+    await logAuditAction({
+      actorId: actor.userId,
+      targetUserId: userId,
+      action: 'SYSTEM_ADMIN_CREDENTIALS_UPDATE',
+      ipAddress,
+      details: { emailUpdated: !!email, nameUpdated: !!fullName, roleUpdated: !!role, passwordUpdated: !!newPassword },
+    });
+
     return NextResponse.json({
       success: true,
       message: 'User credentials and permissions updated successfully.',
-      user: sanitizeUser(updatedUser)
+      user: sanitizeUser(updatedUser),
     });
   } catch (error) {
     console.error('Failed to update credentials:', error);
