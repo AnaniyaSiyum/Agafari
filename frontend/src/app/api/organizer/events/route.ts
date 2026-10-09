@@ -75,7 +75,7 @@ async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?:
         await query(
           `INSERT INTO users (id, email, password_hash, full_name, role)
            VALUES ($1, $2, $3, $4, 'EVENT_ORGANIZER')
-           ON CONFLICT DO NOTHING`,
+           ON DUPLICATE KEY UPDATE id=id`,
           [fallbackUserId, rawInput.includes('@') ? rawInput : `organizer-${rawUserId}@agafari.com`, hashPassword('org2026'), autoAgencyName]
         );
         ownerUser = await queryOne<{ id: string; full_name: string; email: string }>(
@@ -90,7 +90,7 @@ async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?:
         await query(
           `INSERT INTO organizers (id, owner_user_id, business_name)
            VALUES ($1, $2, $3)
-           ON CONFLICT DO NOTHING`,
+           ON DUPLICATE KEY UPDATE id=id`,
           [newOrgId, ownerUser.id, autoAgencyName]
         );
         orgRow = await queryOne<{ id: string; business_name: string; owner_user_id: string; full_name?: string; email?: string }>(
