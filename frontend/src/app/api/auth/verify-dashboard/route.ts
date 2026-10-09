@@ -13,8 +13,23 @@ import {
 import { queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 
+import { verifyRateLimit, buildRateLimitResponse, getClientIp } from '@/lib/rateLimit';
+
 export async function POST(req: NextRequest) {
-  const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+  const ipAddress = getClientIp(req);
+
+  // Rate Limiting Defense: Max 10 attempts per minute per IP address
+  const rateLimit = await verifyRateLimit(`verify_dashboard:${ipAddress}`, { max: 10, windowSeconds: 60 });
+  if (!rateLimit.success) {
+    await logAuditAction({
+      actorId: null,
+      targetUserId: null,
+      action: 'DASHBOARD_VERIFY_RATE_LIMITED',
+      ipAddress,
+      details: { limit: rateLimit.limit },
+    });
+    return buildRateLimitResponse(rateLimit);
+  }
 
   try {
     const body = await req.json();
