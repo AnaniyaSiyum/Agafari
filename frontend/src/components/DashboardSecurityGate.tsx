@@ -10,6 +10,7 @@ interface DashboardSecurityGateProps {
   dashboardId?: string;
   dashboardType?: 'admin' | 'organizer' | 'couple' | 'scanner' | 'streamer' | 'moderator';
   slug?: string;
+  organizerSlug?: string;
   defaultEmail?: string;
   children: React.ReactNode;
 }
@@ -19,6 +20,7 @@ export default function DashboardSecurityGate({
   dashboardId = 'default',
   dashboardType = 'admin',
   slug,
+  organizerSlug,
   defaultEmail,
   children,
 }: DashboardSecurityGateProps) {
@@ -42,18 +44,55 @@ export default function DashboardSecurityGate({
     if (typeof window !== 'undefined') {
       const unlockedVal = sessionStorage.getItem(storageKey);
       const token = localStorage.getItem('agafari_token');
-      if (unlockedVal === 'true' || (token && !pathname?.includes('/login'))) {
+      const userStr = localStorage.getItem('agafari_user');
+      let currentUser: any = null;
+      if (userStr) {
+        try {
+          currentUser = JSON.parse(userStr);
+        } catch (e) {}
+      }
+
+      const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login';
+
+      let isSessionAuthorized = false;
+      if (unlockedVal === 'true') {
+        isSessionAuthorized = true;
+      } else if (token && currentUser && !isGeneralLogin) {
+        if (dashboardType === 'admin') {
+          isSessionAuthorized = currentUser.role === 'SYSTEM_ADMIN';
+        } else if (dashboardType === 'organizer') {
+          // Strict tenant check: logged in user must specifically match this organizerSlug
+          if (currentUser.role === 'EVENT_ORGANIZER' && organizerSlug) {
+            const userOrg = String(currentUser.organizerId || currentUser.tenantId || currentUser.id || '').toLowerCase().replace(/^org-/, '');
+            const targetOrg = organizerSlug.toLowerCase().replace(/^org-/, '');
+            isSessionAuthorized = Boolean(userOrg && targetOrg && userOrg === targetOrg);
+          } else {
+            isSessionAuthorized = false;
+          }
+        } else if (dashboardType === 'couple') {
+          isSessionAuthorized = currentUser.role === 'BRIDE_GROOM';
+        } else if (dashboardType === 'scanner') {
+          isSessionAuthorized = currentUser.role === 'GATE_SCANNER';
+        } else if (dashboardType === 'streamer') {
+          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER';
+        }
+      }
+
+      if (isSessionAuthorized) {
         setIsUnlocked(true);
       } else {
-        const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login';
+        setIsUnlocked(false);
         const urlParams = new URLSearchParams(window.location.search);
         const queryIdentifier = urlParams.get('email') || urlParams.get('identifier') || urlParams.get('username') || '';
-        const computedDefault = defaultEmail || queryIdentifier || (slug ? `${dashboardType}@${slug}.com` : isGeneralLogin ? '' : `admin@agafari.com`);
+        const computedDefault =
+          defaultEmail ||
+          queryIdentifier ||
+          (organizerSlug ? organizerSlug : slug ? `${dashboardType}@${slug}.com` : isGeneralLogin ? '' : `admin@agafari.com`);
         setIdentifier(computedDefault);
       }
       setChecking(false);
     }
-  }, [dashboardId, dashboardType, slug, defaultEmail, storageKey, pathname]);
+  }, [dashboardId, dashboardType, slug, organizerSlug, defaultEmail, storageKey, pathname]);
 
   const handleRolePresetClick = (role: 'admin' | 'matrimony' | 'couple' | 'scanner') => {
     setSelectedRolePreset(role);
@@ -91,6 +130,7 @@ export default function DashboardSecurityGate({
           dashboardId,
           dashboardType,
           slug,
+          organizerSlug,
           identifier: identifier.trim(),
           password: password.trim(),
         }),
@@ -175,11 +215,13 @@ export default function DashboardSecurityGate({
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-serif font-extrabold text-white tracking-wide">
-            Agafari Platform Login
+            {dashboardTitle || 'Agafari Platform Login'}
           </h1>
 
           <p className="text-[11px] font-bold text-gold-500 uppercase tracking-widest block">
-            OFFICIAL PLATFORM ACCESS CONTROL
+            {dashboardType === 'organizer' && organizerSlug
+              ? `ORGANIZER ACCESS CONTROL: ${organizerSlug}`
+              : 'OFFICIAL PLATFORM ACCESS CONTROL'}
           </p>
         </div>
 
@@ -212,7 +254,7 @@ export default function DashboardSecurityGate({
                 setIdentifier(e.target.value);
                 setSelectedRolePreset(null);
               }}
-              placeholder="e.g. admin@agafari.com or couple@agafari.com"
+              placeholder={organizerSlug ? `e.g. ${organizerSlug} or email` : "e.g. admin@agafari.com or couple@agafari.com"}
               className="w-full bg-[#0d0d0d] border border-stone-800 focus:border-gold-500 focus:ring-1 focus:ring-gold-500 rounded-xl px-4 py-3 text-xs text-white placeholder-stone-600 outline-none transition font-medium"
             />
           </div>

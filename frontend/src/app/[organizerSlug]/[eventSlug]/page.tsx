@@ -727,10 +727,12 @@ export default function DedicatedEventControlPage({
 
   return (
     <DashboardSecurityGate
-      dashboardTitle={formState.title || 'Wedding Event Control Hub'}
+      dashboardTitle={formState.title || `${formattedAgencyName} Agency — Event Control`}
       dashboardId={`organizer:${organizerSlug}:${eventSlug}`}
       dashboardType="organizer"
       slug={eventSlug}
+      organizerSlug={organizerSlug}
+      defaultEmail={event?.credentials?.organizer?.email || organizerSlug}
     >
       <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col font-sans selection:bg-amber-400 selection:text-slate-950">
       
