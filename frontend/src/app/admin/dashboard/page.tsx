@@ -23,6 +23,7 @@ import {
   Layers, 
   KeyRound, 
   FileText, 
+  User,
   UserPlus, 
   Briefcase, 
   QrCode, 
