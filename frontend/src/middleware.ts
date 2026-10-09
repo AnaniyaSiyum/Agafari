@@ -48,7 +48,7 @@ async function verifyJwtInMiddleware(token: string): Promise<JwtPayload | null> 
 function getHomeDashboardForRole(role: string): string {
   switch (role) {
     case 'SYSTEM_ADMIN':
-      return '/system-admin';
+      return '/admin/dashboard';
     case 'EVENT_ORGANIZER':
       return '/organizer/dashboard';
     case 'BRIDE_GROOM':
@@ -127,6 +127,16 @@ export async function middleware(req: NextRequest) {
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
     if (!allowedRoles.includes(user.role)) {
       return redirectToAuthorizedHome();
+    }
+
+    // Strict Multi-Tenant Isolation Guard:
+    // Organizers cannot navigate into another agency's dedicated event dashboard
+    if (user.role === 'EVENT_ORGANIZER') {
+      const requestedOrgSlug = pathSegments[0].toLowerCase().replace(/^org-/, '');
+      const userOrgSlug = (user.tenantId || user.userId || '').toLowerCase().replace(/^org-/, '');
+      if (requestedOrgSlug && userOrgSlug && requestedOrgSlug !== userOrgSlug) {
+        return redirectToAuthorizedHome();
+      }
     }
   }
 

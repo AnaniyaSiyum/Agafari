@@ -105,9 +105,9 @@ const mockEvents: EventData[] = [
   {
     id: 'evt-adeday-123456',
     slug: 'adeday-and-adisu-mtrnab92',
-    title: 'adeday & adisu Wedding',
-    brideName: 'adeday',
-    groomName: 'adisu',
+    title: 'Adeday & Adisu Wedding',
+    brideName: 'Adeday',
+    groomName: 'Adisu',
     eventDate: '2026-09-20T14:00:00.000Z',
     startTime: '14:00',
     venueName: 'Sheraton Addis Luxury Ballroom',
@@ -117,7 +117,38 @@ const mockEvents: EventData[] = [
     welcomeMessage: 'We are overjoyed to welcome you to our special day!',
     coverImageUrl: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200',
     status: 'COMING_SOON',
-    adminApprovalStatus: 'APPROVED'
+    adminApprovalStatus: 'APPROVED',
+    organizerId: 'org-usr-org-1',
+    credentials: {
+      couple: { fullName: 'Adeday & Adisu', email: 'couple@agafari.com', temporaryPassword: 'agafari2026', role: 'BRIDE_GROOM' },
+      organizer: { fullName: 'Agafari Luxury Event Production', email: 'organizer@agafari.com', temporaryPassword: 'org123', role: 'EVENT_ORGANIZER' },
+      streamer: { fullName: 'Live Streamer Crew', email: 'streamer@agafari.com', temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
+      scanner: { fullName: 'Gate QR Security Scanner', email: 'scanner@agafari.com', temporaryPassword: 'scan123', role: 'GATE_SCANNER' }
+    }
+  },
+  {
+    id: 'evt-matrimony-789012',
+    slug: 'sara-and-dawit-matrimony-2026',
+    title: 'Sara & Dawit Holy Matrimony',
+    brideName: 'Sara',
+    groomName: 'Dawit',
+    eventDate: '2026-10-18T14:00:00.000Z',
+    startTime: '14:00',
+    venueName: 'Skylight Hotel Grand Palace Ballroom',
+    venueAddress: 'Bole Airport Road, Addis Ababa, Ethiopia',
+    venueMapUrl: 'https://maps.google.com/?q=Ethiopian+Skylight+Hotel',
+    dressCode: 'Royal Habesha Cultural Attire',
+    welcomeMessage: 'Welcome to our sacred union and joyful matrimony celebration!',
+    coverImageUrl: 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=1200',
+    status: 'COMING_SOON',
+    adminApprovalStatus: 'APPROVED',
+    organizerId: 'org-matrimony-1',
+    credentials: {
+      couple: { fullName: 'Sara & Dawit', email: 'couple@matrimony.com', temporaryPassword: 'agafari2026', role: 'BRIDE_GROOM' },
+      organizer: { fullName: 'Matrimony Event Planners', email: 'matrimony@agafari.com', temporaryPassword: 'org123', role: 'EVENT_ORGANIZER' },
+      streamer: { fullName: 'Matrimony Stream Studio', email: 'streamer@matrimony.com', temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
+      scanner: { fullName: 'Matrimony Gate Scanner', email: 'scanner@matrimony.com', temporaryPassword: 'scan123', role: 'GATE_SCANNER' }
+    }
   }
 ];
 
@@ -133,8 +164,20 @@ const mockUsers: UserRecord[] = [
     role: 'SYSTEM_ADMIN',
   },
   {
+    id: 'usr-matrimony-1',
+    eventId: 'evt-matrimony-789012',
+    email: 'matrimony@agafari.com',
+    passwordHash: hashPassword('org123'),
+    temporaryPassword: 'org123',
+    fullName: 'Matrimony Event Planners',
+    companyName: 'Matrimony Event Planners',
+    description: 'Premier wedding and holy matrimony coordination agency.',
+    organizerId: 'org-matrimony-1',
+    role: 'EVENT_ORGANIZER',
+  },
+  {
     id: 'usr-org-1',
-    eventId: null,
+    eventId: 'evt-adeday-123456',
     email: 'organizer@agafari.com',
     passwordHash: hashPassword('org123'),
     temporaryPassword: 'org123',
@@ -191,6 +234,16 @@ const mockUsers: UserRecord[] = [
     role: 'BRIDE_GROOM',
   },
   {
+    id: 'usr-couple-matrimony',
+    eventId: 'evt-matrimony-789012',
+    email: 'couple@matrimony.com',
+    passwordHash: hashPassword('agafari2026'),
+    temporaryPassword: 'agafari2026',
+    fullName: 'Sara & Dawit',
+    companyName: 'Sara & Dawit Wedding',
+    role: 'BRIDE_GROOM',
+  },
+  {
     id: 'usr-streamer-1',
     eventId: 'evt-adeday-123456',
     email: 'streamer@agafari.com',
@@ -200,12 +253,30 @@ const mockUsers: UserRecord[] = [
     role: 'LIVE_STREAMER',
   },
   {
+    id: 'usr-streamer-matrimony',
+    eventId: 'evt-matrimony-789012',
+    email: 'streamer@matrimony.com',
+    passwordHash: hashPassword('stream123'),
+    temporaryPassword: 'stream123',
+    fullName: 'Matrimony Live Broadcast Crew',
+    role: 'LIVE_STREAMER',
+  },
+  {
     id: 'usr-scanner-1',
     eventId: 'evt-adeday-123456',
     email: 'scanner@agafari.com',
     passwordHash: hashPassword('scan123'),
     temporaryPassword: 'scan123',
     fullName: 'Gate QR Security Scanner',
+    role: 'GATE_SCANNER',
+  },
+  {
+    id: 'usr-scanner-matrimony',
+    eventId: 'evt-matrimony-789012',
+    email: 'scanner@matrimony.com',
+    passwordHash: hashPassword('scan123'),
+    temporaryPassword: 'scan123',
+    fullName: 'Matrimony Gate Security Scanner',
     role: 'GATE_SCANNER',
   }
 ];

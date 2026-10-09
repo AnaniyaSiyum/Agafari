@@ -142,6 +142,7 @@ export default function DedicatedEventControlPage({
   const [activeTab, setActiveTab] = useState<'ROLES' | 'DETAILS' | 'RSVPS' | 'MEDIA'>('ROLES');
   const [event, setEvent] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
@@ -278,6 +279,24 @@ export default function DedicatedEventControlPage({
         const data = await res.json();
         if (data.event) {
           const evt = data.event;
+          
+          // Strict Multi-Tenant Isolation Check:
+          const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
+          let userObj: any = null;
+          if (userStr) {
+            try { userObj = JSON.parse(userStr); } catch (e) {}
+          }
+          if (userObj && userObj.role === 'EVENT_ORGANIZER') {
+            const userOrg = String(userObj.organizerId || userObj.tenantId || userObj.id || '').toLowerCase().replace(/^org-/, '');
+            const targetOrg = organizerSlug.toLowerCase().replace(/^org-/, '');
+            const evtOrg = String(evt.organizerId || evt.organizer_id || '').toLowerCase().replace(/^org-/, '');
+            if (userOrg && ((targetOrg && userOrg !== targetOrg) || (evtOrg && userOrg !== evtOrg))) {
+              setAccessDenied(true);
+              setLoading(false);
+              return;
+            }
+          }
+
           const brideName = evt.brideName || evt.bride_name || 'Bride';
           const groomName = evt.groomName || evt.groom_name || 'Groom';
           
@@ -622,6 +641,37 @@ export default function DedicatedEventControlPage({
           </div>
           <p className="text-base font-bold text-slate-800 tracking-tight">{t('commandHub.loading')}</p>
           <p className="text-xs text-slate-400">Syncing role credentials & event controls</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-white font-sans">
+        <div className="p-8 max-w-lg w-full rounded-3xl bg-slate-900 border border-rose-500/30 text-center space-y-6 shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8 text-rose-400" />
+          </div>
+          <div className="space-y-2">
+            <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold uppercase tracking-wider border border-rose-500/40">
+              ⛔ ACCESS DENIED: PRIVATE TENANT
+            </span>
+            <h2 className="font-serif font-bold text-2xl text-white pt-2">
+              Isolated Agency Workspace
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-md mx-auto">
+              You do not have authorization to view or manage another event organizer's wedding workspace. For security and multi-tenant isolation, please return to your dedicated organizer dashboard.
+            </p>
+          </div>
+          <div className="pt-2">
+            <Link
+              href="/organizer/dashboard"
+              className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-2"
+            >
+              <span>Return to My Agency Dashboard →</span>
+            </Link>
+          </div>
         </div>
       </div>
     );

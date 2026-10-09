@@ -231,13 +231,31 @@ export async function GET(req: NextRequest) {
   try {
     let auth = requireRole(req, ['EVENT_ORGANIZER', 'SYSTEM_ADMIN']);
     const userId = auth.ok ? auth.user.userId : null;
+
+    // Strict Multi-Tenant Isolation: An organizer can NEVER fetch another organizer's events
+    let effectiveTargetOrgId = targetOrgId;
+    if (auth.ok && auth.user.role === 'EVENT_ORGANIZER') {
+      const myOrgId = auth.user.tenantId || auth.user.userId;
+      if (targetOrgId) {
+        const cleanTarget = targetOrgId.replace(/^org-/, '');
+        const cleanMy = myOrgId.replace(/^org-/, '');
+        const cleanUser = auth.user.userId.replace(/^org-/, '').replace(/^usr-/, '');
+        if (cleanTarget !== cleanMy && cleanTarget !== cleanUser) {
+          return NextResponse.json(
+            { error: 'Forbidden: You are not authorized to view another organizer’s events.' },
+            { status: 403 }
+          );
+        }
+      }
+      effectiveTargetOrgId = myOrgId;
+    }
     
     // Resolve organizer details using unified helper
-    const orgData = await resolveOrCreateOrganizerInDb(targetOrgId, userId);
+    const orgData = await resolveOrCreateOrganizerInDb(effectiveTargetOrgId, userId);
     const { dbOrganizerId, cleanKey, rawUserId, organizerInfo } = orgData;
 
     // Build target keys for matching
-    const targetKeys = new Set([cleanKey, rawUserId, targetOrgId, dbOrganizerId].filter(Boolean) as string[]);
+    const targetKeys = new Set([cleanKey, rawUserId, effectiveTargetOrgId, dbOrganizerId].filter(Boolean) as string[]);
 
     // Try DB fetch
     let rawEvents: any[] = [];

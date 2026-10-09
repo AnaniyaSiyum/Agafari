@@ -202,7 +202,13 @@ function OrganizerDashboardContent() {
 
         const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
         const userObj = userStr ? JSON.parse(userStr) : null;
-        const effectiveOrgId = orgId || userObj?.organizerId || userObj?.tenantId || userObj?.userId || userObj?.id || 'usr-org-1';
+        const myOrgId = userObj?.organizerId || userObj?.tenantId || userObj?.userId || userObj?.id;
+
+        // Multi-tenant Isolation: Organizers are strictly locked to their own tenant/agency profile
+        let effectiveOrgId = orgId || myOrgId || 'usr-org-1';
+        if (userObj?.role === 'EVENT_ORGANIZER' && myOrgId) {
+          effectiveOrgId = myOrgId;
+        }
 
         // Derive the organizer URL slug used in /{organizerSlug}/{eventSlug} deep links
         const derivedSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;

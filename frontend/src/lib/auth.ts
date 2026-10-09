@@ -2,7 +2,7 @@ import { createHmac, pbkdf2Sync, randomBytes } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 
 import { config } from '@/config/env';
-import { query } from '@/lib/db';
+import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 
 // -----------------------------------------------------------------------------
@@ -406,21 +406,239 @@ export function sanitizeUser<T extends { password_hash?: string; temporary_passw
   return safe;
 }
 
-export function getAuthorizedDashboardUrl(role: UserRole | string, slug?: string): string {
+export function getAuthorizedDashboardUrl(role: UserRole | string, slug?: string, orgSlug?: string): string {
   switch (role) {
     case 'SYSTEM_ADMIN':
-      return '/system-admin';
+      return '/admin/dashboard';
     case 'EVENT_ORGANIZER':
+      if (orgSlug && slug) return `/${orgSlug}/${slug}`;
+      if (orgSlug) return `/organizer/dashboard?id=${encodeURIComponent(orgSlug)}`;
       return '/organizer/dashboard';
     case 'BRIDE_GROOM':
-      return slug ? `/${slug}/couple` : '/couple/dashboard';
+      if (orgSlug && slug) return `/${orgSlug}/${slug}/couple`;
+      if (slug) return `/event/${slug}/couple`;
+      return '/couple/dashboard';
     case 'GATE_SCANNER':
-      return slug ? `/event/${slug}/scanner` : '/scanner';
+      if (orgSlug && slug) return `/${orgSlug}/${slug}/scanner`;
+      if (slug) return `/event/${slug}/scanner`;
+      return '/scanner';
     case 'LIVE_STREAMER':
-      return slug ? `/event/${slug}/live-streamer` : '/live-streamer';
+      if (orgSlug && slug) return `/${orgSlug}/${slug}/live-streamer`;
+      if (slug) return `/event/${slug}/live-streamer`;
+      return '/live-streamer';
     case 'MODERATOR':
-      return slug ? `/event/${slug}/moderation` : '/moderation';
+    case 'CONTENT_MODERATOR':
+    case 'MEDIA_MODERATOR':
+      if (orgSlug && slug) return `/${orgSlug}/${slug}/moderation`;
+      if (slug) return `/event/${slug}/moderation`;
+      return '/moderation';
     default:
       return '/login';
   }
+}
+
+/**
+ * Resolves the exact, isolated dashboard for an authenticated user.
+ * Guarantees that:
+ * 1. Organizers only see their own event or their own organizer dashboard (never another organizer's, never a sample event).
+ * 2. Couples only see their own wedding dashboard.
+ * 3. Streamers only launch their assigned event's streamer studio.
+ * 4. Scanners only launch their assigned event's QR scanner.
+ */
+export async function resolveUserDashboardUrl(options: {
+  role: UserRole | string;
+  userId: string;
+  email: string;
+  tenantId?: string;
+  slug?: string;
+}): Promise<string> {
+  const { role, userId, email, tenantId, slug } = options;
+  const effectiveOrgId = tenantId || userId;
+  const userOrgSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
+
+  // 1. SYSTEM ADMIN -> Universal Platform Executive Suite
+  if (role === 'SYSTEM_ADMIN') {
+    return '/admin/dashboard';
+  }
+
+  // 2. EVENT ORGANIZER
+  if (role === 'EVENT_ORGANIZER') {
+    if (slug) {
+      return `/${userOrgSlug}/${slug}`;
+    }
+
+    // A. Query DB for an event owned specifically by this organizer
+    try {
+      const evt = await queryOne<{ slug: string; organizer_id: string }>(
+        `SELECT slug, organizer_id FROM events 
+         WHERE organizer_id = $1 
+            OR organizer_id = $2 
+            OR organizer_id = $3 
+            OR organizer_id = (SELECT id FROM organizers WHERE owner_user_id = $1 OR owner_user_id = $3 LIMIT 1)
+         ORDER BY created_at DESC LIMIT 1`,
+        [effectiveOrgId, userOrgSlug, userId]
+      );
+      if (evt && evt.slug) {
+        const orgSlug = evt.organizer_id
+          ? (evt.organizer_id.startsWith('org-') ? evt.organizer_id : `org-${evt.organizer_id}`)
+          : userOrgSlug;
+        return `/${orgSlug}/${evt.slug}`;
+      }
+    } catch (e) {}
+
+    // B. Query mockStore strictly for this organizer's own events (NEVER fallback to other events)
+    const cleanOrg = userOrgSlug.replace(/^org-/, '');
+    const cleanUserId = userId.replace(/^org-/, '');
+    const cleanEmail = (email || '').toLowerCase();
+
+    const mockEvt = mockStore.events.find((e: any) => {
+      const eOrg = String(e.organizerId || (e as any).organizer_id || '').replace(/^org-/, '');
+      const eEmail = (e.credentials?.organizer?.email || '').toLowerCase();
+      return (eOrg && (eOrg === cleanOrg || eOrg === cleanUserId)) || (eEmail && eEmail === cleanEmail);
+    });
+
+    if (mockEvt && mockEvt.slug) {
+      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || userOrgSlug;
+      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
+      return `/${orgSlug}/${mockEvt.slug}`;
+    }
+
+    // C. No events created yet: Go to their specific organizer command dashboard
+    return `/organizer/dashboard?id=${encodeURIComponent(effectiveOrgId)}`;
+  }
+
+  // 3. BRIDE & GROOM (COUPLE)
+  if (role === 'BRIDE_GROOM') {
+    if (slug) return `/event/${slug}/couple`;
+
+    // A. Check in DB
+    try {
+      const evt = await queryOne<{ slug: string; organizer_id: string }>(
+        `SELECT e.slug, e.organizer_id FROM events e 
+         LEFT JOIN users cu ON cu.id = e.couple_user_id 
+         WHERE e.couple_user_id = $1 OR lower(cu.email) = lower($2) OR lower(e.couple_email) = lower($2)
+         ORDER BY e.created_at DESC LIMIT 1`,
+        [userId, email]
+      );
+      if (evt && evt.slug) {
+        const orgSlug = evt.organizer_id
+          ? (evt.organizer_id.startsWith('org-') ? evt.organizer_id : `org-${evt.organizer_id}`)
+          : 'event';
+        return `/${orgSlug}/${evt.slug}/couple`;
+      }
+    } catch (e) {}
+
+    // B. Check in mockStore
+    const cleanEmail = (email || '').toLowerCase();
+    const mockEvt = mockStore.events.find((e: any) => {
+      const cEmail = (
+        e.credentials?.couple?.email ||
+        e.coupleCredentials?.email ||
+        e.couple_email ||
+        ''
+      ).toLowerCase();
+      return cEmail === cleanEmail || e.id === userId || (e as any).couple_user_id === userId;
+    });
+
+    if (mockEvt && mockEvt.slug) {
+      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
+      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
+      return `/${orgSlug}/${mockEvt.slug}/couple`;
+    }
+
+    return '/couple/dashboard';
+  }
+
+  // 4. GATE SCANNER
+  if (role === 'GATE_SCANNER') {
+    if (slug) return `/event/${slug}/scanner`;
+
+    // A. Check DB staff assignment
+    try {
+      const staffEvt = await queryOne<{ slug: string; organizer_id: string }>(
+        `SELECT e.slug, e.organizer_id FROM events e
+         JOIN event_staff es ON es.event_id = e.id
+         WHERE es.user_id = $1 AND es.role = 'GATE_SCANNER'
+         LIMIT 1`,
+        [userId]
+      );
+      if (staffEvt && staffEvt.slug) {
+        const orgSlug = staffEvt.organizer_id
+          ? (staffEvt.organizer_id.startsWith('org-') ? staffEvt.organizer_id : `org-${staffEvt.organizer_id}`)
+          : 'event';
+        return `/${orgSlug}/${staffEvt.slug}/scanner`;
+      }
+    } catch (e) {}
+
+    // B. Check mockStore
+    const cleanEmail = (email || '').toLowerCase();
+    const mockEvt = mockStore.events.find((e: any) => {
+      const sEmail = (e.credentials?.scanner?.email || '').toLowerCase();
+      return sEmail === cleanEmail || e.id === userId;
+    });
+
+    if (mockEvt && mockEvt.slug) {
+      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
+      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
+      return `/${orgSlug}/${mockEvt.slug}/scanner`;
+    }
+
+    return '/scanner';
+  }
+
+  // 5. LIVE STREAMER
+  if (role === 'LIVE_STREAMER') {
+    if (slug) return `/event/${slug}/live-streamer`;
+
+    // A. Check DB staff assignment
+    try {
+      const staffEvt = await queryOne<{ slug: string; organizer_id: string }>(
+        `SELECT e.slug, e.organizer_id FROM events e
+         JOIN event_staff es ON es.event_id = e.id
+         WHERE es.user_id = $1 AND es.role = 'LIVE_STREAMER'
+         LIMIT 1`,
+        [userId]
+      );
+      if (staffEvt && staffEvt.slug) {
+        const orgSlug = staffEvt.organizer_id
+          ? (staffEvt.organizer_id.startsWith('org-') ? staffEvt.organizer_id : `org-${staffEvt.organizer_id}`)
+          : 'event';
+        return `/${orgSlug}/${staffEvt.slug}/live-streamer`;
+      }
+    } catch (e) {}
+
+    // B. Check mockStore
+    const cleanEmail = (email || '').toLowerCase();
+    const mockEvt = mockStore.events.find((e: any) => {
+      const sEmail = (e.credentials?.streamer?.email || '').toLowerCase();
+      return sEmail === cleanEmail || e.id === userId;
+    });
+
+    if (mockEvt && mockEvt.slug) {
+      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
+      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
+      return `/${orgSlug}/${mockEvt.slug}/live-streamer`;
+    }
+
+    return '/live-streamer';
+  }
+
+  // 6. CONTENT / MEDIA MODERATOR
+  if (role === 'MODERATOR' || role === 'CONTENT_MODERATOR' || (role as string) === 'MEDIA_MODERATOR') {
+    if (slug) return `/event/${slug}/moderation`;
+    const cleanEmail = (email || '').toLowerCase();
+    const mockEvt = mockStore.events.find((e: any) => {
+      const mEmail = (e.credentials?.moderator?.email || '').toLowerCase();
+      return mEmail === cleanEmail || e.id === userId;
+    });
+
+    if (mockEvt && mockEvt.slug) {
+      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
+      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
+      return `/${orgSlug}/${mockEvt.slug}/moderation`;
+    }
+    return '/moderation';
+  }
+
+  return '/login';
 }

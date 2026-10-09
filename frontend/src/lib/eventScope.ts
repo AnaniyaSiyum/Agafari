@@ -1,5 +1,6 @@
 import { AuthTokenPayload } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
+import { mockStore } from '@/lib/mockData';
 
 export type EventAccess =
   | { allowed: true; via: 'SYSTEM_ADMIN' | 'ORGANIZER_OWNER' | 'COUPLE' | 'STAFF'; staffId?: string }
@@ -8,8 +9,11 @@ export type EventAccess =
 /**
  * Checks whether `user` may act on `eventId`, optionally restricted to one or
  * more event_staff roles (e.g. only GATE_SCANNER may hit the scan endpoint).
- * Centralizing this avoids re-deriving "does this user own/staff this event"
- * with slightly different logic in every route.
+ * Enforces strict multi-tenant data isolation:
+ * - SYSTEM_ADMIN has platform-wide access.
+ * - EVENT_ORGANIZER can ONLY access events owned by their specific agency.
+ * - BRIDE_GROOM can ONLY access their own assigned wedding.
+ * - STAFF (Scanner / Streamer / Moderator) can ONLY access their assigned event.
  */
 export async function checkEventAccess(
   user: AuthTokenPayload,
@@ -18,6 +22,11 @@ export async function checkEventAccess(
 ): Promise<EventAccess> {
   if (user.role === 'SYSTEM_ADMIN') return { allowed: true, via: 'SYSTEM_ADMIN' };
 
+  const cleanUserId = (user.userId || '').replace(/^usr-/, '').replace(/^org-/, '');
+  const userTenant = (user.tenantId || '').replace(/^org-/, '');
+  const userEmail = (user.email || '').toLowerCase();
+
+  // 1. Database Multi-Tenant Access Verification
   try {
     const event = await queryOne<{ id: string; slug: string; organizer_id: string | null; couple_user_id: string | null }>(
       'SELECT e.id, e.slug, e.organizer_id, e.couple_user_id FROM events e WHERE e.id = $1 OR e.slug = $1',
@@ -26,32 +35,79 @@ export async function checkEventAccess(
 
     if (event) {
       if (user.role === 'EVENT_ORGANIZER') {
-        if (!event.organizer_id) return { allowed: true, via: 'ORGANIZER_OWNER' };
         const owns = await queryOne(
           'SELECT 1 FROM organizers WHERE id = $1 AND owner_user_id = $2',
           [event.organizer_id, user.userId]
         );
-        if (owns || user.userId.includes('org') || user.email.includes('organizer') || user.role === 'EVENT_ORGANIZER') {
+        const eventOrgClean = (event.organizer_id || '').replace(/^org-/, '');
+        const isOwner = owns || (eventOrgClean && (eventOrgClean === userTenant || eventOrgClean === cleanUserId));
+        if (isOwner) {
           return { allowed: true, via: 'ORGANIZER_OWNER' };
         }
+        return { allowed: false };
       }
 
       if (user.role === 'BRIDE_GROOM') {
-        if (!event.couple_user_id || event.couple_user_id === user.userId || user.userId.includes('couple') || user.email.includes('couple') || user.role === 'BRIDE_GROOM') {
+        if (event.couple_user_id === user.userId) {
           return { allowed: true, via: 'COUPLE' };
         }
+        const coupleUser = await queryOne<{ email: string }>(
+          'SELECT email FROM users WHERE id = $1',
+          [event.couple_user_id]
+        );
+        if (coupleUser && coupleUser.email.toLowerCase() === userEmail) {
+          return { allowed: true, via: 'COUPLE' };
+        }
+        return { allowed: false };
       }
     }
   } catch (e) {
     console.warn('DB checkEventAccess fallback:', e);
   }
 
-  // Fallback / mockStore check
-  const r = user.role as string;
-  if (r === 'SYSTEM_ADMIN' || r === 'EVENT_ORGANIZER' || r === 'BRIDE_GROOM') {
-    return { allowed: true, via: (r === 'SYSTEM_ADMIN' ? 'SYSTEM_ADMIN' : r === 'EVENT_ORGANIZER' ? 'ORGANIZER_OWNER' : 'COUPLE') };
+  // 2. MockStore Multi-Tenant Access Verification (Runtime Dev Fallback)
+  const mockEvt = mockStore.events.find((e: any) => e.id === eventId || e.slug === eventId);
+  if (mockEvt) {
+    if (user.role === 'EVENT_ORGANIZER') {
+      const eOrg = String(mockEvt.organizerId || (mockEvt as any).organizer_id || '').replace(/^org-/, '');
+      const eEmail = (mockEvt.credentials?.organizer?.email || '').toLowerCase();
+      if ((eOrg && (eOrg === userTenant || eOrg === cleanUserId)) || (eEmail && eEmail === userEmail)) {
+        return { allowed: true, via: 'ORGANIZER_OWNER' };
+      }
+      return { allowed: false };
+    }
+
+    if (user.role === 'BRIDE_GROOM') {
+      const coupleEmail = (mockEvt.credentials?.couple?.email || mockEvt.coupleCredentials?.email || '').toLowerCase();
+      if (coupleEmail === userEmail || mockEvt.id === user.userId || (mockEvt as any).couple_user_id === user.userId) {
+        return { allowed: true, via: 'COUPLE' };
+      }
+      return { allowed: false };
+    }
+
+    if (user.role === 'GATE_SCANNER') {
+      const scannerEmail = (mockEvt.credentials?.scanner?.email || '').toLowerCase();
+      if (scannerEmail === userEmail) {
+        return { allowed: true, via: 'STAFF' };
+      }
+    }
+
+    if (user.role === 'LIVE_STREAMER') {
+      const streamerEmail = (mockEvt.credentials?.streamer?.email || '').toLowerCase();
+      if (streamerEmail === userEmail) {
+        return { allowed: true, via: 'STAFF' };
+      }
+    }
+
+    if (user.role === 'MODERATOR') {
+      const modEmail = (mockEvt.credentials?.moderator?.email || '').toLowerCase();
+      if (modEmail === userEmail) {
+        return { allowed: true, via: 'STAFF' };
+      }
+    }
   }
 
+  // 3. Database Event Staff Record Verification
   let staffRow = null;
   try {
     if (allowedStaffRoles && allowedStaffRoles.length > 0) {

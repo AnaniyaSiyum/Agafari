@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Lock, ShieldCheck, KeyRound, Sparkles, AlertCircle, Eye, EyeOff, CheckCircle2, ArrowRight, Crown, Briefcase, Heart, User } from 'lucide-react';
+import { Lock, ShieldCheck, KeyRound, Sparkles, AlertCircle, Eye, EyeOff, CheckCircle2, ArrowRight, Crown, Briefcase, Heart, User, ScanLine } from 'lucide-react';
 
 interface DashboardSecurityGateProps {
   dashboardTitle?: string;
@@ -34,7 +34,7 @@ export default function DashboardSecurityGate({
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [selectedRolePreset, setSelectedRolePreset] = useState<'admin' | 'organizer' | 'couple' | null>(null);
+  const [selectedRolePreset, setSelectedRolePreset] = useState<'admin' | 'matrimony' | 'couple' | 'scanner' | null>(null);
 
   const storageKey = `agafari_unlocked_dashboard_${dashboardId}`;
 
@@ -45,25 +45,31 @@ export default function DashboardSecurityGate({
       if (unlockedVal === 'true' || (token && !pathname?.includes('/login'))) {
         setIsUnlocked(true);
       } else {
-        const computedDefault = defaultEmail || (slug ? `${dashboardType}@${slug}.com` : `admin@agafari.com`);
+        const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login';
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryIdentifier = urlParams.get('email') || urlParams.get('identifier') || urlParams.get('username') || '';
+        const computedDefault = defaultEmail || queryIdentifier || (slug ? `${dashboardType}@${slug}.com` : isGeneralLogin ? '' : `admin@agafari.com`);
         setIdentifier(computedDefault);
       }
       setChecking(false);
     }
   }, [dashboardId, dashboardType, slug, defaultEmail, storageKey, pathname]);
 
-  const handleRolePresetClick = (role: 'admin' | 'organizer' | 'couple') => {
+  const handleRolePresetClick = (role: 'admin' | 'matrimony' | 'couple' | 'scanner') => {
     setSelectedRolePreset(role);
     setErrorMsg(null);
     if (role === 'admin') {
       setIdentifier('admin@agafari.com');
       setPassword('admin123');
-    } else if (role === 'organizer') {
-      setIdentifier('organizer@agafari.com');
+    } else if (role === 'matrimony') {
+      setIdentifier('matrimony@agafari.com');
       setPassword('org123');
     } else if (role === 'couple') {
-      setIdentifier('couple@agafari.com');
+      setIdentifier('couple@matrimony.com');
       setPassword('agafari2026');
+    } else if (role === 'scanner') {
+      setIdentifier('scanner@matrimony.com');
+      setPassword('scan123');
     }
   };
 
@@ -113,7 +119,7 @@ export default function DashboardSecurityGate({
 
       // Smart Redirect based on identified role credentials
       const targetUrl = data.redirectUrl || '/admin/dashboard';
-      if (pathname && targetUrl && !pathname.startsWith(targetUrl) && targetUrl !== pathname) {
+      if (pathname && (pathname.includes('/login') || targetUrl !== pathname)) {
         router.push(targetUrl);
       } else {
         setIsUnlocked(true);
@@ -259,48 +265,62 @@ export default function DashboardSecurityGate({
 
         {/* Quick Role Selection Presets Bar */}
         <div className="pt-3 border-t border-stone-800/80 space-y-2">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             
             {/* 1. Super Admin Preset */}
             <button
               type="button"
               onClick={() => handleRolePresetClick('admin')}
-              className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+              className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 selectedRolePreset === 'admin'
                   ? 'bg-gold-500/20 border-gold-500 text-gold-300 shadow-md ring-1 ring-gold-500/50'
                   : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:border-gold-500/40 hover:bg-stone-900'
               }`}
             >
               <Crown className="w-4 h-4 text-gold-400" />
-              <span className="text-[11px] font-bold">Super Admin</span>
+              <span className="text-[10px] font-bold">Super Admin</span>
             </button>
 
-            {/* 2. Organizer Preset */}
+            {/* 2. Matrimony Organizer Preset */}
             <button
               type="button"
-              onClick={() => handleRolePresetClick('organizer')}
-              className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                selectedRolePreset === 'organizer'
+              onClick={() => handleRolePresetClick('matrimony')}
+              className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                selectedRolePreset === 'matrimony'
                   ? 'bg-amber-500/20 border-amber-500 text-amber-300 shadow-md ring-1 ring-amber-500/50'
                   : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:border-amber-500/40 hover:bg-stone-900'
               }`}
             >
               <Briefcase className="w-4 h-4 text-amber-400" />
-              <span className="text-[11px] font-bold">Organizer</span>
+              <span className="text-[10px] font-bold">Matrimony Org</span>
             </button>
 
             {/* 3. Couple Preset */}
             <button
               type="button"
               onClick={() => handleRolePresetClick('couple')}
-              className={`p-3 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+              className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                 selectedRolePreset === 'couple'
                   ? 'bg-rose-500/20 border-rose-500 text-rose-300 shadow-md ring-1 ring-rose-500/50'
                   : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:border-rose-500/40 hover:bg-stone-900'
               }`}
             >
               <Heart className="w-4 h-4 text-rose-400" />
-              <span className="text-[11px] font-bold">Couple</span>
+              <span className="text-[10px] font-bold">Couple</span>
+            </button>
+
+            {/* 4. Scanner Preset */}
+            <button
+              type="button"
+              onClick={() => handleRolePresetClick('scanner')}
+              className={`p-2.5 rounded-2xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                selectedRolePreset === 'scanner'
+                  ? 'bg-indigo-500/20 border-indigo-500 text-indigo-300 shadow-md ring-1 ring-indigo-500/50'
+                  : 'bg-stone-900/60 border-stone-800 text-stone-300 hover:border-indigo-500/40 hover:bg-stone-900'
+              }`}
+            >
+              <ScanLine className="w-4 h-4 text-indigo-400" />
+              <span className="text-[10px] font-bold">Gate Scanner</span>
             </button>
 
           </div>

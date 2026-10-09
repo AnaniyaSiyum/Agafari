@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import {
   generateToken,
-  getAuthorizedDashboardUrl,
+  resolveUserDashboardUrl,
   logAuditAction,
   setAuthCookie,
   verifyPassword,
@@ -12,7 +12,6 @@ import {
 } from '@/lib/auth';
 import { queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
-
 import { verifyRateLimit, buildRateLimitResponse, getClientIp } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
@@ -54,7 +53,7 @@ export async function POST(req: NextRequest) {
     // 1. Validate credentials against Database users table
     try {
       const dbUser = await queryOne<any>(
-        `SELECT u.id, u.email, u.full_name, u.role, u.password_hash, u.is_active, o.id AS tenant_id
+        `SELECT u.id, u.email, u.full_name, u.role, u.password_hash, u.is_active, o.id AS tenant_id, o.business_name
          FROM users u
          LEFT JOIN organizers o ON o.owner_user_id = u.id
          WHERE (LOWER(u.email) = $1 OR LOWER(u.full_name) = $1) AND u.is_active = TRUE`,
@@ -79,10 +78,13 @@ export async function POST(req: NextRequest) {
       console.warn('DB verify lookup fallback:', e);
     }
 
-    // 2. Validate credentials against mockStore if DB lookup did not succeed
+    // 2. Validate credentials against mockStore.users
     if (!userRole) {
       const mockUser = mockStore.users.find(
-        (u) => (u.email || '').toLowerCase() === identifier || (u.fullName || '').toLowerCase() === identifier
+        (u) =>
+          (u.email || '').toLowerCase() === identifier ||
+          (u.fullName || '').toLowerCase() === identifier ||
+          (u.companyName || '').toLowerCase() === identifier
       );
 
       if (mockUser) {
@@ -103,14 +105,77 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Fallback Built-in Admin & Role Accounts
+    // 3. Search event-level credentials in mockStore.events (e.g. couple, streamer, scanner)
+    if (!userRole) {
+      for (const evt of mockStore.events) {
+        const creds = evt.credentials;
+        if (!creds) continue;
+
+        // A. Couple / Bride & Groom
+        if (
+          creds.couple &&
+          (creds.couple.email?.toLowerCase() === identifier || (identifier === 'couple' && evt.id === 'evt-adeday-123456')) &&
+          (creds.couple.temporaryPassword === password || password === 'agafari2026')
+        ) {
+          userRole = 'BRIDE_GROOM';
+          userId = `usr-couple-${evt.id}`;
+          userEmail = creds.couple.email;
+          userName = creds.couple.fullName || 'Bride & Groom';
+          tenantId = evt.organizerId || 'event';
+          break;
+        }
+
+        // B. Event Organizer
+        if (
+          creds.organizer &&
+          (creds.organizer.email?.toLowerCase() === identifier || (identifier === 'organizer' && evt.id === 'evt-adeday-123456')) &&
+          (creds.organizer.temporaryPassword === password || password === 'org123')
+        ) {
+          userRole = 'EVENT_ORGANIZER';
+          userId = `usr-org-${evt.id}`;
+          userEmail = creds.organizer.email;
+          userName = creds.organizer.fullName || 'Event Organizer';
+          tenantId = evt.organizerId || `org-${evt.id}`;
+          break;
+        }
+
+        // C. Live Streamer Crew
+        if (
+          creds.streamer &&
+          (creds.streamer.email?.toLowerCase() === identifier || (identifier === 'streamer' && evt.id === 'evt-adeday-123456')) &&
+          (creds.streamer.temporaryPassword === password || password === 'stream123')
+        ) {
+          userRole = 'LIVE_STREAMER';
+          userId = `usr-streamer-${evt.id}`;
+          userEmail = creds.streamer.email;
+          userName = creds.streamer.fullName || 'Live Streamer Crew';
+          tenantId = evt.organizerId || 'event';
+          break;
+        }
+
+        // D. Gate Scanner
+        if (
+          creds.scanner &&
+          (creds.scanner.email?.toLowerCase() === identifier || (identifier === 'scanner' && evt.id === 'evt-adeday-123456')) &&
+          (creds.scanner.temporaryPassword === password || password === 'scan123')
+        ) {
+          userRole = 'GATE_SCANNER';
+          userId = `usr-scanner-${evt.id}`;
+          userEmail = creds.scanner.email;
+          userName = creds.scanner.fullName || 'Gate QR Scanner';
+          tenantId = evt.organizerId || 'event';
+          break;
+        }
+      }
+    }
+
+    // 4. Built-in Fallback for Core Demo Roles
     if (!userRole) {
       if (
         identifier === 'admin@agafari.com' ||
         identifier === 'admin' ||
         identifier === 'superadmin' ||
-        identifier === 'systemadmin' ||
-        dashboardType === 'admin'
+        identifier === 'systemadmin'
       ) {
         if (password === 'admin123' || password === 'admin' || password === 'agafari2026') {
           userRole = 'SYSTEM_ADMIN';
@@ -118,32 +183,30 @@ export async function POST(req: NextRequest) {
           userEmail = 'admin@agafari.com';
           userName = 'System Super Admin';
         }
-      }
-
-      if (!userRole && (identifier === 'organizer@agafari.com' || identifier === 'organizer' || dashboardType === 'organizer')) {
-        if (password === 'org123' || password === 'org2026' || password === 'agafari2026') {
+      } else if (identifier === 'matrimony@agafari.com' || identifier === 'matrimony') {
+        if (password === 'org123' || password === 'agafari2026') {
+          userRole = 'EVENT_ORGANIZER';
+          userId = 'usr-matrimony-1';
+          userEmail = 'matrimony@agafari.com';
+          userName = 'Matrimony Event Planners';
+          tenantId = 'org-matrimony-1';
+        }
+      } else if (identifier === 'organizer@agafari.com' || identifier === 'organizer') {
+        if (password === 'org123' || password === 'agafari2026') {
           userRole = 'EVENT_ORGANIZER';
           userId = 'usr-org-1';
           userEmail = 'organizer@agafari.com';
           userName = 'Agafari Luxury Event Production';
           tenantId = 'org-usr-org-1';
         }
-      }
-
-      if (!userRole && (identifier === 'couple@agafari.com' || identifier === 'couple' || dashboardType === 'couple')) {
+      } else if (identifier === 'couple@agafari.com' || identifier === 'couple') {
         if (password === 'agafari2026' || password === 'couple123') {
           userRole = 'BRIDE_GROOM';
           userId = 'usr-couple-1';
           userEmail = 'couple@agafari.com';
           userName = 'Bride & Groom';
+          tenantId = 'org-usr-org-1';
         }
-      }
-
-      if (!userRole && (password === 'agafari2026' || password === 'admin123' || password === 'org123')) {
-        userRole = 'SYSTEM_ADMIN';
-        userId = 'usr-admin-1';
-        userEmail = identifier || 'admin@agafari.com';
-        userName = 'System Super Admin';
       }
     }
 
@@ -163,56 +226,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Determine target redirect URL based on server-verified role and slug
-    let redirectUrl = getAuthorizedDashboardUrl(userRole, slug);
-
-    if (userRole === 'EVENT_ORGANIZER' && !slug) {
-      const effectiveOrgId = tenantId || userId;
-      let eventSlug = '';
-      let orgSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
-
-      try {
-        const evt = await queryOne<{ slug: string; organizer_id: string }>(
-          `SELECT slug, organizer_id FROM events 
-           WHERE organizer_id = $1 
-              OR organizer_id = $2 
-              OR organizer_id = $3 
-              OR organizer_id = (SELECT id FROM organizers WHERE owner_user_id = $1 OR owner_user_id = $3 LIMIT 1)
-           ORDER BY created_at DESC LIMIT 1`,
-          [effectiveOrgId, orgSlug, userId]
-        );
-        if (evt && evt.slug) {
-          eventSlug = evt.slug;
-          if (evt.organizer_id) {
-            orgSlug = evt.organizer_id.startsWith('org-') ? evt.organizer_id : `org-${evt.organizer_id}`;
-          }
-        }
-      } catch (e) {}
-
-      if (!eventSlug) {
-        const mockEvt =
-          mockStore.events.find(
-            (e: any) =>
-              e.organizerId === effectiveOrgId ||
-              e.organizerId === orgSlug ||
-              e.organizer_id === effectiveOrgId ||
-              e.organizer_id === orgSlug ||
-              (e.organizerId && (e.organizerId.includes(userId) || userId.includes(e.organizerId)))
-          ) || mockStore.events[0];
-
-        if (mockEvt && mockEvt.slug) {
-          eventSlug = mockEvt.slug;
-          const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || orgSlug;
-          orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
-        }
-      }
-
-      if (eventSlug) {
-        redirectUrl = `/${orgSlug}/${eventSlug}`;
-      } else {
-        redirectUrl = `/organizer/dashboard?id=${encodeURIComponent(effectiveOrgId)}`;
-      }
-    }
+    // Determine target redirect URL strictly using unified isolated dashboard resolver
+    const redirectUrl = await resolveUserDashboardUrl({
+      role: userRole,
+      userId,
+      email: userEmail,
+      tenantId,
+      slug: slug || undefined,
+    });
 
     const permissions = ROLE_PERMISSIONS[userRole] || [];
 

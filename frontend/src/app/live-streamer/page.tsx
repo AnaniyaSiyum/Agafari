@@ -71,6 +71,19 @@ function LiveStreamerRootContent() {
             const data = await res.json();
             eventList = data.events || [];
           }
+        } else if (user.role === 'LIVE_STREAMER') {
+          const storedUser = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
+          const parsed = storedUser ? JSON.parse(storedUser) : null;
+          if (parsed?.eventSlug) {
+            const targetOrg = parsed.organizerId || 'event';
+            router.replace(`/${targetOrg}/${parsed.eventSlug}/live-streamer`);
+            return;
+          }
+          const res = await fetch('/api/admin/events');
+          if (res.ok) {
+            const data = await res.json();
+            eventList = data.events || [];
+          }
         }
 
         setEvents(eventList);
@@ -80,6 +93,7 @@ function LiveStreamerRootContent() {
           const e = eventList[0] as any;
           const targetOrg = e.isIndividual || e.managedBy === 'INDIVIDUAL' ? 'event' : (e.organizer_id || e.organizerId || 'org-ethio-weddings');
           router.replace(`/${targetOrg}/${e.slug}/live-streamer`);
+          return;
         }
       } catch (err) {
         console.error('Failed to initialize live streamer launcher:', err);
