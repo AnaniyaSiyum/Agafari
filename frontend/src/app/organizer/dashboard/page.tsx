@@ -202,7 +202,7 @@ function OrganizerDashboardContent() {
 
         const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
         const userObj = userStr ? JSON.parse(userStr) : null;
-        const effectiveOrgId = orgId || userObj?.userId || 'org-certified';
+        const effectiveOrgId = orgId || userObj?.organizerId || userObj?.tenantId || userObj?.userId || userObj?.id || 'usr-org-1';
 
         // Derive the organizer URL slug used in /{organizerSlug}/{eventSlug} deep links
         const derivedSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
@@ -235,11 +235,20 @@ function OrganizerDashboardContent() {
           setEvents(loadedEvents);
           if (eventsData.organizerInfo) {
             setOrganizerInfo(eventsData.organizerInfo);
-          } else {
-            setErrorMsg(`No organizer profile data found for ID "${orgId}".`);
+          } else if (userObj) {
+            setOrganizerInfo({
+              agencyName: userObj.companyName || userObj.fullName || 'Event Production Agency',
+              fullName: userObj.fullName || userObj.email,
+              email: userObj.email || '',
+            });
           }
+
+          // AUTO-REDIRECT DIRECTLY TO SPECIFIC EVENT DASHBOARD IF ORGANIZER HAS AN EVENT
           if (loadedEvents.length > 0) {
             setSelectedEvent(loadedEvents[0]);
+            const targetUrl = `/${derivedSlug}/${loadedEvents[0].slug}`;
+            router.replace(targetUrl);
+            return;
           } else {
             setSelectedEvent(null);
           }
@@ -384,40 +393,35 @@ function OrganizerDashboardContent() {
   const displayOrgId = currentOrgId.length > 22 ? `${currentOrgId.slice(0, 18)}...` : currentOrgId;
 
   function getDynamicAgencyTitle(orgIdParam: string | null, info: { agencyName?: string; fullName?: string; email?: string } | null): string {
-    const rawName = info?.agencyName || info?.fullName;
-    const email = info?.email;
+    const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
+    const userObj = userStr ? JSON.parse(userStr) : null;
 
-    // 1. If clean custom name exists, return it
+    if (userObj?.companyName && !userObj.companyName.includes('@') && !userObj.companyName.includes('Certified Event')) {
+      return userObj.companyName.trim();
+    }
+    if (userObj?.fullName && !userObj.fullName.includes('@') && userObj.fullName.trim() !== 'Event Organizer' && !userObj.fullName.includes('Certified Event')) {
+      return userObj.fullName.trim();
+    }
+
+    const rawName = info?.agencyName || info?.fullName;
     if (
       rawName &&
       !rawName.startsWith('org-') &&
       !rawName.includes('@') &&
       rawName.trim() !== 'Event Organizer' &&
-      !rawName.startsWith('Organizer Agency') &&
-      rawName.trim() !== 'Certified Event Agency & Planners' &&
-      !/[0-9a-f]{8,}/i.test(rawName)
+      !rawName.includes('Certified Event')
     ) {
       return rawName.trim();
     }
 
-    // 2. If email exists and is valid (e.g. kanaevents@gmail.com, anansiy861@gmail.com)
-    if (email && email.includes('@') && !email.startsWith('organizer-')) {
+    const email = userObj?.email || info?.email;
+    if (email && email.includes('@')) {
       const uname = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
       const titleCase = uname.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       return `${titleCase} Event Production Agency`;
     }
 
-    // 3. Derive from URL orgId parameter if available
-    if (orgIdParam) {
-      const cleanId = orgIdParam.replace(/^org-/, '').trim();
-      if (cleanId && !/[0-9a-f]{8,}/i.test(cleanId)) {
-        const titleCase = cleanId.replace(/[^a-zA-Z0-9]/g, ' ').split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-        return `${titleCase} Event Agency`;
-      }
-    }
-
-    // 4. Universal default (neutral, no hardcoded agency names)
-    return 'Event Organizer Agency Suite';
+    return 'Event Production Agency';
   }
 
   const displayAgencyName = getDynamicAgencyTitle(rawOrgIdParam, organizerInfo);
