@@ -4,6 +4,7 @@ interface JwtPayload {
   userId: string;
   email: string;
   role: string;
+  tenantId?: string;
   permissions?: string[];
   exp?: number;
 }
@@ -151,7 +152,7 @@ export async function middleware(req: NextRequest) {
   // 5. Protect General Admin routes (/admin, /admin/*)
   if (isAdminRoute) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
+    const allowedRoles = ['SYSTEM_ADMIN'];
     if (!allowedRoles.includes(user.role)) {
       return redirectToAuthorizedHome();
     }

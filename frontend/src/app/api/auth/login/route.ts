@@ -229,7 +229,32 @@ export async function POST(req: NextRequest) {
     const redirectParam = req.nextUrl.searchParams.get('redirect');
     let redirectUrl = redirectParam;
 
-    if (!redirectUrl || redirectUrl === '/login' || redirectUrl === '/') {
+    // Strict multi-tenant and role authorization check for redirectParam
+    let isRedirectAuthorized = false;
+    if (redirectParam && redirectParam !== '/login' && redirectParam !== '/') {
+      if (redirectParam.startsWith('/admin') || redirectParam.startsWith('/system-admin')) {
+        isRedirectAuthorized = userRole === 'SYSTEM_ADMIN';
+      } else if (redirectParam.startsWith('/couple') || redirectParam.endsWith('/couple')) {
+        isRedirectAuthorized = userRole === 'BRIDE_GROOM' || userRole === 'SYSTEM_ADMIN';
+      } else if (redirectParam.startsWith('/scanner') || redirectParam.endsWith('/scanner')) {
+        isRedirectAuthorized = (['GATE_SCANNER', 'EVENT_ORGANIZER', 'SYSTEM_ADMIN'] as UserRole[]).includes(userRole);
+      } else if (redirectParam.startsWith('/live-streamer') || redirectParam.endsWith('/live-streamer')) {
+        isRedirectAuthorized = (['LIVE_STREAMER', 'EVENT_ORGANIZER', 'SYSTEM_ADMIN'] as UserRole[]).includes(userRole);
+      } else if (userRole === 'EVENT_ORGANIZER') {
+        const segments = redirectParam.split('/').filter(Boolean);
+        if (segments.length >= 1) {
+          const requestedSlug = segments[0].toLowerCase().replace(/^org-/, '');
+          const myOrgSlug = (tenantId || userId).toLowerCase().replace(/^org-/, '');
+          isRedirectAuthorized = !requestedSlug || requestedSlug === myOrgSlug || requestedSlug === 'organizer';
+        } else {
+          isRedirectAuthorized = true;
+        }
+      } else {
+        isRedirectAuthorized = true;
+      }
+    }
+
+    if (!redirectUrl || !isRedirectAuthorized || redirectUrl === '/login' || redirectUrl === '/') {
       redirectUrl = await resolveUserDashboardUrl({
         role: userRole,
         userId,
