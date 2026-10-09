@@ -90,9 +90,7 @@ export async function middleware(req: NextRequest) {
 
   // Helper function to build standard unauthenticated redirect
   const redirectToLogin = () => {
-    const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('redirect', path);
-    return NextResponse.redirect(loginUrl);
+    return NextResponse.redirect(new URL('/login', req.url));
   };
 
   // Helper function to handle unauthorized role access (redirect to user's authorized home)
