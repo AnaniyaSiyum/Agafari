@@ -2404,15 +2404,14 @@ function SystemAdminDashboardContent() {
 
               <div className="flex items-center gap-3 pb-3 border-b border-gold-500/20">
                 <div className="w-10 h-10 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
-                  <Edit className="w-5 h-5 text-amber-400" />
+                  <KeyRound className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
                   <h3 className="font-serif font-bold text-xl text-gold-400">
-                    Edit User Credentials
+                    Organizer Login Credentials
                   </h3>
-                  <p className="text-xs text-amber-300/90 font-mono flex items-center gap-1.5 mt-0.5">
-                    <span>Login Username:</span>
-                    <strong className="text-white bg-slate-900 px-2 py-0.5 rounded border border-gold-500/30">{selectedEditUser.email}</strong>
+                  <p className="text-xs text-gray-400">
+                    Credentials used on the login page (<span className="text-gold-300 font-mono font-semibold">/login</span>)
                   </p>
                 </div>
               </div>
@@ -2432,19 +2431,18 @@ function SystemAdminDashboardContent() {
               )}
 
               <form onSubmit={handleSaveUserCredentials} className="space-y-4 text-xs">
-                {/* Prominent Exact Login Username Field */}
-                <div className="p-3.5 rounded-2xl bg-amber-500/10 border-2 border-gold-500/60 shadow-lg space-y-2">
+                {/* Username Field */}
+                <div className="space-y-1.5">
                   <label className="block text-[11px] font-extrabold text-amber-400 flex items-center justify-between">
                     <span className="flex items-center gap-1.5 uppercase tracking-wider">
                       <User className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Exact Username for Login Page (/login)</span>
+                      <span>Username</span>
                     </span>
                     <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">
-                      Login Identity
+                      Login Page ID
                     </span>
                   </label>
                   
-                  {/* Primary Username with Copy Button */}
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
                       <input
@@ -2467,74 +2465,16 @@ function SystemAdminDashboardContent() {
                       <span>{copiedUsername ? 'Copied ✓' : 'Copy Username'}</span>
                     </button>
                   </div>
-
-                  {/* Clarification Guidance */}
-                  <div className="pt-1 text-[11px] text-amber-200/90 leading-relaxed space-y-1">
-                    <p className="flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span>Enter <strong>{editEmail}</strong> on the login page in the <strong>"USERNAME OR EMAIL ADDRESS"</strong> field.</span>
-                    </p>
-                    {editFullName && editFullName.toLowerCase() !== editEmail.toLowerCase() && (
-                      <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
-                        <span>Alternative login username:</span>
-                        <code className="text-amber-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">{editFullName}</code>
-                        <span>can also be entered on the login page.</span>
-                      </p>
-                    )}
-                    {selectedEditUser.organizerId && (
-                      <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
-                        <span>Organizer Tenant ID:</span>
-                        <code className="text-gray-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">{selectedEditUser.organizerId}</code>
-                      </p>
-                    )}
-                  </div>
                 </div>
 
-                {/* Fixed Read-Only Field: Full Name */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
-                    <span>Full Name / Organization Name</span>
-                    <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-gray-500" />
-                      (Fixed)
-                    </span>
-                  </label>
-                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gray-300 font-sans font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
-                    <span>{editFullName}</span>
-                    <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                  </div>
-                </div>
-
-                {/* Fixed Read-Only Field: System Role */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
-                    <span>Role & Access Permission Level</span>
-                    <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-gray-500" />
-                      (Fixed)
-                    </span>
-                  </label>
-                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gold-300 font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
-                    <span>
-                      {editRole === 'SYSTEM_ADMIN' && '👑 SYSTEM_ADMIN (Master Super Admin)'}
-                      {editRole === 'EVENT_ORGANIZER' && '👔 EVENT_ORGANIZER (Certified Production Agency)'}
-                      {editRole === 'BRIDE_GROOM' && '💍 BRIDE_GROOM (Wedding Host Couple)'}
-                      {editRole === 'LIVE_STREAMER' && '📹 LIVE_STREAMER (Broadcast Manager)'}
-                      {editRole === 'GATE_SCANNER' && '📱 GATE_SCANNER (Gate Check-In Agent)'}
-                      {editRole === 'GUEST' && '👥 GUEST (Guest User)'}
-                    </span>
-                    <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                  </div>
-                </div>
-
-                {/* Existing Password Display & Copy Section */}
-                <div>
-                  <label className="block text-[11px] font-bold text-amber-400 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
+                {/* Password Field */}
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-extrabold text-amber-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 uppercase tracking-wider">
                       <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Existing Active Password</span>
+                      <span>Password</span>
                     </span>
-                    <span className="text-[10px] text-gray-400 font-mono">Current Credential</span>
+                    <span className="text-[10px] text-gray-400 font-mono">Current Password</span>
                   </label>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
@@ -2542,7 +2482,7 @@ function SystemAdminDashboardContent() {
                         type={showCurrentPassword ? 'text' : 'password'}
                         readOnly
                         value={selectedEditUser.temporaryPassword || 'agafari2026'}
-                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/30 text-gold-300 font-mono font-bold focus:outline-none cursor-default"
+                        className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/40 text-gold-300 font-mono font-bold focus:outline-none cursor-default"
                       />
                       <button
                         type="button"
