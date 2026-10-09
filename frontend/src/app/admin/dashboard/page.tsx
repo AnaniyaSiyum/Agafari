@@ -209,6 +209,7 @@ function SystemAdminDashboardContent() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [copiedCurrentPassword, setCopiedCurrentPassword] = useState(false);
+  const [copiedUsername, setCopiedUsername] = useState(false);
   const [submittingEdit, setSubmittingEdit] = useState(false);
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState('');
@@ -804,6 +805,7 @@ function SystemAdminDashboardContent() {
     setShowCurrentPassword(false);
     setIsChangingPassword(false);
     setCopiedCurrentPassword(false);
+    setCopiedUsername(false);
     setEditError('');
     setEditSuccess('');
     setEditModalOpen(true);
@@ -2407,8 +2409,9 @@ function SystemAdminDashboardContent() {
                   <h3 className="font-serif font-bold text-xl text-gold-400">
                     Edit User Credentials
                   </h3>
-                  <p className="text-xs text-gray-400">
-                    Account: <strong className="text-white font-mono">{selectedEditUser.email}</strong>
+                  <p className="text-xs text-amber-300/90 font-mono flex items-center gap-1.5 mt-0.5">
+                    <span>Login Username:</span>
+                    <strong className="text-white bg-slate-900 px-2 py-0.5 rounded border border-gold-500/30">{selectedEditUser.email}</strong>
                   </p>
                 </div>
               </div>
@@ -2428,6 +2431,64 @@ function SystemAdminDashboardContent() {
               )}
 
               <form onSubmit={handleSaveUserCredentials} className="space-y-4 text-xs">
+                {/* Prominent Exact Login Username Field */}
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border-2 border-gold-500/60 shadow-lg space-y-2">
+                  <label className="block text-[11px] font-extrabold text-amber-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 uppercase tracking-wider">
+                      <User className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Exact Username for Login Page (/login)</span>
+                    </span>
+                    <span className="text-[10px] text-amber-300 font-mono font-bold bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/40">
+                      Login Identity
+                    </span>
+                  </label>
+                  
+                  {/* Primary Username with Copy Button */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        readOnly
+                        value={editEmail}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-gold-500/40 text-gold-300 font-mono font-bold text-xs focus:outline-none cursor-text select-all"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(editEmail);
+                        setCopiedUsername(true);
+                        setTimeout(() => setCopiedUsername(false), 2500);
+                      }}
+                      className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-[11px] font-extrabold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer shadow-md active:scale-95"
+                    >
+                      <Copy className="w-3.5 h-3.5 text-black" />
+                      <span>{copiedUsername ? 'Copied ✓' : 'Copy Username'}</span>
+                    </button>
+                  </div>
+
+                  {/* Clarification Guidance */}
+                  <div className="pt-1 text-[11px] text-amber-200/90 leading-relaxed space-y-1">
+                    <p className="flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Enter <strong>{editEmail}</strong> on the login page in the <strong>"USERNAME OR EMAIL ADDRESS"</strong> field.</span>
+                    </p>
+                    {editFullName && editFullName.toLowerCase() !== editEmail.toLowerCase() && (
+                      <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
+                        <span>Alternative login username:</span>
+                        <code className="text-amber-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">{editFullName}</code>
+                        <span>can also be entered on the login page.</span>
+                      </p>
+                    )}
+                    {selectedEditUser.organizerId && (
+                      <p className="text-[10px] text-gray-400 flex items-center gap-1.5">
+                        <span>Organizer Tenant ID:</span>
+                        <code className="text-gray-300 font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">{selectedEditUser.organizerId}</code>
+                      </p>
+                    )}
+                  </div>
+                </div>
+
                 {/* Fixed Read-Only Field: Full Name */}
                 <div>
                   <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
@@ -2439,21 +2500,6 @@ function SystemAdminDashboardContent() {
                   </label>
                   <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gray-300 font-sans font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
                     <span>{editFullName}</span>
-                    <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
-                  </div>
-                </div>
-
-                {/* Fixed Read-Only Field: Email Address */}
-                <div>
-                  <label className="block text-[11px] font-bold text-gray-400 mb-1 flex items-center justify-between">
-                    <span>Email Address (Login Identity)</span>
-                    <span className="text-[10px] text-gray-500 font-mono flex items-center gap-1">
-                      <Lock className="w-3 h-3 text-gray-500" />
-                      (Fixed)
-                    </span>
-                  </label>
-                  <div className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/60 border border-slate-800 text-gray-300 font-mono font-semibold cursor-not-allowed opacity-80 flex items-center justify-between">
-                    <span>{editEmail}</span>
                     <Lock className="w-3.5 h-3.5 text-gray-500 shrink-0" />
                   </div>
                 </div>
