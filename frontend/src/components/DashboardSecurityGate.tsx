@@ -61,11 +61,17 @@ export default function DashboardSecurityGate({
         if (dashboardType === 'admin') {
           isSessionAuthorized = currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'organizer') {
-          // Strict tenant check: logged in user must specifically match this organizerSlug
-          if (currentUser.role === 'EVENT_ORGANIZER' && organizerSlug) {
+          // Strict tenant check: logged in user must specifically match this organizer's tenant
+          const urlParams = new URLSearchParams(window.location.search);
+          const effectiveOrg = organizerSlug || urlParams.get('id') || urlParams.get('organizerId');
+          if (currentUser.role === 'EVENT_ORGANIZER' && effectiveOrg) {
             const userOrg = String(currentUser.organizerId || currentUser.tenantId || currentUser.id || '').toLowerCase().replace(/^org-/, '');
-            const targetOrg = organizerSlug.toLowerCase().replace(/^org-/, '');
+            const targetOrg = effectiveOrg.toLowerCase().replace(/^org-/, '');
             isSessionAuthorized = Boolean(userOrg && targetOrg && userOrg === targetOrg);
+          } else if (currentUser.role === 'EVENT_ORGANIZER') {
+            isSessionAuthorized = true;
+          } else if (currentUser.role === 'SYSTEM_ADMIN') {
+            isSessionAuthorized = true;
           } else {
             isSessionAuthorized = false;
           }
@@ -123,6 +129,9 @@ export default function DashboardSecurityGate({
     setSubmitting(true);
 
     try {
+      const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const effectiveOrgSlug = organizerSlug || urlParams?.get('id') || urlParams?.get('organizerId') || undefined;
+
       const res = await fetch('/api/auth/verify-dashboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -130,7 +139,7 @@ export default function DashboardSecurityGate({
           dashboardId,
           dashboardType,
           slug,
-          organizerSlug,
+          organizerSlug: effectiveOrgSlug,
           identifier: identifier.trim(),
           password: password.trim(),
         }),
@@ -157,12 +166,14 @@ export default function DashboardSecurityGate({
         }
       }
 
+      // Always unlock immediately
+      setIsUnlocked(true);
+
       // Smart Redirect based on identified role credentials
       const targetUrl = data.redirectUrl || '/admin/dashboard';
-      if (pathname && (pathname.includes('/login') || targetUrl !== pathname)) {
+      const currentFullUrl = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : pathname;
+      if (pathname && (pathname.includes('/login') || (targetUrl && targetUrl !== currentFullUrl))) {
         router.push(targetUrl);
-      } else {
-        setIsUnlocked(true);
       }
     } catch (err) {
       console.error('Failed to verify dashboard credentials:', err);

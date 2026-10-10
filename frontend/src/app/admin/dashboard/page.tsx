@@ -144,6 +144,16 @@ const DEFAULT_PLATFORM_USERS: UserData[] = [
     temporaryPassword: 'org123',
   },
   {
+    id: 'usr-1790347886383-736',
+    email: 'abe@gmail.com',
+    fullName: 'abe',
+    companyName: 'Abe Event Organizer Agency',
+    description: 'Certified Event Organizer Agency.',
+    organizerId: 'org-usr-1790347886383-736',
+    role: 'EVENT_ORGANIZER',
+    temporaryPassword: 'agafari2026',
+  },
+  {
     id: 'usr-org-2',
     email: 'royal@agafari.com',
     fullName: 'Ethiopian Royal Wedding Planners',

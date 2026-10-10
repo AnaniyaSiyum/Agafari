@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
+import { getStoredUsers, saveStoredUser } from '@/lib/userStore';
 
 // GET: List accounts — filtered by capability and scoped by tenant
 export async function GET(req: NextRequest) {
@@ -60,10 +61,11 @@ export async function GET(req: NextRequest) {
       createdAt: u.created_at || new Date().toISOString(),
     }));
 
-    // Merge mockStore.users for runtime synchronization
+    // Merge mockStore.users and persistent userStore for runtime synchronization
     const existingMap = new Map(formatted.map((u: any) => [(u.email || '').toLowerCase(), u]));
 
-    for (const mockUser of mockStore.users) {
+    const combinedList = [...mockStore.users, ...getStoredUsers()];
+    for (const mockUser of combinedList) {
       const emailKey = (mockUser.email || '').toLowerCase();
       const existing = existingMap.get(emailKey);
 
@@ -83,6 +85,7 @@ export async function GET(req: NextRequest) {
           company_name: mockUser.companyName || mockUser.fullName,
           description: mockUser.description || '',
           organizerId: mockUser.organizerId || `org-${mockUser.id}`,
+          temporaryPassword: mockUser.temporaryPassword || 'agafari2026',
           isActive: true,
           createdAt: new Date().toISOString(),
         };
@@ -99,7 +102,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ users: safeUsers });
   } catch (e) {
-    return NextResponse.json({ users: mockStore.users.map((u) => sanitizeUser(u)) });
+    return NextResponse.json({ users: [...mockStore.users, ...getStoredUsers()].map((u) => sanitizeUser(u)) });
   }
 }
 
@@ -182,19 +185,21 @@ export async function POST(req: NextRequest) {
 
       const newUser = await queryOne('SELECT id, email, full_name, role FROM users WHERE id = $1', [newUserId]);
 
-      // Sync into mockStore
-      mockStore.users.unshift({
+      // Sync into mockStore and persistent userStore
+      const persistentRecord = {
         id: newUser.id,
-        eventId: eventId || null,
         email: newUser.email,
-        passwordHash: hashedPassword,
-        temporaryPassword: effectivePassword,
         fullName: newUser.full_name || effectiveName,
         companyName: companyName || effectiveName,
         description: description || '',
         organizerId: orgId,
         role: newUser.role as UserRole,
-      });
+        passwordHash: hashedPassword,
+        temporaryPassword: effectivePassword,
+        isActive: true,
+      };
+      mockStore.users.unshift(persistentRecord);
+      saveStoredUser(persistentRecord);
 
       await logAuditAction({
         actorId: actor.userId,
@@ -223,17 +228,18 @@ export async function POST(req: NextRequest) {
       const newUserId = `usr-org-${Date.now()}`;
       const newMockUser = {
         id: newUserId,
-        eventId: eventId || null,
         email: email.toLowerCase().trim(),
-        passwordHash: hashedPassword,
-        temporaryPassword: effectivePassword,
         fullName: (fullName || companyName || 'Agafari User').trim(),
         companyName: (companyName || fullName || 'Agafari User').trim(),
         description: description || '',
         organizerId: `org-${newUserId}`,
         role: role as UserRole,
+        passwordHash: hashedPassword,
+        temporaryPassword: effectivePassword,
+        isActive: true,
       };
       mockStore.users.unshift(newMockUser);
+      saveStoredUser(newMockUser);
 
       await logAuditAction({
         actorId: actor.userId,

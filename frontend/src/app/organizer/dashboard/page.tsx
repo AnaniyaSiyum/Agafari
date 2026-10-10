@@ -1088,7 +1088,7 @@ export default function OrganizerDashboardPage() {
       dashboardTitle="Event Organizer Agency Dashboard"
       dashboardId="organizer-dashboard"
       dashboardType="organizer"
-      defaultEmail="organizer@agafari.com"
+      defaultEmail=""
     >
       <OrganizerDashboardContent />
     </DashboardSecurityGate>

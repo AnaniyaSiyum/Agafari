@@ -188,6 +188,18 @@ const mockUsers: UserRecord[] = [
     role: 'EVENT_ORGANIZER',
   },
   {
+    id: 'usr-1790347886383-736',
+    eventId: null,
+    email: 'abe@gmail.com',
+    passwordHash: hashPassword('agafari2026'),
+    temporaryPassword: 'agafari2026',
+    fullName: 'abe',
+    companyName: 'Abe Event Organizer Agency',
+    description: 'Certified Event Organizer Agency.',
+    organizerId: 'org-usr-1790347886383-736',
+    role: 'EVENT_ORGANIZER',
+  },
+  {
     id: 'usr-org-2',
     eventId: null,
     email: 'royal@agafari.com',

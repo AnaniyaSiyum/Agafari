@@ -11,6 +11,7 @@ import {
 } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
+import { updateStoredUserCredentials } from '@/lib/userStore';
 
 const VALID_ROLES: UserRole[] = [
   'SYSTEM_ADMIN',
@@ -126,7 +127,21 @@ export async function PATCH(
       console.warn('DB User Credentials Update fallback:', dbErr);
     }
 
-    // 5. Synchronize mockStore
+    // 5. Synchronize mockStore and persistent userStore
+    if (newPassword && newPassword.trim()) {
+      const persisted = updateStoredUserCredentials(userId, newPassword.trim());
+      if (persisted && !updatedUser) {
+        updatedUser = {
+          id: persisted.id,
+          email: persisted.email,
+          full_name: persisted.fullName,
+          fullName: persisted.fullName,
+          role: persisted.role,
+          created_at: new Date().toISOString(),
+        };
+      }
+    }
+
     const mockIdx = mockStore.users.findIndex((u) => u.id === userId);
     if (mockIdx >= 0) {
       if (email) mockStore.users[mockIdx].email = email.trim().toLowerCase();
