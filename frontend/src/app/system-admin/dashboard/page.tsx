@@ -37,7 +37,7 @@ interface UserRecord {
   fullName: string;
   full_name?: string;
   companyName?: string;
-  role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'GUEST';
+  role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'MODERATOR' | 'GUEST';
   isActive?: boolean;
   createdAt?: string;
   created_at?: string;

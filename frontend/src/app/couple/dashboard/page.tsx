@@ -61,8 +61,9 @@ interface MediaAssetData {
   id: string;
   eventId: string;
   uploaderName: string;
-  mediaType: 'VIDEO' | 'IMAGE';
-  category?: 'BTS' | 'WISHES' | 'LIVE' | 'MEZMUR';
+  mediaType: 'VIDEO' | 'IMAGE' | 'MEZMUR' | string;
+  media_type?: string;
+  category?: 'BTS' | 'WISHES' | 'LIVE' | 'MEZMUR' | 'MUSIC' | string;
   cdnUrl: string;
   thumbnailUrl?: string;
   caption: string;

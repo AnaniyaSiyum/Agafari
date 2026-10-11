@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { 
   Radio, 
@@ -34,6 +35,7 @@ function extractYouTubeId(input: string): string {
 function EventLiveStreamerContent({ params }: { params: { slug: string } }) {
   const { slug } = params;
   const { t } = useTranslation();
+  const router = useRouter();
 
   const [authUser, setAuthUser] = useState<{ userId: string; email: string; role: string } | null>(null);
   const [eventData, setEventData] = useState<{ id: string; title: string; brideName: string; groomName: string; adminApprovalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED' } | null>(null);

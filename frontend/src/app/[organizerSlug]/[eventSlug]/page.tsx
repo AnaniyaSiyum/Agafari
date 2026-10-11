@@ -46,7 +46,8 @@ import {
   BookOpen,
   Music,
   Volume2,
-  AlertTriangle
+  AlertTriangle,
+  Lock
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 import InvitationCardModal from '@/components/InvitationCardModal';

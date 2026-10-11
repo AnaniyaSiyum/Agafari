@@ -29,9 +29,18 @@ export interface EventData {
   additionalLocations?: any[];
   status: 'DRAFT' | 'COMING_SOON' | 'LIVE' | 'COMPLETED' | 'ARCHIVED';
   adminApprovalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  organizerId?: string;
   coupleCredentials?: {
     email: string;
     temporaryPassword?: string;
+  };
+  credentials?: {
+    [key: string]: any;
+    couple?: { fullName?: string; email?: string; temporaryPassword?: string; role?: string };
+    organizer?: { fullName?: string; email?: string; temporaryPassword?: string; role?: string };
+    streamer?: { fullName?: string; email?: string; temporaryPassword?: string; role?: string };
+    scanner?: { fullName?: string; email?: string; temporaryPassword?: string; role?: string };
+    moderator?: { fullName?: string; email?: string; temporaryPassword?: string; role?: string };
   };
   youtubeStreamUrl?: string;
   youtubeVideoId?: string;
@@ -45,7 +54,7 @@ export interface EventData {
 
 export interface UserRecord {
   id: string;
-  eventId: string | null;
+  eventId?: string | null;
   email: string;
   passwordHash: string;
   temporaryPassword?: string;
@@ -53,7 +62,7 @@ export interface UserRecord {
   companyName?: string;
   description?: string;
   organizerId?: string;
-  role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'GUEST';
+  role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'MODERATOR' | 'GUEST';
 }
 
 export interface WishData {

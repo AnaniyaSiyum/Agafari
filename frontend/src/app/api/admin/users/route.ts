@@ -188,6 +188,7 @@ export async function POST(req: NextRequest) {
       // Sync into mockStore and persistent userStore
       const persistentRecord = {
         id: newUser.id,
+        eventId: null,
         email: newUser.email,
         fullName: newUser.full_name || effectiveName,
         companyName: companyName || effectiveName,
@@ -213,13 +214,7 @@ export async function POST(req: NextRequest) {
         {
           success: true,
           message: `Account created successfully with role '${role}'.`,
-          user: sanitizeUser({
-            id: newUser.id,
-            email: newUser.email,
-            fullName: newUser.full_name,
-            role: newUser.role,
-            organizerId: orgId,
-          }),
+          user: sanitizeUser(persistentRecord),
         },
         { status: 201 }
       );
@@ -228,6 +223,7 @@ export async function POST(req: NextRequest) {
       const newUserId = `usr-org-${Date.now()}`;
       const newMockUser = {
         id: newUserId,
+        eventId: null,
         email: email.toLowerCase().trim(),
         fullName: (fullName || companyName || 'Agafari User').trim(),
         companyName: (companyName || fullName || 'Agafari User').trim(),

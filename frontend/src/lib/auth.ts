@@ -399,7 +399,7 @@ export function canManageUser(
 // 5. HELPER UTILITIES
 // -----------------------------------------------------------------------------
 
-export function sanitizeUser<T extends { password_hash?: string; temporary_password?: string; passwordHash?: string }>(
+export function sanitizeUser<T extends Record<string, any>>(
   row: T
 ): Omit<T, 'password_hash' | 'temporary_password' | 'passwordHash'> {
   const { password_hash, temporary_password, passwordHash, ...safe } = row;

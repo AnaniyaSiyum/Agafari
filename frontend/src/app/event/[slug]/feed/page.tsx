@@ -30,7 +30,7 @@ interface MediaAssetData {
   id: string;
   uploaderName: string;
   mediaType: 'VIDEO' | 'IMAGE';
-  category?: 'WISHES' | 'BTS' | 'LIVE';
+  category?: 'WISHES' | 'BTS' | 'LIVE' | 'MEZMUR' | 'MUSIC' | string;
   cdnUrl: string;
   caption: string;
   viewsCount: number;

@@ -108,7 +108,7 @@ interface UserData {
   companyName?: string;
   description?: string;
   organizerId?: string;
-  role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'GUEST';
+  role: 'SYSTEM_ADMIN' | 'EVENT_ORGANIZER' | 'BRIDE_GROOM' | 'LIVE_STREAMER' | 'GATE_SCANNER' | 'MODERATOR' | 'GUEST';
   eventId?: string | null;
   temporaryPassword?: string;
 }
