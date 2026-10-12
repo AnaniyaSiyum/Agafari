@@ -286,10 +286,10 @@ export async function GET(req: NextRequest) {
     }
 
     let combinedFormatted: any[] = [];
-    if (dbSuccess) {
+    if (dbSuccess && rawEvents && rawEvents.length > 0) {
       combinedFormatted = (rawEvents || []).map((dbEvt: any) => formatEvent(dbEvt));
     } else {
-      // Fallback only if DB is unavailable
+      // Fallback if DB returns 0 rows or is unavailable
       const mockEventsForOrg = mockStore.events.filter((e: any) => {
         const eOrgId = e.organizerId || e.organizer_id;
         if (!eOrgId) return false;

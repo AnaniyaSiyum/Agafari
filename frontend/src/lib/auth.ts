@@ -466,44 +466,7 @@ export async function resolveUserDashboardUrl(options: {
     if (slug) {
       return `/${userOrgSlug}/${slug}`;
     }
-
-    // A. Query DB for an event owned specifically by this organizer
-    try {
-      const evt = await queryOne<{ slug: string; organizer_id: string }>(
-        `SELECT slug, organizer_id FROM events 
-         WHERE organizer_id = $1 
-            OR organizer_id = $2 
-            OR organizer_id = $3 
-            OR organizer_id = (SELECT id FROM organizers WHERE owner_user_id = $1 OR owner_user_id = $3 LIMIT 1)
-         ORDER BY created_at DESC LIMIT 1`,
-        [effectiveOrgId, userOrgSlug, userId]
-      );
-      if (evt && evt.slug) {
-        const orgSlug = evt.organizer_id
-          ? (evt.organizer_id.startsWith('org-') ? evt.organizer_id : `org-${evt.organizer_id}`)
-          : userOrgSlug;
-        return `/${orgSlug}/${evt.slug}`;
-      }
-    } catch (e) {}
-
-    // B. Query mockStore strictly for this organizer's own events (NEVER fallback to other events)
-    const cleanOrg = userOrgSlug.replace(/^org-/, '');
-    const cleanUserId = userId.replace(/^org-/, '');
-    const cleanEmail = (email || '').toLowerCase();
-
-    const mockEvt = mockStore.events.find((e: any) => {
-      const eOrg = String(e.organizerId || (e as any).organizer_id || '').replace(/^org-/, '');
-      const eEmail = (e.credentials?.organizer?.email || '').toLowerCase();
-      return (eOrg && (eOrg === cleanOrg || eOrg === cleanUserId)) || (eEmail && eEmail === cleanEmail);
-    });
-
-    if (mockEvt && mockEvt.slug) {
-      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || userOrgSlug;
-      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
-      return `/${orgSlug}/${mockEvt.slug}`;
-    }
-
-    // C. No events created yet: Go to their specific organizer command dashboard
+    // Multi-tenant Organizer Hub: Manage fleet of events, credentials, RSVPs, and financials
     return `/organizer/dashboard?id=${encodeURIComponent(effectiveOrgId)}`;
   }
 

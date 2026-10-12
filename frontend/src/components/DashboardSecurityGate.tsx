@@ -29,7 +29,7 @@ import {
 interface DashboardSecurityGateProps {
   dashboardTitle?: string;
   dashboardId?: string;
-  dashboardType?: 'admin' | 'organizer' | 'couple' | 'scanner' | 'streamer' | 'moderator';
+  dashboardType?: 'admin' | 'organizer' | 'couple' | 'scanner' | 'streamer' | 'moderator' | 'any';
   slug?: string;
   organizerSlug?: string;
   defaultEmail?: string;
@@ -135,7 +135,7 @@ export default function DashboardSecurityGate({
 
   // Selected role context (for guidance and filter only, DOES NOT autofill credentials)
   const [selectedRole, setSelectedRole] = useState<PlatformRoleCategory | null>(null);
-  const [showDirectory, setShowDirectory] = useState(false);
+  const [showDirectory, setShowDirectory] = useState(dashboardId === 'platform-login' || dashboardType === 'any');
   const [copiedAccount, setCopiedAccount] = useState<string | null>(null);
 
   const storageKey = `agafari_unlocked_dashboard_${dashboardId}`;
@@ -152,7 +152,7 @@ export default function DashboardSecurityGate({
         } catch (e) {}
       }
 
-      const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login';
+      const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login' || dashboardType === 'any';
 
       let isSessionAuthorized = false;
       if (unlockedVal === 'true') {
@@ -167,21 +167,19 @@ export default function DashboardSecurityGate({
             const userOrg = String(currentUser.organizerId || currentUser.tenantId || currentUser.id || '').toLowerCase().replace(/^org-/, '');
             const targetOrg = effectiveOrg.toLowerCase().replace(/^org-/, '');
             isSessionAuthorized = Boolean(userOrg && targetOrg && userOrg === targetOrg);
-          } else if (currentUser.role === 'EVENT_ORGANIZER') {
-            isSessionAuthorized = true;
-          } else if (currentUser.role === 'SYSTEM_ADMIN') {
+          } else if (currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN') {
             isSessionAuthorized = true;
           } else {
             isSessionAuthorized = false;
           }
         } else if (dashboardType === 'couple') {
-          isSessionAuthorized = currentUser.role === 'BRIDE_GROOM';
+          isSessionAuthorized = currentUser.role === 'BRIDE_GROOM' || currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'scanner') {
-          isSessionAuthorized = currentUser.role === 'GATE_SCANNER';
+          isSessionAuthorized = currentUser.role === 'GATE_SCANNER' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'streamer') {
-          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER';
+          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'moderator') {
-          isSessionAuthorized = currentUser.role === 'MODERATOR';
+          isSessionAuthorized = currentUser.role === 'MODERATOR' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN';
         }
       }
 
@@ -195,13 +193,17 @@ export default function DashboardSecurityGate({
         setIdentifier(defaultEmail || queryIdentifier || '');
         setPassword('');
 
-        // Map initial role hint if arriving from a specific scoped dashboard URL
-        if (dashboardType === 'admin') setSelectedRole('admin');
-        else if (dashboardType === 'organizer') setSelectedRole('organizer');
-        else if (dashboardType === 'couple') setSelectedRole('couple');
-        else if (dashboardType === 'scanner') setSelectedRole('scanner');
-        else if (dashboardType === 'streamer') setSelectedRole('streamer');
-        else if (dashboardType === 'moderator') setSelectedRole('moderator');
+        // Map initial role hint only if arriving from a specific scoped dashboard URL
+        if (!isGeneralLogin) {
+          if (dashboardType === 'admin') setSelectedRole('admin');
+          else if (dashboardType === 'organizer') setSelectedRole('organizer');
+          else if (dashboardType === 'couple') setSelectedRole('couple');
+          else if (dashboardType === 'scanner') setSelectedRole('scanner');
+          else if (dashboardType === 'streamer') setSelectedRole('streamer');
+          else if (dashboardType === 'moderator') setSelectedRole('moderator');
+        } else {
+          setSelectedRole(null);
+        }
       }
       setChecking(false);
     }
@@ -237,6 +239,7 @@ export default function DashboardSecurityGate({
     setSubmitting(true);
 
     try {
+      const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login' || dashboardType === 'any';
       const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
       const effectiveOrgSlug = organizerSlug || urlParams?.get('id') || urlParams?.get('organizerId') || undefined;
 
@@ -245,7 +248,7 @@ export default function DashboardSecurityGate({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           dashboardId,
-          dashboardType: selectedRole || dashboardType,
+          dashboardType: isGeneralLogin ? 'any' : (selectedRole || dashboardType),
           slug,
           organizerSlug: effectiveOrgSlug,
           identifier: identifier.trim(),
@@ -305,6 +308,7 @@ export default function DashboardSecurityGate({
   }
 
   const activeRoleConfig = selectedRole ? PLATFORM_ROLES.find((r) => r.id === selectedRole) : null;
+  const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login' || dashboardType === 'any';
 
   return (
     <div className="min-h-screen bg-[#070707] text-stone-100 flex items-center justify-center p-4 sm:p-6 font-sans relative overflow-hidden">
@@ -336,60 +340,64 @@ export default function DashboardSecurityGate({
           </h1>
 
           <p className="text-[11px] font-bold text-gold-500 uppercase tracking-widest block">
-            {dashboardType === 'organizer' && organizerSlug
-              ? `ORGANIZER WORKSPACE: ${organizerSlug}`
-              : 'OFFICIAL PLATFORM ACCESS CONTROL'}
+            {isGeneralLogin
+              ? 'ENTER CREDENTIALS TO ACCESS YOUR SPECIFIC DASHBOARD'
+              : (dashboardType === 'organizer' && organizerSlug
+                  ? `ORGANIZER WORKSPACE: ${organizerSlug}`
+                  : 'OFFICIAL PLATFORM ACCESS CONTROL')}
           </p>
         </div>
 
-        {/* Role Portal Selector (Guides Context - Does NOT Fill Credentials) */}
-        <div className="space-y-2">
-          <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
-            SELECT ROLE CONTEXT (OPTIONAL):
-          </label>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-            {PLATFORM_ROLES.map((role) => {
-              const Icon = role.icon;
-              const isSelected = selectedRole === role.id;
-              return (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => handleRoleTabClick(role.id)}
-                  title={`${role.name}: ${role.scopeDescription}`}
-                  className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
-                    isSelected
-                      ? `${role.accentColor} shadow-md ring-1 ring-gold-500/50 font-bold scale-[1.02]`
-                      : 'bg-stone-900/60 border-stone-800 text-stone-400 hover:border-gold-500/30 hover:text-stone-200'
-                  }`}
-                >
-                  <Icon className="w-3.5 h-3.5 shrink-0" />
-                  <span className="text-[9px] leading-tight truncate w-full">{role.name}</span>
-                </button>
-              );
-            })}
-          </div>
+        {/* Role Portal Selector (Only shown if NOT general login) */}
+        {!isGeneralLogin && (
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">
+              SELECT ROLE CONTEXT (OPTIONAL):
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
+              {PLATFORM_ROLES.map((role) => {
+                const Icon = role.icon;
+                const isSelected = selectedRole === role.id;
+                return (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleRoleTabClick(role.id)}
+                    title={`${role.name}: ${role.scopeDescription}`}
+                    className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                      isSelected
+                        ? `${role.accentColor} shadow-md ring-1 ring-gold-500/50 font-bold scale-[1.02]`
+                        : 'bg-stone-900/60 border-stone-800 text-stone-400 hover:border-gold-500/30 hover:text-stone-200'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="text-[9px] leading-tight truncate w-full">{role.name}</span>
+                  </button>
+                );
+              })}
+            </div>
 
-          {/* Active Role Architecture Guidance Banner */}
-          {activeRoleConfig && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 flex items-start gap-2.5 text-xs text-stone-300"
-            >
-              <activeRoleConfig.icon className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
-              <div className="space-y-0.5 text-[11px]">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-white">{activeRoleConfig.name}</span>
-                  <span className="text-[9px] px-1.5 py-0.2 rounded bg-gold-500/20 text-gold-300 font-mono font-semibold border border-gold-500/30">
-                    {activeRoleConfig.scopeBadge}
-                  </span>
+            {/* Active Role Architecture Guidance Banner */}
+            {activeRoleConfig && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="p-3 rounded-xl bg-stone-900/80 border border-stone-800 flex items-start gap-2.5 text-xs text-stone-300"
+              >
+                <activeRoleConfig.icon className="w-4 h-4 text-gold-400 shrink-0 mt-0.5" />
+                <div className="space-y-0.5 text-[11px]">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white">{activeRoleConfig.name}</span>
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-gold-500/20 text-gold-300 font-mono font-semibold border border-gold-500/30">
+                      {activeRoleConfig.scopeBadge}
+                    </span>
+                  </div>
+                  <p className="text-stone-400 leading-snug">{activeRoleConfig.scopeDescription}</p>
                 </div>
-                <p className="text-stone-400 leading-snug">{activeRoleConfig.scopeDescription}</p>
-              </div>
-            </motion.div>
-          )}
-        </div>
+              </motion.div>
+            )}
+          </div>
+        )}
 
         {/* Error Notification Banner */}
         {errorMsg && (
@@ -514,7 +522,7 @@ export default function DashboardSecurityGate({
                     <div>
                       <div className="flex items-center gap-1.5">
                         <Crown className="w-3 h-3 text-gold-400" />
-                        <span className="font-bold text-white text-[11px]">System Super Admin</span>
+                        <span className="font-bold text-white text-[11px]">System Platform Admin</span>
                         <span className="text-[9px] text-gold-400 font-mono">(1 Single Admin)</span>
                       </div>
                       <p className="text-[10px] text-stone-400 font-mono">admin@agafari.com • admin123</p>
@@ -522,32 +530,32 @@ export default function DashboardSecurityGate({
                     <button
                       type="button"
                       onClick={() => handleUseTestAccount('admin@agafari.com', 'admin123')}
-                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold"
+                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold cursor-pointer"
                     >
                       {copiedAccount === 'admin@agafari.com' ? 'Filled ✓' : 'Use Account'}
                     </button>
                   </div>
 
-                  {/* Organizer 1 */}
+                  {/* Organizer 1: Kebkab Events */}
                   <div className="p-2 rounded-lg bg-stone-900/60 border border-stone-800 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-1.5">
                         <Briefcase className="w-3 h-3 text-amber-400" />
-                        <span className="font-bold text-white text-[11px]">Agafari Luxury Events</span>
+                        <span className="font-bold text-white text-[11px]">Kebkab Events</span>
                         <span className="text-[9px] text-amber-400 font-mono">(Organizer Agency 1)</span>
                       </div>
-                      <p className="text-[10px] text-stone-400 font-mono">organizer@agafari.com • org123</p>
+                      <p className="text-[10px] text-stone-400 font-mono">kebkab@agafari.com • org123</p>
                     </div>
                     <button
                       type="button"
-                      onClick={() => handleUseTestAccount('organizer@agafari.com', 'org123')}
-                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold"
+                      onClick={() => handleUseTestAccount('kebkab@agafari.com', 'org123')}
+                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold cursor-pointer"
                     >
-                      {copiedAccount === 'organizer@agafari.com' ? 'Filled ✓' : 'Use Account'}
+                      {copiedAccount === 'kebkab@agafari.com' ? 'Filled ✓' : 'Use Account'}
                     </button>
                   </div>
 
-                  {/* Organizer 2 */}
+                  {/* Organizer 2: Matrimony Planners */}
                   <div className="p-2 rounded-lg bg-stone-900/60 border border-stone-800 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-1.5">
@@ -560,58 +568,102 @@ export default function DashboardSecurityGate({
                     <button
                       type="button"
                       onClick={() => handleUseTestAccount('matrimony@agafari.com', 'org123')}
-                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold"
+                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold cursor-pointer"
                     >
                       {copiedAccount === 'matrimony@agafari.com' ? 'Filled ✓' : 'Use Account'}
                     </button>
                   </div>
 
-                  {/* Event 1: Adeday & Adisu Staff */}
+                  {/* Organizer 3: Agafari Luxury Events */}
+                  <div className="p-2 rounded-lg bg-stone-900/60 border border-stone-800 flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <Briefcase className="w-3 h-3 text-amber-400" />
+                        <span className="font-bold text-white text-[11px]">Agafari Luxury Events</span>
+                        <span className="text-[9px] text-amber-400 font-mono">(Organizer Agency 3)</span>
+                      </div>
+                      <p className="text-[10px] text-stone-400 font-mono">organizer@agafari.com • org123</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleUseTestAccount('organizer@agafari.com', 'org123')}
+                      className="text-[10px] px-2 py-1 rounded bg-stone-800 hover:bg-gold-500 hover:text-black text-stone-200 transition font-semibold cursor-pointer"
+                    >
+                      {copiedAccount === 'organizer@agafari.com' ? 'Filled ✓' : 'Use Account'}
+                    </button>
+                  </div>
+
+                  {/* Event 1: Bethlehem & Yonas Wedding (Kebkab) */}
                   <div className="p-2 rounded-lg bg-stone-900/40 border border-stone-800/80 space-y-1">
-                    <span className="text-[10px] font-bold text-rose-300 block">
-                      💍 Event 1: Adeday & Adisu Wedding (Per-Event Credentials):
+                    <span className="text-[10px] font-bold text-amber-300 block">
+                      💍 Event 1: Bethlehem & Yonas Wedding (Kebkab Events - Dedicated Roles):
                     </span>
                     <div className="grid grid-cols-2 gap-1 text-[10px] text-stone-300 font-mono">
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
-                        <span>Couple: couple@agafari.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('couple@agafari.com', 'agafari2026')} className="text-gold-400 hover:underline">Use</button>
+                        <span>Couple: couple@kebkab-wedding.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('couple@kebkab-wedding.com', 'couple123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
-                        <span>Scanner: scanner@agafari.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('scanner@agafari.com', 'scan123')} className="text-gold-400 hover:underline">Use</button>
+                        <span>Scanner: scanner@kebkab-wedding.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('scanner@kebkab-wedding.com', 'scan123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
-                        <span>Streamer: streamer@agafari.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('streamer@agafari.com', 'stream123')} className="text-gold-400 hover:underline">Use</button>
+                        <span>Moderator: moderator@kebkab-wedding.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('moderator@kebkab-wedding.com', 'mod123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
-                        <span>Moderator: moderator@agafari.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('moderator@agafari.com', 'mod123')} className="text-gold-400 hover:underline">Use</button>
+                        <span>Streamer: streamer@kebkab-wedding.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('streamer@kebkab-wedding.com', 'stream123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                     </div>
                   </div>
 
-                  {/* Event 2: Sara & Dawit Staff */}
+                  {/* Event 2: Sara & Dawit Matrimony (Matrimony) */}
                   <div className="p-2 rounded-lg bg-stone-900/40 border border-stone-800/80 space-y-1">
                     <span className="text-[10px] font-bold text-indigo-300 block">
-                      💍 Event 2: Sara & Dawit Matrimony (Per-Event Credentials):
+                      💍 Event 2: Sara & Dawit Matrimony (Matrimony Planners - Dedicated Roles):
                     </span>
                     <div className="grid grid-cols-2 gap-1 text-[10px] text-stone-300 font-mono">
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
                         <span>Couple: couple@matrimony.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('couple@matrimony.com', 'agafari2026')} className="text-gold-400 hover:underline">Use</button>
+                        <button type="button" onClick={() => handleUseTestAccount('couple@matrimony.com', 'couple123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
                         <span>Scanner: scanner@matrimony.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('scanner@matrimony.com', 'scan123')} className="text-gold-400 hover:underline">Use</button>
-                      </div>
-                      <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
-                        <span>Streamer: streamer@matrimony.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('streamer@matrimony.com', 'stream123')} className="text-gold-400 hover:underline">Use</button>
+                        <button type="button" onClick={() => handleUseTestAccount('scanner@matrimony.com', 'scan123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                       <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
                         <span>Moderator: moderator@matrimony.com</span>
-                        <button type="button" onClick={() => handleUseTestAccount('moderator@matrimony.com', 'mod123')} className="text-gold-400 hover:underline">Use</button>
+                        <button type="button" onClick={() => handleUseTestAccount('moderator@matrimony.com', 'mod123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
+                      </div>
+                      <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
+                        <span>Streamer: streamer@matrimony.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('streamer@matrimony.com', 'stream123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Event 3: Natnael & Selam Wedding (Agafari) */}
+                  <div className="p-2 rounded-lg bg-stone-900/40 border border-stone-800/80 space-y-1">
+                    <span className="text-[10px] font-bold text-rose-300 block">
+                      💍 Event 3: Natnael & Selam Wedding (Agafari Luxury - Dedicated Roles):
+                    </span>
+                    <div className="grid grid-cols-2 gap-1 text-[10px] text-stone-300 font-mono">
+                      <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
+                        <span>Couple: couple@natnael-selam.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('couple@natnael-selam.com', 'couple123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
+                      </div>
+                      <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
+                        <span>Scanner: scanner@natnael-selam.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('scanner@natnael-selam.com', 'scan123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
+                      </div>
+                      <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
+                        <span>Moderator: moderator@natnael-selam.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('moderator@natnael-selam.com', 'mod123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
+                      </div>
+                      <div className="flex items-center justify-between p-1 bg-stone-950 rounded">
+                        <span>Streamer: streamer@natnael-selam.com</span>
+                        <button type="button" onClick={() => handleUseTestAccount('streamer@natnael-selam.com', 'stream123')} className="text-gold-400 hover:underline cursor-pointer">Use</button>
                       </div>
                     </div>
                   </div>

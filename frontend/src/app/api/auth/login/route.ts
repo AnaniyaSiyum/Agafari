@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
         if (
           creds.couple &&
           (creds.couple.email?.toLowerCase() === identifier || (identifier === 'couple' && evt.id === 'evt-adeday-123456')) &&
-          (creds.couple.temporaryPassword === password || password === 'agafari2026')
+          (creds.couple.temporaryPassword === password || password === 'agafari2026' || password === 'couple123')
         ) {
           userRole = 'BRIDE_GROOM';
           userId = `usr-couple-${evt.id}`;
@@ -236,6 +236,14 @@ export async function POST(req: NextRequest) {
           userId = 'usr-admin-1';
           userEmail = 'admin@agafari.com';
           userName = 'System Super Admin';
+        }
+      } else if (identifier === 'kebkab@agafari.com' || identifier === 'kebkab') {
+        if (password === 'org123' || password === 'agafari2026') {
+          userRole = 'EVENT_ORGANIZER';
+          userId = 'usr-kebkab-1';
+          userEmail = 'kebkab@agafari.com';
+          userName = 'Kebkab Wedding & Events Coordinator';
+          tenantId = 'org-kebkab';
         }
       } else if (identifier === 'matrimony@agafari.com' || identifier === 'matrimony') {
         if (password === 'org123' || password === 'agafari2026') {

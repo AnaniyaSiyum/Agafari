@@ -6,9 +6,9 @@ import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 export default function GeneralLoginPage() {
   return (
     <DashboardSecurityGate
-      dashboardTitle="Agafari Platform Login"
+      dashboardTitle="Agafari Wedding Platform Login"
       dashboardId="platform-login"
-      dashboardType="admin"
+      dashboardType="any"
     >
       <div className="min-h-screen bg-black text-white flex items-center justify-center p-6 text-center font-serif">
         <div className="space-y-3">

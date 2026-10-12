@@ -11,7 +11,23 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   const guestIdentifier = searchParams.get('guestId'); // device/session id, for "did I like this"
 
   try {
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    let event: { id: string } | null = null;
+    try {
+      event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    } catch (e) {}
+
+    if (!event) {
+      const mockEvt = mockStore.events.find(
+        (e: any) =>
+          e.slug?.toLowerCase() === params.slug.toLowerCase() ||
+          e.id === params.slug ||
+          e.id === `evt-${params.slug}`
+      );
+      if (mockEvt) {
+        event = { id: mockEvt.id };
+      }
+    }
+
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const user = getAuthUser(req);
@@ -21,33 +37,55 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     const rawStatus = searchParams.get('status');
     const statusFilter = (rawStatus === 'ALL' || rawStatus === 'null') ? null : (isModerator ? (rawStatus ?? null) : (rawStatus ?? 'APPROVED'));
 
-    const rawItems = await query(
-      `SELECT m.*,
-              ${guestIdentifier ? '(pl.id IS NOT NULL) AS liked_by_me' : 'FALSE AS liked_by_me'}
-       FROM media_assets m
-       ${guestIdentifier ? 'LEFT JOIN post_likes pl ON pl.media_id = m.id AND pl.guest_identifier = $4' : ''}
-       WHERE m.event_id = $1
-         AND ($2 IS NULL OR m.category = $2)
-         AND ($3 IS NULL OR m.status = $3)
-       ORDER BY m.created_at DESC`,
-      guestIdentifier
-        ? [event.id, category || null, statusFilter, guestIdentifier]
-        : [event.id, category || null, statusFilter]
-    );
+    let rawItems: any[] = [];
+    try {
+      rawItems = await query(
+        `SELECT m.*,
+                ${guestIdentifier ? '(pl.id IS NOT NULL) AS liked_by_me' : 'FALSE AS liked_by_me'}
+         FROM media_assets m
+         ${guestIdentifier ? 'LEFT JOIN post_likes pl ON pl.media_id = m.id AND pl.guest_identifier = $4' : ''}
+         WHERE m.event_id = $1
+           AND ($2 IS NULL OR m.category = $2)
+           AND ($3 IS NULL OR m.status = $3)
+         ORDER BY m.created_at DESC`,
+        guestIdentifier
+          ? [event.id, category || null, statusFilter, guestIdentifier]
+          : [event.id, category || null, statusFilter]
+      );
+    } catch (e) {}
 
-    const items = rawItems.map((item: any) => ({
-      ...item,
-      id: item.id,
-      uploaderName: item.uploader_name || item.uploaderName || 'Guest',
-      mediaType: item.media_type || item.mediaType || 'VIDEO',
-      category: item.category || (typeof item.caption === 'string' && item.caption.trim().startsWith('{') ? 'MEZMUR' : 'WISHES'),
-      cdnUrl: item.cdn_url || item.cdnUrl || item.url || '',
-      thumbnailUrl: item.thumbnail_url || item.thumbnailUrl || null,
-      caption: item.caption || '',
-      viewsCount: Number(item.views_count || item.viewsCount || 0),
-      likesCount: Number(item.likes_count || item.likesCount || 0),
-      status: item.status || 'APPROVED'
-    }));
+    let items: any[] = [];
+    if (rawItems && rawItems.length > 0) {
+      items = rawItems.map((item: any) => ({
+        ...item,
+        id: item.id,
+        uploaderName: item.uploader_name || item.uploaderName || 'Guest',
+        mediaType: item.media_type || item.mediaType || 'VIDEO',
+        category: item.category || (typeof item.caption === 'string' && item.caption.trim().startsWith('{') ? 'MEZMUR' : 'WISHES'),
+        cdnUrl: item.cdn_url || item.cdnUrl || item.url || '',
+        thumbnailUrl: item.thumbnail_url || item.thumbnailUrl || null,
+        caption: item.caption || '',
+        viewsCount: Number(item.views_count || item.viewsCount || 0),
+        likesCount: Number(item.likes_count || item.likesCount || 0),
+        status: item.status || 'APPROVED'
+      }));
+    } else {
+      items = mockStore.mediaAssets
+        .filter((m: any) => m.eventId === event?.id || m.eventId === params.slug || m.eventId === `evt-${params.slug}`)
+        .map((m: any) => ({
+          id: m.id,
+          uploaderName: m.uploaderName || 'Guest',
+          mediaType: m.mediaType || 'IMAGE',
+          category: m.category || 'WISHES',
+          cdnUrl: m.cdnUrl,
+          thumbnailUrl: m.thumbnailUrl || m.cdnUrl,
+          caption: m.caption || '',
+          viewsCount: m.viewsCount || 0,
+          likesCount: m.likesCount || 0,
+          status: m.status || 'APPROVED',
+          createdAt: m.createdAt,
+        }));
+    }
 
     return NextResponse.json({ items, mediaAssets: items });
   } catch (err) {

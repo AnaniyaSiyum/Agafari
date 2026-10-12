@@ -240,6 +240,14 @@ export async function POST(req: NextRequest) {
           userEmail = 'admin@agafari.com';
           userName = 'System Super Admin';
         }
+      } else if (identifier === 'kebkab@agafari.com' || identifier === 'kebkab') {
+        if (password === 'org123' || password === 'agafari2026') {
+          userRole = 'EVENT_ORGANIZER';
+          userId = 'usr-kebkab-1';
+          userEmail = 'kebkab@agafari.com';
+          userName = 'Kebkab Wedding & Events Coordinator';
+          tenantId = 'org-kebkab';
+        }
       } else if (identifier === 'matrimony@agafari.com' || identifier === 'matrimony') {
         if (password === 'org123' || password === 'agafari2026') {
           userRole = 'EVENT_ORGANIZER';

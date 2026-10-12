@@ -186,7 +186,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
       e.slug === slug.replace(/^evt-/, '')
   );
   if (mockEvt) {
-    return NextResponse.json({ event: mockEvt, locations: [] });
+    return NextResponse.json({ event: formatEvent(mockEvt), locations: [] });
   }
 
   return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
