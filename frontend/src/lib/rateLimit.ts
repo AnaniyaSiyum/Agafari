@@ -79,3 +79,35 @@ export function recordFailedLogin(key: string): { limited: boolean; attempts: nu
 export function resetFailedLogins(key: string): void {
   rateLimitStore.delete(key);
 }
+
+export function getClientIp(req: any): string {
+  if (typeof req?.headers?.get === 'function') {
+    return (
+      req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+      req.headers.get('x-real-ip') ||
+      '127.0.0.1'
+    );
+  }
+  return '127.0.0.1';
+}
+
+export async function verifyRateLimit(key: string, options = { max: 10, windowSeconds: 60 }) {
+  const check = isRateLimited(key);
+  if (check.limited) {
+    return { success: false, limit: options.max, remaining: 0, resetInSeconds: check.retryAfterSeconds };
+  }
+  return { success: true, limit: options.max, remaining: options.max - check.attempts, resetInSeconds: 60 };
+}
+
+export function buildRateLimitResponse(rateLimit: { resetInSeconds?: number }) {
+  const { NextResponse } = require('next/server');
+  return NextResponse.json(
+    { error: 'Too many requests. Please try again later.' },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(rateLimit.resetInSeconds || 60),
+      },
+    }
+  );
+}

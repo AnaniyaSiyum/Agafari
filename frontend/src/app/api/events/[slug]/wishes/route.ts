@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
 import { verifyRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
+import { mockStore } from '@/infrastructure/dev/mockData';
 
 // GET: the couple's public wishes wall. Guests only ever see APPROVED wishes;
 // an organizer/couple/admin/moderator can pass ?status= to review PENDING/REJECTED.

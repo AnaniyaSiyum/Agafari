@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser } from '@/lib/auth';
 import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
+import { mockStore } from '@/infrastructure/dev/mockData';
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const { searchParams } = new URL(req.url);

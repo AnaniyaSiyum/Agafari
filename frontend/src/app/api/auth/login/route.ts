@@ -1,387 +1,259 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  generateToken,
-  resolveUserDashboardUrl,
-  logAuditAction,
-  setAuthCookie,
-  verifyPassword,
-  ROLE_PERMISSIONS,
-  UserRole,
-} from '@/lib/auth';
-import { queryOne } from '@/lib/db';
-import { mockStore } from '@/lib/mockData';
-import { findStoredUser } from '@/lib/userStore';
-import { verifyRateLimit, buildRateLimitResponse, getClientIp } from '@/lib/rateLimit';
+import { query, queryOne } from '@/lib/db';
+import { verifyPassword } from '@/lib/passwords';
+import { verifyTotpCode, generateTotpSecret, generateTotpUri } from '@/lib/totp';
+import { signSessionToken } from '@/lib/requireMembership';
+import { isRateLimited, recordFailedLogin, resetFailedLogins, getRateLimitKey } from '@/lib/rateLimit';
+import { logAudit } from '@/lib/audit';
+import { AppRole, UserMembership } from '@/types/auth';
+
+function getClientIp(req: NextRequest): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
+    req.headers.get('x-real-ip') ||
+    '127.0.0.1'
+  );
+}
+
+function resolveRoleDashboard(role: AppRole, scopeId: string): string {
+  switch (role) {
+    case 'SYSTEM_ADMIN':
+      return '/admin';
+    case 'ORGANIZER_OWNER':
+      return '/organizer';
+    case 'COUPLE':
+      return `/couple/${scopeId}`;
+    case 'GATE_SCANNER':
+      return `/event/${scopeId}/scanner`;
+    case 'MEDIA_MODERATOR':
+      return `/event/${scopeId}/moderation`;
+    default:
+      return '/login';
+  }
+}
 
 export async function POST(req: NextRequest) {
-  const ipAddress = getClientIp(req);
-
-  // Rate Limiting Defense: Max 10 attempts per minute per IP address
-  const rateLimit = await verifyRateLimit(`login:${ipAddress}`, { max: 10, windowSeconds: 60 });
-  if (!rateLimit.success) {
-    await logAuditAction({
-      actorId: null,
-      targetUserId: null,
-      action: 'LOGIN_RATE_LIMITED',
-      ipAddress,
-      details: { limit: rateLimit.limit },
-    });
-    return buildRateLimitResponse(rateLimit);
-  }
+  const ip = getClientIp(req);
 
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
     const identifier = (body.username || body.email || body.identifier || '').trim().toLowerCase();
     const password = (body.password || '').trim();
+    const totpCode = body.totpCode ? String(body.totpCode).trim() : null;
+    const requestedMembershipId = body.membershipId ? String(body.membershipId).trim() : null;
 
     if (!identifier || !password) {
-      return NextResponse.json(
-        { error: 'Username/Email and Password are required.' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Username/Email and Password are required.' }, { status: 400 });
     }
 
-    let userRole: UserRole | null = null;
-    let userId = '';
-    let userEmail = identifier;
-    let userName = '';
-    let tenantId: string | undefined = undefined;
+    const rateLimitKey = getRateLimitKey(ip, identifier);
+    const rateCheck = isRateLimited(rateLimitKey);
 
-    // 1. Validate credentials against Database users table
-    try {
-      const dbUser = await queryOne<any>(
-        `SELECT u.id, u.email, u.full_name, u.role, u.password_hash, u.is_active, o.id AS tenant_id, o.business_name
-         FROM users u
-         LEFT JOIN organizers o ON o.owner_user_id = u.id
-         WHERE (
-           LOWER(u.email) = $1 
-           OR LOWER(u.full_name) = $1
-           OR LOWER(u.id) = $1
-           OR LOWER(u.id) = LOWER(REPLACE($1, 'org-', ''))
-           OR LOWER(o.id) = $1
-           OR LOWER(o.id) = LOWER(REPLACE($1, 'org-', ''))
-           OR LOWER(o.business_name) = $1
-         ) AND u.is_active = TRUE`,
-        [identifier]
-      );
-
-      if (dbUser && dbUser.password_hash) {
-        const isPasswordValid =
-          verifyPassword(password, dbUser.password_hash) ||
-          password === 'admin123' ||
-          password === 'agafari2026' ||
-          password === 'org123';
-
-        if (isPasswordValid) {
-          userRole = (dbUser.role as UserRole) || 'EVENT_ORGANIZER';
-          userId = dbUser.id;
-          userEmail = dbUser.email;
-          userName = dbUser.full_name || dbUser.email;
-          tenantId = dbUser.tenant_id || `org-${dbUser.id}`;
-        }
-      }
-    } catch (e) {
-      console.warn('DB Login query fallback:', e);
-    }
-
-    // 2. Validate credentials against persistent user store (persists across server restarts)
-    if (!userRole) {
-      const storedUser = findStoredUser(identifier);
-      if (storedUser) {
-        const isPasswordValid =
-          (storedUser.passwordHash && verifyPassword(password, storedUser.passwordHash)) ||
-          storedUser.temporaryPassword === password ||
-          password === 'admin123' ||
-          password === 'agafari2026' ||
-          password === 'org123';
-
-        if (isPasswordValid) {
-          userRole = storedUser.role || 'EVENT_ORGANIZER';
-          userId = storedUser.id;
-          userEmail = storedUser.email;
-          userName = storedUser.fullName || storedUser.email;
-          tenantId = storedUser.organizerId || `org-${storedUser.id}`;
-        }
-      }
-    }
-
-    // 3. Validate credentials against mockStore.users
-    if (!userRole) {
-      const mockUser = mockStore.users.find(
-        (u) =>
-          (u.email || '').toLowerCase() === identifier ||
-          (u.fullName || '').toLowerCase() === identifier ||
-          (u.companyName || '').toLowerCase() === identifier ||
-          (u.id || '').toLowerCase() === identifier ||
-          (u.organizerId || '').toLowerCase() === identifier ||
-          `org-${(u.id || '').toLowerCase()}` === identifier ||
-          (u.id || '').toLowerCase().replace(/^org-/, '').replace(/^usr-/, '') === identifier.replace(/^org-/, '').replace(/^usr-/, '')
-      );
-
-      if (mockUser) {
-        const isPasswordValid =
-          (mockUser.passwordHash && verifyPassword(password, mockUser.passwordHash)) ||
-          mockUser.temporaryPassword === password ||
-          password === 'admin123' ||
-          password === 'agafari2026' ||
-          password === 'org123';
-
-        if (isPasswordValid) {
-          userRole = (mockUser.role as UserRole) || 'EVENT_ORGANIZER';
-          userId = mockUser.id;
-          userEmail = mockUser.email;
-          userName = mockUser.fullName || mockUser.email;
-          tenantId = mockUser.organizerId || `org-${mockUser.id}`;
-        }
-      }
-    }
-
-    // 3. Search event-level credentials in mockStore.events (e.g. couple, streamer, scanner)
-    if (!userRole) {
-      for (const evt of mockStore.events) {
-        const creds = evt.credentials;
-        if (!creds) continue;
-
-        // A. Couple / Bride & Groom Credentials
-        if (
-          creds.couple &&
-          (creds.couple.email?.toLowerCase() === identifier || (identifier === 'couple' && evt.id === 'evt-adeday-123456')) &&
-          (creds.couple.temporaryPassword === password || password === 'agafari2026' || password === 'couple123')
-        ) {
-          userRole = 'BRIDE_GROOM';
-          userId = `usr-couple-${evt.id}`;
-          userEmail = creds.couple.email || `${identifier}@agafari.com`;
-          userName = creds.couple.fullName || 'Bride & Groom';
-          tenantId = evt.organizerId || 'event';
-          break;
-        }
-
-        // B. Event Organizer Credentials
-        const evtOrg = String(evt.organizerId || (evt as any).organizer_id || '').toLowerCase();
-        const matchesOrg =
-          evtOrg === identifier ||
-          evtOrg.replace(/^org-/, '') === identifier.replace(/^org-/, '') ||
-          (creds.organizer && creds.organizer.email?.toLowerCase() === identifier) ||
-          (identifier === 'organizer' && evt.id === 'evt-adeday-123456');
-
-        if (
-          creds.organizer &&
-          matchesOrg &&
-          (creds.organizer.temporaryPassword === password || password === 'org123' || password === 'agafari2026')
-        ) {
-          userRole = 'EVENT_ORGANIZER';
-          userId = `usr-org-${evt.id}`;
-          userEmail = creds.organizer.email;
-          userName = creds.organizer.fullName || 'Event Organizer';
-          tenantId = evt.organizerId || `org-${evt.id}`;
-          break;
-        }
-
-        // C. Live Streamer Crew Credentials
-        if (
-          creds.streamer &&
-          (creds.streamer.email?.toLowerCase() === identifier || (identifier === 'streamer' && evt.id === 'evt-adeday-123456')) &&
-          (creds.streamer.temporaryPassword === password || password === 'stream123')
-        ) {
-          userRole = 'LIVE_STREAMER';
-          userId = `usr-streamer-${evt.id}`;
-          userEmail = creds.streamer.email;
-          userName = creds.streamer.fullName || 'Live Streamer Crew';
-          tenantId = evt.organizerId || 'event';
-          break;
-        }
-
-        // D. Gate Scanner Credentials
-        if (
-          creds.scanner &&
-          (creds.scanner.email?.toLowerCase() === identifier || (identifier === 'scanner' && evt.id === 'evt-adeday-123456')) &&
-          (creds.scanner.temporaryPassword === password || password === 'scan123')
-        ) {
-          userRole = 'GATE_SCANNER';
-          userId = `usr-scanner-${evt.id}`;
-          userEmail = creds.scanner.email;
-          userName = creds.scanner.fullName || 'Gate QR Scanner';
-          tenantId = evt.organizerId || 'event';
-          break;
-        }
-
-        // E. Content Moderator Credentials
-        if (
-          creds.moderator &&
-          (creds.moderator.email?.toLowerCase() === identifier || (identifier === 'moderator' && evt.id === 'evt-adeday-123456')) &&
-          (creds.moderator.temporaryPassword === password || password === 'mod123' || password === 'agafari2026')
-        ) {
-          userRole = 'MODERATOR';
-          userId = `usr-moderator-${evt.id}`;
-          userEmail = creds.moderator.email;
-          userName = creds.moderator.fullName || 'Content Moderator';
-          tenantId = evt.organizerId || 'event';
-          break;
-        }
-      }
-    }
-
-    // 4. Fallback Master Credentials for Key Accounts and Dynamic Organizers
-    if (!userRole) {
-      if (
-        identifier === 'admin@agafari.com' ||
-        identifier === 'admin' ||
-        identifier === 'superadmin' ||
-        identifier === 'systemadmin'
-      ) {
-        if (password === 'admin123' || password === 'admin' || password === 'agafari2026') {
-          userRole = 'SYSTEM_ADMIN';
-          userId = 'usr-admin-1';
-          userEmail = 'admin@agafari.com';
-          userName = 'System Super Admin';
-        }
-      } else if (identifier === 'kebkab@agafari.com' || identifier === 'kebkab') {
-        if (password === 'org123' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr-kebkab-1';
-          userEmail = 'kebkab@agafari.com';
-          userName = 'Kebkab Wedding & Events Coordinator';
-          tenantId = 'org-kebkab';
-        }
-      } else if (identifier === 'matrimony@agafari.com' || identifier === 'matrimony') {
-        if (password === 'org123' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr-matrimony-1';
-          userEmail = 'matrimony@agafari.com';
-          userName = 'Matrimony Event Planners';
-          tenantId = 'org-matrimony-1';
-        }
-      } else if (identifier === 'organizer@agafari.com' || identifier === 'organizer') {
-        if (password === 'org123' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr-org-1';
-          userEmail = 'organizer@agafari.com';
-          userName = 'Agafari Luxury Event Production';
-          tenantId = 'org-usr-org-1';
-        }
-      } else if (identifier === 'couple@agafari.com' || identifier === 'couple') {
-        if (password === 'agafari2026' || password === 'couple123') {
-          userRole = 'BRIDE_GROOM';
-          userId = 'usr-couple-1';
-          userEmail = 'couple@agafari.com';
-          userName = 'Bride & Groom';
-          tenantId = 'org-usr-org-1';
-        }
-      } else if (identifier.startsWith('org-') || identifier.startsWith('usr-')) {
-        if (password === 'org123' || password === 'agafari2026' || password === 'admin123') {
-          userRole = 'EVENT_ORGANIZER';
-          const cleanOrgId = identifier.startsWith('org-') ? identifier : `org-${identifier}`;
-          userId = identifier;
-          userEmail = `${identifier}@agafari.com`;
-          userName = 'Event Organizer Agency';
-          tenantId = cleanOrgId;
-        }
-      }
-    }
-
-    // Account Enumeration Defense: Uniform Error Message
-    if (!userRole) {
-      await logAuditAction({
+    if (rateCheck.limited) {
+      await logAudit({
         actorId: null,
-        targetUserId: null,
-        action: 'LOGIN_FAILED',
-        ipAddress,
-        details: { identifier },
+        action: 'LOGIN_RATE_LIMITED',
+        ip,
+        metaJson: { identifier, attempts: rateCheck.attempts },
       });
-
       return NextResponse.json(
-        { error: 'Invalid email or password.' },
-        { status: 401 }
+        {
+          error: 'Too many failed login attempts. Please complete CAPTCHA or wait before retrying.',
+          rateLimited: true,
+          requireCaptcha: true,
+          retryAfterSeconds: rateCheck.retryAfterSeconds,
+        },
+        { status: 429 }
       );
     }
 
-    // Dynamically resolve the exact dedicated dashboard for this user
-    const redirectParam = req.nextUrl.searchParams.get('redirect');
-    let redirectUrl = redirectParam;
+    // 1. Look up user by email or phone or id
+    const user = await queryOne<any>(
+      `SELECT id, email, phone, full_name, password_hash, status, totp_secret, totp_enabled, session_version
+       FROM users
+       WHERE LOWER(email) = $1 OR LOWER(phone) = $1 OR id = $1
+       LIMIT 1`,
+      [identifier]
+    );
 
-    // Strict multi-tenant and role authorization check for redirectParam
-    let isRedirectAuthorized = false;
-    if (redirectParam && redirectParam !== '/login' && redirectParam !== '/') {
-      if (redirectParam.startsWith('/admin') || redirectParam.startsWith('/system-admin')) {
-        isRedirectAuthorized = userRole === 'SYSTEM_ADMIN';
-      } else if (redirectParam.startsWith('/couple') || redirectParam.endsWith('/couple')) {
-        isRedirectAuthorized = userRole === 'BRIDE_GROOM' || userRole === 'SYSTEM_ADMIN';
-      } else if (redirectParam.startsWith('/scanner') || redirectParam.endsWith('/scanner')) {
-        isRedirectAuthorized = (['GATE_SCANNER', 'EVENT_ORGANIZER', 'SYSTEM_ADMIN'] as UserRole[]).includes(userRole);
-      } else if (redirectParam.startsWith('/live-streamer') || redirectParam.endsWith('/live-streamer')) {
-        isRedirectAuthorized = (['LIVE_STREAMER', 'EVENT_ORGANIZER', 'SYSTEM_ADMIN'] as UserRole[]).includes(userRole);
-      } else if (userRole === 'EVENT_ORGANIZER') {
-        const segments = redirectParam.split('/').filter(Boolean);
-        if (segments.length >= 1) {
-          const requestedSlug = segments[0].toLowerCase().replace(/^org-/, '');
-          const myOrgSlug = (tenantId || userId).toLowerCase().replace(/^org-/, '');
-          isRedirectAuthorized = !requestedSlug || requestedSlug === myOrgSlug || requestedSlug === 'organizer';
-        } else {
-          isRedirectAuthorized = true;
+    // Uniform failure defense: non-existent, pending, disabled, or missing password_hash
+    if (!user || user.status !== 'ACTIVE' || !user.password_hash) {
+      recordFailedLogin(rateLimitKey);
+      await logAudit({
+        actorId: null,
+        action: 'LOGIN_FAILED',
+        ip,
+        metaJson: { identifier, reason: !user ? 'USER_NOT_FOUND' : user.status },
+      });
+      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+    }
+
+    // 2. Verify password hash
+    const isPasswordValid = await verifyPassword(password, user.password_hash);
+    if (!isPasswordValid) {
+      recordFailedLogin(rateLimitKey);
+      await logAudit({
+        actorId: user.id,
+        action: 'LOGIN_FAILED',
+        targetType: 'USER',
+        targetId: user.id,
+        ip,
+        metaJson: { identifier, reason: 'BAD_PASSWORD' },
+      });
+      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+    }
+
+    // Password verified: reset failed attempts
+    resetFailedLogins(rateLimitKey);
+
+    // 3. Load active, non-expired memberships
+    const allMemberships = await query<any>(
+      `SELECT id, user_id, role, scope_type, scope_id, status, expires_at
+       FROM memberships
+       WHERE user_id = $1 AND status = 'ACTIVE'
+       ORDER BY created_at ASC`,
+      [user.id]
+    );
+
+    const now = new Date();
+    const activeMemberships: UserMembership[] = allMemberships
+      .filter((m) => !m.expires_at || new Date(m.expires_at) >= now)
+      .map((m) => ({
+        id: m.id,
+        userId: m.user_id,
+        role: m.role,
+        scopeType: m.scope_type,
+        scopeId: m.scope_id,
+        status: m.status,
+        expiresAt: m.expires_at,
+      }));
+
+    if (activeMemberships.length === 0) {
+      return NextResponse.json({ error: 'No active access.' }, { status: 403 });
+    }
+
+    // 4. Two-Factor Authentication (TOTP) for SYSTEM_ADMIN
+    const isAdmin = activeMemberships.some((m) => m.role === 'SYSTEM_ADMIN');
+    if (isAdmin) {
+      if (user.totp_enabled) {
+        if (!totpCode) {
+          return NextResponse.json({
+            requireTotp: true,
+            message: 'Two-factor authentication code required.',
+          });
+        }
+
+        const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
+        if (!isTotpValid) {
+          await logAudit({
+            actorId: user.id,
+            action: 'TOTP_FAILED',
+            targetType: 'USER',
+            targetId: user.id,
+            ip,
+          });
+          return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
         }
       } else {
-        isRedirectAuthorized = true;
+        // Admin first-time TOTP setup
+        if (totpCode) {
+          const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
+          if (!isTotpValid) {
+            return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
+          }
+          await query('UPDATE users SET totp_enabled = TRUE WHERE id = $1', [user.id]);
+        } else {
+          let secret = user.totp_secret;
+          if (!secret) {
+            secret = generateTotpSecret();
+            await query('UPDATE users SET totp_secret = $1 WHERE id = $2', [secret, user.id]);
+          }
+          const qrUri = generateTotpUri(user.email, secret);
+          return NextResponse.json({
+            requireTotpSetup: true,
+            secret,
+            qrUri,
+            message: 'Please set up 2FA in your authenticator app and enter the 6-digit code.',
+          });
+        }
       }
     }
 
-    if (!redirectUrl || !isRedirectAuthorized || redirectUrl === '/login' || redirectUrl === '/') {
-      redirectUrl = await resolveUserDashboardUrl({
-        role: userRole,
-        userId,
-        email: userEmail,
-        tenantId,
-      });
+    // 5. Select active membership
+    let selectedMembership: UserMembership = activeMemberships[0];
+
+    if (activeMemberships.length > 1) {
+      if (requestedMembershipId) {
+        const found = activeMemberships.find((m) => m.id === requestedMembershipId);
+        if (found) {
+          selectedMembership = found;
+        } else {
+          return NextResponse.json({ error: 'Requested membership not found or inactive.' }, { status: 403 });
+        }
+      } else {
+        return NextResponse.json({
+          requireSelectAccess: true,
+          memberships: activeMemberships,
+          redirectUrl: '/select-access',
+        });
+      }
     }
 
-    const permissions = ROLE_PERMISSIONS[userRole] || [];
+    // 6. Issue signed session token in httpOnly, Secure cookie
+    const sessionToken = signSessionToken({
+      userId: user.id,
+      email: user.email,
+      membershipId: selectedMembership.id,
+      role: selectedMembership.role,
+      scopeType: selectedMembership.scopeType,
+      scopeId: selectedMembership.scopeId,
+      sessionVersion: user.session_version || 1,
+      isViewAs: false,
+    });
 
-    const userPayload = {
-      id: userId,
-      email: userEmail,
-      fullName: userName,
-      role: userRole,
-      tenantId: tenantId || `org-${userId}`,
-      organizerId: tenantId || `org-${userId}`,
-      permissions,
-    };
+    const redirectUrl = resolveRoleDashboard(selectedMembership.role, selectedMembership.scopeId);
 
-    // Issue tamper-proof JWT token
-    const token = generateToken({
-      userId,
-      email: userEmail,
-      role: userRole,
-      tenantId: tenantId || `org-${userId}`,
-      permissions,
+    await logAudit({
+      actorId: user.id,
+      action: 'LOGIN_SUCCESS',
+      targetType: 'USER',
+      targetId: user.id,
+      ip,
+      metaJson: {
+        role: selectedMembership.role,
+        scopeType: selectedMembership.scopeType,
+        scopeId: selectedMembership.scopeId,
+        redirectUrl,
+      },
     });
 
     const response = NextResponse.json({
       success: true,
       message: 'Authentication successful.',
-      user: userPayload,
-      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name || user.email,
+        role: selectedMembership.role,
+        scopeId: selectedMembership.scopeId,
+      },
       redirectUrl,
     });
 
-    // Set HttpOnly, Secure, SameSite=Lax cookie
-    setAuthCookie(response, token);
-
-    // Record Audit Log
-    await logAuditAction({
-      actorId: userId,
-      targetUserId: userId,
-      action: 'LOGIN_SUCCESS',
-      ipAddress,
-      details: { role: userRole, redirectUrl },
+    // Set signed httpOnly cookie
+    response.cookies.set('agafari_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 86400 * 7, // 7 days
     });
 
     return response;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unified login error:', error);
-    return NextResponse.json(
-      { error: 'An unexpected authentication error occurred.' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'An unexpected authentication error occurred.' }, { status: 500 });
   }
 }
