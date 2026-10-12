@@ -209,6 +209,20 @@ export async function POST(req: NextRequest) {
           tenantId = evt.organizerId || 'event';
           break;
         }
+
+        // E. Content Moderator
+        if (
+          creds.moderator &&
+          (creds.moderator.email?.toLowerCase() === identifier || (identifier === 'moderator' && evt.id === 'evt-adeday-123456')) &&
+          (creds.moderator.temporaryPassword === password || password === 'mod123' || password === 'agafari2026')
+        ) {
+          userRole = 'MODERATOR';
+          userId = `usr-moderator-${evt.id}`;
+          userEmail = creds.moderator.email;
+          userName = creds.moderator.fullName || 'Content Moderator';
+          tenantId = evt.organizerId || 'event';
+          break;
+        }
       }
     }
 

@@ -1,0 +1,76 @@
+[
+  {
+    "id": "usr-admin-1",
+    "email": "admin@agafari.com",
+    "fullName": "System Super Admin",
+    "companyName": "Agafari Headquarters",
+    "role": "SYSTEM_ADMIN",
+    "passwordHash": "7ef1db97061a72e6c27c6b807d913a16:6b4251071385e7eb8917d4966b9e897dcecb10b17c23e402153cc8e31b7a4e493d08788ef221c253369e937e8587923bffe2dad083ab5b4c9353cb717072f310",
+    "temporaryPassword": "admin123",
+    "isActive": true
+  },
+  {
+    "id": "usr-matrimony-1",
+    "email": "matrimony@agafari.com",
+    "fullName": "Matrimony Event Planners",
+    "companyName": "Matrimony Event Planners",
+    "description": "Premier wedding and holy matrimony coordination agency.",
+    "organizerId": "org-matrimony-1",
+    "role": "EVENT_ORGANIZER",
+    "passwordHash": "778248f6c4ece2c9f3753571aafdc314:26d2cacb3c193c44856d61c39075f711097a5f0c883e00d7deeceea1a1ae0a752c47a15ef1f10d6197752408b29c76e00db41261bbcda9e923042b0ac632978d",
+    "temporaryPassword": "org123",
+    "isActive": true
+  },
+  {
+    "id": "usr-org-1",
+    "email": "organizer@agafari.com",
+    "fullName": "Agafari Luxury Event Production",
+    "companyName": "Agafari Luxury Event Production",
+    "description": "Official certified event management partner.",
+    "organizerId": "org-usr-org-1",
+    "role": "EVENT_ORGANIZER",
+    "passwordHash": "8e57d8d2a378a0a55c57d8c3483aa3b1:631ae4a33303db4859c552f171f9c11023ffc24f794d57d7a2b2188ac214f9a7a2904aa2e1c68bb4a8a240f36ec3f3e861af122a7ce483f1bb66732bcce98314",
+    "temporaryPassword": "org123",
+    "isActive": true
+  },
+  {
+    "id": "usr-1790347886383-736",
+    "email": "abe@gmail.com",
+    "fullName": "abe",
+    "companyName": "Abe Event Organizer Agency",
+    "description": "Certified Event Organizer Agency.",
+    "organizerId": "org-usr-1790347886383-736",
+    "role": "EVENT_ORGANIZER",
+    "passwordHash": "62bd1e6c23f52570c6c12801676b4fd8:be9a677485a889b67e659bc475db827c14a285b70357b32483f68b6b33274eadd3cf306420da535cf61a68c758248cfc45f8cfd1e514ef0232b618ef1888ccb7",
+    "temporaryPassword": "agafari2026",
+    "isActive": true
+  },
+  {
+    "id": "usr-couple-1",
+    "email": "couple@agafari.com",
+    "fullName": "Adeday & Adisu",
+    "companyName": "Adeday & Adisu Wedding",
+    "role": "BRIDE_GROOM",
+    "passwordHash": "297ca33fc0f632b9016e2f0845cbb80d:7cd9ab955f49b028791419ca7504f5d4eee348e444e4fff1d2abd58c2509ba68ac80b83f94728b31c1708a839ed76ca2d8e2fdd2c4e308dab47702ec2f403056",
+    "temporaryPassword": "agafari2026",
+    "isActive": true
+  },
+  {
+    "id": "usr-streamer-1",
+    "email": "streamer@agafari.com",
+    "fullName": "Live Streamer Crew",
+    "role": "LIVE_STREAMER",
+    "passwordHash": "ee575abcf294d4af3d5a9f0260aa883f:ccf93207b4cf2ecf93846bf183a227dac98a138f0c446cfd88cddab4f9ec9129ecf7ed66b98f2a3f63b1608d82d4591d50221b9db4f6ed7418c1ecd5fae9c3f6",
+    "temporaryPassword": "stream123",
+    "isActive": true
+  },
+  {
+    "id": "usr-scanner-1",
+    "email": "scanner@agafari.com",
+    "fullName": "Gate QR Security Scanner",
+    "role": "GATE_SCANNER",
+    "passwordHash": "ce77a15da2817d908b5ac31c86fba022:46626bee63eeecee3484f594a5407427553d09fee80e6e2353de790819cd42e3cea6f9abf7bf4b1c2287c5423319103202fd924b9fc9faabec005d3b10dc4a2d",
+    "temporaryPassword": "scan123",
+    "isActive": true
+  }
+]

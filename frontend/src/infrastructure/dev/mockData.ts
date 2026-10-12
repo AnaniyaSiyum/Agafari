@@ -132,7 +132,8 @@ const mockEvents: EventData[] = [
       couple: { fullName: 'Adeday & Adisu', email: 'couple@agafari.com', temporaryPassword: 'agafari2026', role: 'BRIDE_GROOM' },
       organizer: { fullName: 'Agafari Luxury Event Production', email: 'organizer@agafari.com', temporaryPassword: 'org123', role: 'EVENT_ORGANIZER' },
       streamer: { fullName: 'Live Streamer Crew', email: 'streamer@agafari.com', temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
-      scanner: { fullName: 'Gate QR Security Scanner', email: 'scanner@agafari.com', temporaryPassword: 'scan123', role: 'GATE_SCANNER' }
+      scanner: { fullName: 'Gate QR Security Scanner', email: 'scanner@agafari.com', temporaryPassword: 'scan123', role: 'GATE_SCANNER' },
+      moderator: { fullName: 'Content Moderator', email: 'moderator@agafari.com', temporaryPassword: 'mod123', role: 'MODERATOR' }
     }
   },
   {
@@ -156,7 +157,8 @@ const mockEvents: EventData[] = [
       couple: { fullName: 'Sara & Dawit', email: 'couple@matrimony.com', temporaryPassword: 'agafari2026', role: 'BRIDE_GROOM' },
       organizer: { fullName: 'Matrimony Event Planners', email: 'matrimony@agafari.com', temporaryPassword: 'org123', role: 'EVENT_ORGANIZER' },
       streamer: { fullName: 'Matrimony Stream Studio', email: 'streamer@matrimony.com', temporaryPassword: 'stream123', role: 'LIVE_STREAMER' },
-      scanner: { fullName: 'Matrimony Gate Scanner', email: 'scanner@matrimony.com', temporaryPassword: 'scan123', role: 'GATE_SCANNER' }
+      scanner: { fullName: 'Matrimony Gate Scanner', email: 'scanner@matrimony.com', temporaryPassword: 'scan123', role: 'GATE_SCANNER' },
+      moderator: { fullName: 'Matrimony Moderator', email: 'moderator@matrimony.com', temporaryPassword: 'mod123', role: 'MODERATOR' }
     }
   }
 ];
