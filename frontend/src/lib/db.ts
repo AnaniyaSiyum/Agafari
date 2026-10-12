@@ -37,17 +37,20 @@ function convertPgToMysqlQuery(
   text: string,
   params: unknown[] = []
 ): { sql: string; mysqlParams: unknown[] } {
-  const mysqlParams: unknown[] = [];
-  const sql = text.replace(/\$(\d+)/g, (_, numStr) => {
-    const idx = parseInt(numStr, 10) - 1;
-    if (idx >= 0 && idx < params.length) {
-      mysqlParams.push(params[idx]);
-    } else {
-      mysqlParams.push(null);
-    }
-    return '?';
-  });
-  return { sql, mysqlParams };
+  if (/\$\d+/.test(text)) {
+    const mysqlParams: unknown[] = [];
+    const sql = text.replace(/\$(\d+)/g, (_, numStr) => {
+      const idx = parseInt(numStr, 10) - 1;
+      if (idx >= 0 && idx < params.length) {
+        mysqlParams.push(params[idx]);
+      } else {
+        mysqlParams.push(null);
+      }
+      return '?';
+    });
+    return { sql, mysqlParams };
+  }
+  return { sql: text, mysqlParams: [...params] };
 }
 
 export async function query<T = any>(

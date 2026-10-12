@@ -10,9 +10,10 @@
     "test:unit": "npx tsx tests/unit/domain.test.ts",
     "test:integration": "npx tsx tests/integration/services.test.ts",
     "test:concurrent-scan": "npx tsx tests/scripts/test_concurrent_scan.ts"
-
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "framer-motion": "^11.5.4",
     "html5-qrcode": "^2.3.8",
