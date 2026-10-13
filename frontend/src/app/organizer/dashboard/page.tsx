@@ -732,9 +732,9 @@ function OrganizerDashboardContent() {
                     <div
                       key={evt.id}
                       onClick={() => {
-                        // Navigate to the dedicated event management page
+                        // Navigate to the dedicated event management page via login gate
                         const destination = `/${organizerUrlSlug}/${evt.slug}`;
-                        router.push(destination);
+                        router.push(`/login?redirect=${encodeURIComponent(destination)}`);
                       }}
                       className={`
                         rounded-3xl p-5 border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden bg-white
@@ -1014,7 +1014,7 @@ function OrganizerDashboardContent() {
                           <td className="py-3 px-4 text-right">
                             {evt.adminApprovalStatus === 'APPROVED' ? (
                               <Link
-                                href={`/${(evt as any).organizer_id || (evt as any).organizerId || currentOrgId || 'org-default'}/${evt.slug}/couple`}
+                                href={`/login?redirect=${encodeURIComponent(`/${(evt as any).organizer_id || (evt as any).organizerId || currentOrgId || 'org-default'}/${evt.slug}/couple`)}`}
                                 className="px-3 py-1.5 rounded-lg bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold shadow-sm inline-flex items-center gap-1 border border-gold-500/30"
                               >
                                 <span>Launch Couple Suite</span>

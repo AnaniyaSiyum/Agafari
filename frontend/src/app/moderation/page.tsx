@@ -164,7 +164,7 @@ function MediaModerationRootContent() {
             {events.map((evt) => (
               <Link
                 key={evt.id}
-                href={`/${(evt as any).isIndividual ? 'event' : ((evt as any).organizer_id || (evt as any).organizerId || 'org-ethio-weddings')}/${evt.slug}/moderation`}
+                href={`/login?redirect=${encodeURIComponent(`/${(evt as any).isIndividual ? 'event' : ((evt as any).organizer_id || (evt as any).organizerId || 'org-ethio-weddings')}/${evt.slug}/moderation`)}`}
                 className="p-6 rounded-3xl bg-black/80 border-2 border-gold-500/30 hover:border-gold-500 transition-all space-y-3 group shadow-xl flex flex-col justify-between"
               >
                 <div className="space-y-2">

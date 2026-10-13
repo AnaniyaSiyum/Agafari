@@ -393,7 +393,7 @@ function ScopedCouplePortalContent({ params }: { params: { organizerSlug: string
           </div>
           <div className="pt-2">
             <Link
-              href={`/organizer/dashboard?id=${organizerSlug}`}
+              href={`/login?redirect=${encodeURIComponent(`/organizer/dashboard?id=${organizerSlug}`)}`}
               className="w-full py-3 px-6 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black text-xs font-bold shadow-md hover:brightness-110 transition-all flex items-center justify-center gap-2"
             >
               <span>{t('couplePortal.returnToDashboard')}</span>
@@ -411,7 +411,7 @@ function ScopedCouplePortalContent({ params }: { params: { organizerSlug: string
       <header className="sticky top-0 z-40 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
           <Link
-            href={`/${organizerSlug}/${eventSlug}`}
+            href={`/login?redirect=${encodeURIComponent(`/${organizerSlug}/${eventSlug}`)}`}
             className="w-10 h-10 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center transition-all border border-slate-200/80 active:scale-95"
             title="Go to Event Hub"
           >

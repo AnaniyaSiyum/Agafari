@@ -529,7 +529,7 @@ function CoupleDashboardContent() {
             </p>
           </div>
           <Link
-            href="/couple/login"
+            href={`/login?redirect=${encodeURIComponent('/couple/dashboard')}`}
             className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-gold-500 to-gold-600 hover:from-gold-400 hover:to-gold-500 text-black font-extrabold text-xs transition-all flex items-center justify-center gap-2 shadow-gold active:scale-95 cursor-pointer"
           >
             <span>Log In to Couple Portal →</span>
@@ -1482,7 +1482,7 @@ function CoupleDashboardContent() {
         </button>
 
         <Link
-          href="/couple/login"
+          href="/login"
           className="p-3 rounded-full text-rose-400/90 hover:text-rose-400 hover:bg-rose-950/40 transition-all flex items-center justify-center"
           title="Sign Out"
         >

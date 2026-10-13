@@ -142,6 +142,9 @@ export default function UniversalLoginPage() {
       }
 
       // Save user session
+      if (data.token) {
+        localStorage.setItem('agafari_token', data.token);
+      }
       if (data.user) {
         localStorage.setItem('agafari_user', JSON.stringify(data.user));
         localStorage.setItem('agafari_role', data.user.role);
@@ -166,6 +169,8 @@ export default function UniversalLoginPage() {
     setTotpCode('');
     setError(null);
   };
+
+  const redirectTarget = searchParams.get('redirect');
 
   return (
     <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-4 selection:bg-amber-500 selection:text-black">
@@ -196,6 +201,26 @@ export default function UniversalLoginPage() {
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
             </button>
+          </motion.div>
+        )}
+
+        {/* Security Gate Banner for Protected Dashboards */}
+        {redirectTarget && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-amber-500/10 border border-amber-500/40 rounded-2xl text-xs backdrop-blur-md space-y-1 shadow-md"
+          >
+            <div className="flex items-center gap-2 font-bold text-amber-400">
+              <Lock className="w-4 h-4 shrink-0 text-amber-400" />
+              <span>Authentication Required</span>
+            </div>
+            <p className="text-[11px] text-neutral-300 font-medium">
+              Please enter your credentials below to unlock access to{' '}
+              <span className="font-mono text-amber-300 bg-black/40 px-1.5 py-0.5 rounded break-all">
+                {redirectTarget}
+              </span>
+            </p>
           </motion.div>
         )}
 

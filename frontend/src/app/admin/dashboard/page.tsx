@@ -1268,7 +1268,7 @@ function SystemAdminDashboardContent() {
                             </button>
 
                             <Link
-                              href={dedicatedUrl}
+                              href={`/login?redirect=${encodeURIComponent(dedicatedUrl)}`}
                               className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30"
                             >
                               <span>Open Dedicated Dashboard</span>
@@ -1796,7 +1796,7 @@ function SystemAdminDashboardContent() {
                             </button>
 
                             <Link
-                              href={specificOrgUrl}
+                              href={`/login?redirect=${encodeURIComponent(specificOrgUrl)}`}
                               className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30"
                             >
                               <span>Open Dedicated Dashboard</span>
@@ -2065,7 +2065,7 @@ function SystemAdminDashboardContent() {
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <Link
-                        href={`${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`}
+                        href={`/login?redirect=${encodeURIComponent(`${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`)}`}
                         onClick={() => {
                           setShowCreateModal(false);
                           setCreatedAdminControlUrl(null);
@@ -2077,7 +2077,7 @@ function SystemAdminDashboardContent() {
                       </Link>
 
                       <Link
-                        href={createdAdminControlUrl}
+                        href={`/login?redirect=${encodeURIComponent(createdAdminControlUrl)}`}
                         onClick={() => {
                           setShowCreateModal(false);
                           setCreatedAdminControlUrl(null);

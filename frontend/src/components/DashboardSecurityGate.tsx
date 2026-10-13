@@ -142,7 +142,6 @@ export default function DashboardSecurityGate({
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const unlockedVal = sessionStorage.getItem(storageKey);
       const token = localStorage.getItem('agafari_token');
       const userStr = localStorage.getItem('agafari_user');
       let currentUser: any = null;
@@ -155,9 +154,7 @@ export default function DashboardSecurityGate({
       const isGeneralLogin = pathname?.includes('/login') || dashboardId === 'platform-login' || dashboardType === 'any';
 
       let isSessionAuthorized = false;
-      if (unlockedVal === 'true') {
-        isSessionAuthorized = true;
-      } else if (token && currentUser && !isGeneralLogin) {
+      if (token && currentUser && !isGeneralLogin) {
         if (dashboardType === 'admin') {
           isSessionAuthorized = currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'organizer') {
@@ -167,47 +164,43 @@ export default function DashboardSecurityGate({
             const userOrg = String(currentUser.organizerId || currentUser.tenantId || currentUser.id || '').toLowerCase().replace(/^org-/, '');
             const targetOrg = effectiveOrg.toLowerCase().replace(/^org-/, '');
             isSessionAuthorized = Boolean(userOrg && targetOrg && userOrg === targetOrg);
-          } else if (currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN') {
+          } else if (currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'ORGANIZER_OWNER') {
             isSessionAuthorized = true;
           } else {
             isSessionAuthorized = false;
           }
         } else if (dashboardType === 'couple') {
-          isSessionAuthorized = currentUser.role === 'BRIDE_GROOM' || currentUser.role === 'SYSTEM_ADMIN';
+          isSessionAuthorized = currentUser.role === 'BRIDE_GROOM' || currentUser.role === 'COUPLE';
         } else if (dashboardType === 'scanner') {
-          isSessionAuthorized = currentUser.role === 'GATE_SCANNER' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN';
+          isSessionAuthorized = currentUser.role === 'GATE_SCANNER';
         } else if (dashboardType === 'streamer') {
-          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN';
+          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER';
         } else if (dashboardType === 'moderator') {
-          isSessionAuthorized = currentUser.role === 'MODERATOR' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'SYSTEM_ADMIN';
+          isSessionAuthorized = currentUser.role === 'MODERATOR' || currentUser.role === 'MEDIA_MODERATOR';
         }
       }
 
       if (isSessionAuthorized) {
         setIsUnlocked(true);
+        setChecking(false);
       } else {
         setIsUnlocked(false);
+        if (!isGeneralLogin) {
+          // Immediately redirect to universal login page with return destination preserved
+          const currentDest = window.location.pathname + window.location.search;
+          router.replace(`/login?redirect=${encodeURIComponent(currentDest)}`);
+          return;
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const queryIdentifier = urlParams.get('email') || urlParams.get('identifier') || urlParams.get('username') || '';
-        // Only set if explicitly provided in URL or props; NEVER hardcode default credentials
         setIdentifier(defaultEmail || queryIdentifier || '');
         setPassword('');
-
-        // Map initial role hint only if arriving from a specific scoped dashboard URL
-        if (!isGeneralLogin) {
-          if (dashboardType === 'admin') setSelectedRole('admin');
-          else if (dashboardType === 'organizer') setSelectedRole('organizer');
-          else if (dashboardType === 'couple') setSelectedRole('couple');
-          else if (dashboardType === 'scanner') setSelectedRole('scanner');
-          else if (dashboardType === 'streamer') setSelectedRole('streamer');
-          else if (dashboardType === 'moderator') setSelectedRole('moderator');
-        } else {
-          setSelectedRole(null);
-        }
+        setSelectedRole(null);
+        setChecking(false);
       }
-      setChecking(false);
     }
-  }, [dashboardId, dashboardType, slug, organizerSlug, defaultEmail, storageKey, pathname]);
+  }, [dashboardId, dashboardType, slug, organizerSlug, defaultEmail, pathname, router]);
 
   // Selecting a role tab updates guidance only, NEVER autofills input credentials
   const handleRoleTabClick = (roleId: PlatformRoleCategory) => {
@@ -266,7 +259,6 @@ export default function DashboardSecurityGate({
 
       // Save Auth State
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem(storageKey, 'true');
         if (data.user) {
           localStorage.setItem('agafari_user', JSON.stringify(data.user));
           localStorage.setItem('agafari_role', data.user.role || data.role);

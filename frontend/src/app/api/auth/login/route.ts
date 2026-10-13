@@ -232,6 +232,7 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: 'Authentication successful.',
+      token: sessionToken,
       user: {
         id: user.id,
         email: user.email,
@@ -249,6 +250,14 @@ export async function POST(req: NextRequest) {
       sameSite: 'lax',
       path: '/',
       maxAge: 86400 * 7, // 7 days
+    });
+
+    response.cookies.set('agafari_token', sessionToken, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 86400 * 7,
     });
 
     return response;
