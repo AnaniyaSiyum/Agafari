@@ -42,38 +42,6 @@ const TEST_ACCOUNTS: TestAccount[] = [
     destination: '/admin',
     icon: Crown,
   },
-  {
-    role: 'Event Organizer Agency',
-    badge: 'Kebkab Events',
-    email: 'kebkab@agafari.com',
-    pass: 'org123',
-    destination: '/organizer',
-    icon: Briefcase,
-  },
-  {
-    role: 'Bride & Groom Portal',
-    badge: 'Bethlehem & Yonas',
-    email: 'couple@kebkab-wedding.com',
-    pass: 'couple123',
-    destination: '/couple/evt-bethlehem-yonas',
-    icon: Heart,
-  },
-  {
-    role: 'Gate QR Scanner Terminal',
-    badge: 'Dedicated Event Staff',
-    email: 'scanner@kebkab-wedding.com',
-    pass: 'scan123',
-    destination: '/event/evt-bethlehem-yonas/scanner',
-    icon: ScanLine,
-  },
-  {
-    role: 'Content & Media Moderator',
-    badge: 'Dedicated Event Staff',
-    email: 'moderator@kebkab-wedding.com',
-    pass: 'mod123',
-    destination: '/event/evt-bethlehem-yonas/moderation',
-    icon: Shield,
-  },
 ];
 
 export default function UniversalLoginPage() {
