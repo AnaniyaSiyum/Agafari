@@ -108,7 +108,8 @@ export async function PATCH(
            email = COALESCE($2, email),
            full_name = COALESCE($3, full_name),
            role = COALESCE($4, role),
-           password_hash = COALESCE($5, password_hash)
+           password_hash = COALESCE($5, password_hash),
+           temporary_password = COALESCE($6, temporary_password)
          WHERE id = $1`,
         [
           userId,
@@ -116,6 +117,7 @@ export async function PATCH(
           fullName ? fullName.trim() : null,
           role || null,
           hashedPassword,
+          newPassword && newPassword.trim() ? newPassword.trim() : null,
         ]
       );
 

@@ -133,56 +133,6 @@ const DEFAULT_PLATFORM_USERS: UserData[] = [
     role: 'SYSTEM_ADMIN',
     temporaryPassword: 'admin123',
   },
-  {
-    id: 'usr-org-1',
-    email: 'organizer@agafari.com',
-    fullName: 'Agafari Luxury Event Production',
-    companyName: 'Agafari Luxury Event Production',
-    description: 'Official certified event management partner. Specializing in full-service luxury weddings, guest registration, and live broadcast production.',
-    organizerId: 'org-usr-org-1',
-    role: 'EVENT_ORGANIZER',
-    temporaryPassword: 'org123',
-  },
-  {
-    id: 'usr-1790347886383-736',
-    email: 'abe@gmail.com',
-    fullName: 'abe',
-    companyName: 'Abe Event Organizer Agency',
-    description: 'Certified Event Organizer Agency.',
-    organizerId: 'org-usr-1790347886383-736',
-    role: 'EVENT_ORGANIZER',
-    temporaryPassword: 'agafari2026',
-  },
-  {
-    id: 'usr-org-2',
-    email: 'royal@agafari.com',
-    fullName: 'Ethiopian Royal Wedding Planners',
-    companyName: 'Ethiopian Royal Wedding Planners',
-    description: 'Certified premium event agency specializing in high-profile traditional Ethiopian weddings, VIP guest management, and stage design.',
-    organizerId: 'org-usr-org-2',
-    role: 'EVENT_ORGANIZER',
-    temporaryPassword: 'org123',
-  },
-  {
-    id: 'usr-org-3',
-    email: 'agency@kanaevents.com',
-    fullName: 'Kana Events & Wedding Production',
-    companyName: 'Kana Events & Wedding Production',
-    description: 'Full-service event production studio managing venue setup, guest seating charts, live video streaming, and digital invitations.',
-    organizerId: 'org-usr-org-3',
-    role: 'EVENT_ORGANIZER',
-    temporaryPassword: 'org123',
-  },
-  {
-    id: 'usr-org-4',
-    email: 'contact@habeshaelite.com',
-    fullName: 'Habesha Elite Wedding Coordinators',
-    companyName: 'Habesha Elite Wedding Coordinators',
-    description: 'Bespoke Ethiopian wedding planning agency offering gate QR scanning, live broadcast management, and guest wish moderation.',
-    organizerId: 'org-usr-org-4',
-    role: 'EVENT_ORGANIZER',
-    temporaryPassword: 'org123',
-  },
 ];
 
 function SystemAdminDashboardContent() {
@@ -384,17 +334,10 @@ function SystemAdminDashboardContent() {
         loadedUsers = usersData.users || [];
       }
 
-      const existingEmails = new Set(loadedUsers.map((u) => (u.email || '').toLowerCase()));
-      for (const defUser of DEFAULT_PLATFORM_USERS) {
-        if (!existingEmails.has(defUser.email.toLowerCase())) {
-          loadedUsers.push(defUser);
-        }
-      }
-
       setUsers(loadedUsers);
     } catch (err) {
       console.error('Failed to load admin data:', err);
-      setUsers((prev) => (prev.length > 0 ? prev : DEFAULT_PLATFORM_USERS));
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -520,9 +463,9 @@ function SystemAdminDashboardContent() {
       });
 
       if (res.ok) {
-        setUsers((prev) => prev.filter((u) => u.id !== org.id));
+        setUsers((prev) => prev.filter((u) => u.id !== org.id && u.email !== org.email));
       } else {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         alert(`Failed to delete organizer: ${data.error || 'Server error'}`);
       }
     } catch (err) {
@@ -2491,7 +2434,8 @@ function SystemAdminDashboardContent() {
                       <input
                         type={showCurrentPassword ? 'text' : 'password'}
                         readOnly
-                        value={selectedEditUser.temporaryPassword || 'agafari2026'}
+                        value={selectedEditUser.temporaryPassword || ''}
+                        placeholder="No stored temporary password"
                         className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-900 border border-gold-500/40 text-gold-300 font-mono font-bold focus:outline-none cursor-default"
                       />
                       <button
@@ -2507,10 +2451,12 @@ function SystemAdminDashboardContent() {
                     <button
                       type="button"
                       onClick={() => {
-                        const passToCopy = selectedEditUser.temporaryPassword || 'agafari2026';
-                        navigator.clipboard.writeText(passToCopy);
-                        setCopiedCurrentPassword(true);
-                        setTimeout(() => setCopiedCurrentPassword(false), 2500);
+                        const passToCopy = selectedEditUser.temporaryPassword || '';
+                        if (passToCopy) {
+                          navigator.clipboard.writeText(passToCopy);
+                          setCopiedCurrentPassword(true);
+                          setTimeout(() => setCopiedCurrentPassword(false), 2500);
+                        }
                       }}
                       className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shrink-0 flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
                     >

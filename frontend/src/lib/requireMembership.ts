@@ -53,7 +53,14 @@ export async function requireMembership(
   allowedRoles?: AppRole[],
   requiredScopeId?: string
 ): Promise<AuthValidationResult> {
-  const token = req.cookies.get('agafari_session')?.value || req.cookies.get('agafari_token')?.value;
+  let token = req.cookies.get('agafari_session')?.value || req.cookies.get('agafari_token')?.value;
+
+  if (!token) {
+    const authHeader = req.headers.get('authorization');
+    if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+      token = authHeader.slice(7).trim();
+    }
+  }
 
   if (!token) {
     return { authenticated: false, authorized: false, status: 401, error: 'Authentication required' };
