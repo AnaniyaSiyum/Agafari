@@ -249,13 +249,67 @@ export async function GET(req: NextRequest) {
       }
       effectiveTargetOrgId = myOrgId;
     }
+
+    const isSystemAdmin = auth.ok && auth.user.role === 'SYSTEM_ADMIN';
+    const isGlobalAdminView = isSystemAdmin && (!effectiveTargetOrgId || effectiveTargetOrgId === 'global' || effectiveTargetOrgId === 'all');
+
+    if (isGlobalAdminView) {
+      // Global System Admin view: return all events across the platform
+      let rawEvents: any[] = [];
+      try {
+        rawEvents = await query(
+          `SELECT e.*,
+                  cu.email AS couple_email,
+                  cu.full_name AS couple_full_name,
+                  (SELECT COUNT(*) FROM invitations i WHERE i.event_id = e.id) AS total_invites,
+                  (SELECT COUNT(*) FROM wishes w WHERE w.event_id = e.id) AS total_wishes,
+                  (SELECT COUNT(*) FROM media_assets m WHERE m.event_id = e.id) AS total_media,
+                  (SELECT COUNT(*) FROM media_assets m WHERE m.event_id = e.id AND m.status = 'PENDING') AS pending_media
+           FROM events e
+           LEFT JOIN users cu ON cu.id = e.couple_user_id
+           ORDER BY e.event_date ASC`
+        );
+      } catch (e) {
+        rawEvents = [];
+      }
+
+      let combinedFormatted: any[] = [];
+      if (rawEvents && rawEvents.length > 0) {
+        combinedFormatted = rawEvents.map((dbEvt: any) => formatEvent(dbEvt));
+      } else {
+        combinedFormatted = mockStore.events.map(formatEvent);
+      }
+
+      const activeHostingCount = combinedFormatted.filter((e) => e.status !== 'COMPLETED' && e.status !== 'ARCHIVED' && (e.adminApprovalStatus === 'APPROVED' || e.admin_approval_status === 'APPROVED')).length;
+      const hostedArchiveCount = combinedFormatted.filter((e) => e.status === 'COMPLETED' || e.status === 'ARCHIVED').length;
+
+      return NextResponse.json({
+        events: combinedFormatted,
+        organizerInfo: {
+          agencyName: 'System Super Admin Command',
+          fullName: auth.user.email || 'System Super Admin',
+          email: auth.user.email || 'admin@agafari.com',
+          activeHostingCount,
+          hostedArchiveCount,
+        },
+      });
+    }
     
     // Resolve organizer details using unified helper
     const orgData = await resolveOrCreateOrganizerInDb(effectiveTargetOrgId, userId);
     const { dbOrganizerId, cleanKey, rawUserId, organizerInfo } = orgData;
 
     // Build target keys for matching
-    const targetKeys = new Set([cleanKey, rawUserId, effectiveTargetOrgId, dbOrganizerId].filter(Boolean) as string[]);
+    const candidateKeys = Array.from(new Set([
+      dbOrganizerId,
+      cleanKey,
+      rawUserId,
+      effectiveTargetOrgId,
+      targetOrgId,
+      userId,
+      auth.ok ? auth.user.tenantId : null,
+      auth.ok ? auth.user.userId : null
+    ].filter(Boolean) as string[]));
 
     // Try DB fetch
     let rawEvents: any[] = [];
@@ -275,7 +329,11 @@ export async function GET(req: NextRequest) {
            WHERE e.organizer_id = $1 
               OR e.organizer_id = $2 
               OR e.organizer_id = $3
-              OR e.organizer_id = (SELECT id FROM organizers WHERE owner_user_id = $2 OR owner_user_id = $3 LIMIT 1)
+              OR e.organizer_id IN (
+                SELECT o.id FROM organizers o WHERE o.id = $1 OR o.id = $2 OR o.id = $3 OR o.owner_user_id = $1 OR o.owner_user_id = $2 OR o.owner_user_id = $3
+                UNION SELECT o.owner_user_id FROM organizers o WHERE o.id = $1 OR o.id = $2 OR o.id = $3 OR o.owner_user_id = $1 OR o.owner_user_id = $2 OR o.owner_user_id = $3
+                UNION SELECT m.scope_id FROM memberships m WHERE m.user_id = $1 OR m.user_id = $2 OR m.user_id = $3
+              )
            ORDER BY e.event_date ASC`,
           [dbOrganizerId || cleanKey, cleanKey, rawUserId]
         );
@@ -296,7 +354,7 @@ export async function GET(req: NextRequest) {
         const strOrgId = String(eOrgId);
         const cleanStrOrgId = strOrgId.startsWith('org-') ? strOrgId : `org-${strOrgId}`;
         const rawStrOrgId = strOrgId.replace(/^org-/, '');
-        return targetKeys.has(strOrgId) || targetKeys.has(cleanStrOrgId) || targetKeys.has(rawStrOrgId);
+        return candidateKeys.some((k) => k === strOrgId || k === cleanStrOrgId || k === rawStrOrgId);
       });
       combinedFormatted = mockEventsForOrg.map(formatEvent);
     }
@@ -348,6 +406,13 @@ export async function POST(req: NextRequest) {
 
     let auth = requireRole(req, ['EVENT_ORGANIZER', 'SYSTEM_ADMIN']);
     const userId = auth.ok ? auth.user.userId : null;
+
+    if ((!targetOrgId || targetOrgId === 'global') && auth.ok) {
+      if (auth.user.role === 'EVENT_ORGANIZER') {
+        targetOrgId = auth.user.tenantId || auth.user.userId;
+      }
+    }
+
     const orgData = await resolveOrCreateOrganizerInDb(targetOrgId, userId);
     const { dbOrganizerId, cleanKey, rawUserId } = orgData;
 
@@ -436,8 +501,8 @@ export async function POST(req: NextRequest) {
         ...result.event,
         couple_email: result.coupleEmail,
       });
-      formattedEvent.organizerId = cleanKey;
-      (formattedEvent as any).organizer_id = cleanKey;
+      formattedEvent.organizerId = assignedOrgId;
+      (formattedEvent as any).organizer_id = assignedOrgId;
 
       // Keep mockStore in sync with organizer ID attached
       const existingIdx = mockStore.events.findIndex((e) => e.id === formattedEvent.id || e.slug === formattedEvent.slug);

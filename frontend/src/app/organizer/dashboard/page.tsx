@@ -205,10 +205,12 @@ function OrganizerDashboardContent() {
         let effectiveOrgId = orgId || myOrgId || 'usr-org-1';
         if ((userObj?.role === 'EVENT_ORGANIZER' || userObj?.role === 'ORGANIZER_OWNER') && myOrgId) {
           effectiveOrgId = myOrgId;
+        } else if (userObj?.role === 'SYSTEM_ADMIN') {
+          effectiveOrgId = orgId || 'global';
         }
 
         // Derive the organizer URL slug used in /{organizerSlug}/{eventSlug} deep links
-        const derivedSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
+        const derivedSlug = effectiveOrgId === 'global' ? 'admin' : (effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`);
         setOrganizerUrlSlug(derivedSlug);
 
         const eventsApiUrl = `/api/organizer/events?id=${encodeURIComponent(effectiveOrgId)}`;
@@ -293,14 +295,23 @@ function OrganizerDashboardContent() {
     const generatedTitle = `${brideName.trim()} & ${groomName.trim()}'s Wedding`;
     const generatedSlug = `${brideName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')}-and-${groomName.trim().toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString(36)}`;
 
-    const orgId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
-    const postUrl = '/api/organizer/events' + (orgId ? `?id=${encodeURIComponent(orgId)}` : '');
+    const urlOrgId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
+    const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
+    const userObj = userStr ? JSON.parse(userStr) : null;
+    const myOrgId = userObj?.organizerId || userObj?.tenantId || userObj?.userId || userObj?.id;
+    const effectiveOrgId = urlOrgId || (userObj?.role === 'EVENT_ORGANIZER' || userObj?.role === 'ORGANIZER_OWNER' ? myOrgId : null);
+
+    const postUrl = '/api/organizer/events' + (effectiveOrgId ? `?id=${encodeURIComponent(effectiveOrgId)}` : '');
 
     setRequestingApproval(true);
     try {
+      const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      const storedToken = typeof window !== 'undefined' ? localStorage.getItem('agafari_token') : null;
+      if (storedToken) reqHeaders['Authorization'] = `Bearer ${storedToken}`;
+
       const res = await fetch(postUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: reqHeaders,
         body: JSON.stringify({
           title: generatedTitle,
           slug: generatedSlug,
@@ -310,7 +321,7 @@ function OrganizerDashboardContent() {
           eventDate,
           venueName: venueName.trim(),
           expectedGuests: Number(expectedGuests),
-          organizerId: orgId,
+          organizerId: effectiveOrgId || undefined,
         }),
       });
 
