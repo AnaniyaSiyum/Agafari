@@ -49,15 +49,18 @@ async function verifyJwtInMiddleware(token: string): Promise<JwtPayload | null> 
 function getHomeDashboardForRole(role: string): string {
   switch (role) {
     case 'SYSTEM_ADMIN':
-      return '/admin/dashboard';
+      return '/admin';
+    case 'ORGANIZER_OWNER':
     case 'EVENT_ORGANIZER':
-      return '/organizer/dashboard';
+      return '/organizer';
+    case 'COUPLE':
     case 'BRIDE_GROOM':
       return '/couple/dashboard';
     case 'GATE_SCANNER':
       return '/scanner';
     case 'LIVE_STREAMER':
       return '/live-streamer';
+    case 'MEDIA_MODERATOR':
     case 'MODERATOR':
       return '/moderation';
     default:
@@ -67,7 +70,7 @@ function getHomeDashboardForRole(role: string): string {
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
-  const tokenCookie = req.cookies.get('agafari_token')?.value;
+  const tokenCookie = req.cookies.get('agafari_session')?.value || req.cookies.get('agafari_token')?.value;
 
   // Verify JWT session cookie
   const user = tokenCookie ? await verifyJwtInMiddleware(tokenCookie) : null;
@@ -108,8 +111,8 @@ export async function middleware(req: NextRequest) {
   // Classify dashboard routes
   const isSystemAdminRoute = path === '/system-admin' || path.startsWith('/system-admin/');
   const isAdminRoute = (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/login');
-  const isOrganizerDashboard = path === '/organizer/dashboard' || path.startsWith('/organizer/dashboard/');
-  const isCoupleDashboard = path === '/couple/dashboard' || path.startsWith('/couple/dashboard/') || path.endsWith('/couple') || path.endsWith('/couple-portal');
+  const isOrganizerDashboard = path === '/organizer' || path === '/organizer/dashboard' || path.startsWith('/organizer/dashboard/');
+  const isCoupleDashboard = path === '/couple/dashboard' || path.startsWith('/couple/dashboard/') || path.startsWith('/couple/') || path.endsWith('/couple') || path.endsWith('/couple-portal');
   const isScannerRoute = path === '/scanner' || path.startsWith('/scanner/') || path.endsWith('/scanner');
   const isLiveStreamerRoute = path === '/live-streamer' || path.startsWith('/live-streamer/') || path.endsWith('/live-streamer');
   const isModerationRoute = path === '/moderation' || path.startsWith('/moderation/') || path.endsWith('/moderation');
@@ -118,19 +121,19 @@ export async function middleware(req: NextRequest) {
   const pathSegments = path.split('/').filter(Boolean);
   const isDedicatedOrganizerControlPage =
     pathSegments.length === 2 &&
-    !['admin', 'system-admin', 'organizer', 'login', 'api', 'event', '_next', 'branding', 'images', 'favicon.ico'].includes(pathSegments[0].toLowerCase());
+    !['admin', 'system-admin', 'organizer', 'login', 'api', 'event', 'couple', '_next', 'branding', 'images', 'favicon.ico'].includes(pathSegments[0].toLowerCase());
 
   // 3. Protect Dedicated Organizer Event Control Pages (e.g., /[organizerSlug]/[eventSlug])
   if (isDedicatedOrganizerControlPage) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER'];
+    const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER'];
     if (!allowedRoles.includes(user.role)) {
       return redirectToAuthorizedHome();
     }
 
     // Strict Multi-Tenant Isolation Guard:
     // Organizers cannot navigate into another agency's dedicated event dashboard
-    if (user.role === 'EVENT_ORGANIZER') {
+    if (user.role === 'EVENT_ORGANIZER' || user.role === 'ORGANIZER_OWNER') {
       const requestedOrgSlug = pathSegments[0].toLowerCase().replace(/^org-/, '');
       const userOrgSlug = (user.tenantId || user.userId || '').toLowerCase().replace(/^org-/, '');
       if (requestedOrgSlug && userOrgSlug && requestedOrgSlug !== userOrgSlug) {
