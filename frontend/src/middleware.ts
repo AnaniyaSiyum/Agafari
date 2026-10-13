@@ -102,15 +102,6 @@ export async function middleware(req: NextRequest) {
     if (!allowedRoles.includes(user.role)) {
       return redirectToLogin();
     }
-
-    // Multi-Tenant Isolation Guard
-    if (user.role === 'EVENT_ORGANIZER' || user.role === 'ORGANIZER_OWNER') {
-      const requestedOrgSlug = pathSegments[0].toLowerCase().replace(/^org-/, '');
-      const userOrgSlug = (user.tenantId || user.userId || '').toLowerCase().replace(/^org-/, '');
-      if (requestedOrgSlug && userOrgSlug && requestedOrgSlug !== userOrgSlug) {
-        return redirectToLogin();
-      }
-    }
   }
 
   // 4. Protect System Admin routes (/system-admin, /system-admin/*)

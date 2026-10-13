@@ -158,17 +158,9 @@ export default function DashboardSecurityGate({
         if (dashboardType === 'admin') {
           isSessionAuthorized = currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'organizer') {
-          const urlParams = new URLSearchParams(window.location.search);
-          const effectiveOrg = organizerSlug || urlParams.get('id') || urlParams.get('organizerId');
-          if (currentUser.role === 'EVENT_ORGANIZER' && effectiveOrg) {
-            const userOrg = String(currentUser.organizerId || currentUser.tenantId || currentUser.id || '').toLowerCase().replace(/^org-/, '');
-            const targetOrg = effectiveOrg.toLowerCase().replace(/^org-/, '');
-            isSessionAuthorized = Boolean(userOrg && targetOrg && userOrg === targetOrg);
-          } else if (currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'ORGANIZER_OWNER') {
-            isSessionAuthorized = true;
-          } else {
-            isSessionAuthorized = false;
-          }
+          const isOrgUser = currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'ORGANIZER_OWNER';
+          const isSysAdmin = currentUser.role === 'SYSTEM_ADMIN';
+          isSessionAuthorized = isOrgUser || isSysAdmin;
         } else if (dashboardType === 'couple') {
           isSessionAuthorized = currentUser.role === 'BRIDE_GROOM' || currentUser.role === 'COUPLE';
         } else if (dashboardType === 'scanner') {

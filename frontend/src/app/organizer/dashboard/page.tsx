@@ -183,12 +183,9 @@ function OrganizerDashboardContent() {
       const userStr = localStorage.getItem('agafari_user');
       const token = localStorage.getItem('agafari_token');
       const role = localStorage.getItem('agafari_role');
-      if (!userStr || !token || (role !== 'EVENT_ORGANIZER' && role !== 'SYSTEM_ADMIN')) {
-        localStorage.removeItem('agafari_user');
-        localStorage.removeItem('agafari_role');
-        localStorage.removeItem('agafari_token');
-        document.cookie = 'agafari_token=; path=/; max-age=0';
-        router.push('/organizer/login');
+      const isAuthorizedOrg = role === 'EVENT_ORGANIZER' || role === 'ORGANIZER_OWNER' || role === 'SYSTEM_ADMIN';
+      if (!userStr || !token || !isAuthorizedOrg) {
+        router.push('/login?redirect=%2Forganizer');
         return;
       }
     }
@@ -206,7 +203,7 @@ function OrganizerDashboardContent() {
 
         // Multi-tenant Isolation: Organizers are strictly locked to their own tenant/agency profile
         let effectiveOrgId = orgId || myOrgId || 'usr-org-1';
-        if (userObj?.role === 'EVENT_ORGANIZER' && myOrgId) {
+        if ((userObj?.role === 'EVENT_ORGANIZER' || userObj?.role === 'ORGANIZER_OWNER') && myOrgId) {
           effectiveOrgId = myOrgId;
         }
 
@@ -249,12 +246,8 @@ function OrganizerDashboardContent() {
             });
           }
 
-          // AUTO-REDIRECT DIRECTLY TO SPECIFIC EVENT DASHBOARD IF ORGANIZER HAS AN EVENT
           if (loadedEvents.length > 0) {
             setSelectedEvent(loadedEvents[0]);
-            const targetUrl = `/${derivedSlug}/${loadedEvents[0].slug}`;
-            router.replace(targetUrl);
-            return;
           } else {
             setSelectedEvent(null);
           }

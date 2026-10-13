@@ -17,18 +17,23 @@ function getClientIp(req: NextRequest): string {
   );
 }
 
-function resolveRoleDashboard(role: AppRole, scopeId: string): string {
+function resolveRoleDashboard(role: string, scopeId: string): string {
   switch (role) {
     case 'SYSTEM_ADMIN':
       return '/admin';
     case 'ORGANIZER_OWNER':
+    case 'EVENT_ORGANIZER':
       return '/organizer';
     case 'COUPLE':
+    case 'BRIDE_GROOM':
       return `/couple/${scopeId}`;
     case 'GATE_SCANNER':
       return `/event/${scopeId}/scanner`;
     case 'MEDIA_MODERATOR':
+    case 'MODERATOR':
       return `/event/${scopeId}/moderation`;
+    case 'LIVE_STREAMER':
+      return `/event/${scopeId}/live-streamer`;
     default:
       return '/login';
   }
@@ -201,19 +206,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const userRole = (selectedMembership.role === 'ORGANIZER_OWNER' || selectedMembership.role === 'EVENT_ORGANIZER')
+      ? 'EVENT_ORGANIZER'
+      : selectedMembership.role;
+
     // 6. Issue signed session token in httpOnly, Secure cookie
     const sessionToken = signSessionToken({
       userId: user.id,
       email: user.email,
       membershipId: selectedMembership.id,
-      role: selectedMembership.role,
+      role: userRole,
       scopeType: selectedMembership.scopeType,
       scopeId: selectedMembership.scopeId,
+      tenantId: selectedMembership.scopeId || user.id,
       sessionVersion: user.session_version || 1,
       isViewAs: false,
     });
 
-    const redirectUrl = resolveRoleDashboard(selectedMembership.role, selectedMembership.scopeId);
+    const redirectUrl = resolveRoleDashboard(userRole, selectedMembership.scopeId);
 
     await logAudit({
       actorId: user.id,
@@ -222,7 +232,7 @@ export async function POST(req: NextRequest) {
       targetId: user.id,
       ip,
       metaJson: {
-        role: selectedMembership.role,
+        role: userRole,
         scopeType: selectedMembership.scopeType,
         scopeId: selectedMembership.scopeId,
         redirectUrl,
@@ -237,8 +247,11 @@ export async function POST(req: NextRequest) {
         id: user.id,
         email: user.email,
         fullName: user.full_name || user.email,
-        role: selectedMembership.role,
+        role: userRole,
+        membershipRole: selectedMembership.role,
         scopeId: selectedMembership.scopeId,
+        organizerId: selectedMembership.scopeId || user.id,
+        tenantId: selectedMembership.scopeId || user.id,
       },
       redirectUrl,
     });
