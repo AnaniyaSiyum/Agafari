@@ -452,155 +452,63 @@ export async function resolveUserDashboardUrl(options: {
   tenantId?: string;
   slug?: string;
 }): Promise<string> {
-  const { role, userId, email, tenantId, slug } = options;
-  const effectiveOrgId = tenantId || userId;
-  const userOrgSlug = effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`;
+  const { role, userId, email, slug } = options;
 
-  // 1. SYSTEM ADMIN -> Universal Platform Executive Suite
+  // 1. SYSTEM ADMIN -> /admin
   if (role === 'SYSTEM_ADMIN') {
-    return '/admin/dashboard';
+    return '/admin';
   }
 
-  // 2. EVENT ORGANIZER
-  if (role === 'EVENT_ORGANIZER') {
-    if (slug) {
-      return `/${userOrgSlug}/${slug}`;
-    }
-    // Multi-tenant Organizer Hub: Manage fleet of events, credentials, RSVPs, and financials
-    return `/organizer/dashboard?id=${encodeURIComponent(effectiveOrgId)}`;
+  // 2. EVENT ORGANIZER -> /organizer
+  if (role === 'EVENT_ORGANIZER' || role === 'ORGANIZER_OWNER') {
+    return '/organizer';
   }
 
-  // 3. BRIDE & GROOM (COUPLE)
-  if (role === 'BRIDE_GROOM') {
-    if (slug) return `/event/${slug}/couple`;
-
-    // A. Check in DB
+  // Resolve associated event ID or slug
+  let resolvedEventSlug = slug;
+  if (!resolvedEventSlug) {
     try {
-      const evt = await queryOne<{ slug: string; organizer_id: string }>(
-        `SELECT e.slug, e.organizer_id FROM events e 
+      const evt = await queryOne<{ slug: string; id: string }>(
+        `SELECT e.slug, e.id FROM events e 
          LEFT JOIN users cu ON cu.id = e.couple_user_id 
-         WHERE e.couple_user_id = $1 OR lower(cu.email) = lower($2) OR lower(e.couple_email) = lower($2)
+         LEFT JOIN event_staff es ON es.event_id = e.id
+         WHERE e.couple_user_id = $1 OR lower(cu.email) = lower($2) OR lower(e.couple_email) = lower($2) OR es.user_id = $1
          ORDER BY e.created_at DESC LIMIT 1`,
         [userId, email]
       );
-      if (evt && evt.slug) {
-        const orgSlug = evt.organizer_id
-          ? (evt.organizer_id.startsWith('org-') ? evt.organizer_id : `org-${evt.organizer_id}`)
-          : 'event';
-        return `/${orgSlug}/${evt.slug}/couple`;
-      }
-    } catch (e) {}
+      if (evt) resolvedEventSlug = evt.slug || evt.id;
+    } catch {}
 
-    // B. Check in mockStore
-    const cleanEmail = (email || '').toLowerCase();
-    const mockEvt = mockStore.events.find((e: any) => {
-      const cEmail = (
-        e.credentials?.couple?.email ||
-        e.coupleCredentials?.email ||
-        e.couple_email ||
-        ''
-      ).toLowerCase();
-      return cEmail === cleanEmail || e.id === userId || (e as any).couple_user_id === userId;
-    });
-
-    if (mockEvt && mockEvt.slug) {
-      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
-      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
-      return `/${orgSlug}/${mockEvt.slug}/couple`;
+    if (!resolvedEventSlug) {
+      const cleanEmail = (email || '').toLowerCase();
+      const mockEvt = mockStore.events.find((e: any) => {
+        const cEmail = (e.credentials?.couple?.email || e.credentials?.scanner?.email || e.credentials?.moderator?.email || '').toLowerCase();
+        return cEmail === cleanEmail || e.id === userId;
+      });
+      if (mockEvt) resolvedEventSlug = mockEvt.slug || mockEvt.id;
     }
-
-    return '/couple/dashboard';
   }
 
-  // 4. GATE SCANNER
+  const finalEventId = resolvedEventSlug || 'evt-bethlehem-yonas';
+
+  // 3. COUPLE -> /couple/[eventId]
+  if (role === 'BRIDE_GROOM' || role === 'COUPLE') {
+    return `/couple/${finalEventId}`;
+  }
+
+  // 4. GATE SCANNER -> /event/[eventId]/scanner
   if (role === 'GATE_SCANNER') {
-    if (slug) return `/event/${slug}/scanner`;
-
-    // A. Check DB staff assignment
-    try {
-      const staffEvt = await queryOne<{ slug: string; organizer_id: string }>(
-        `SELECT e.slug, e.organizer_id FROM events e
-         JOIN event_staff es ON es.event_id = e.id
-         WHERE es.user_id = $1 AND es.role = 'GATE_SCANNER'
-         LIMIT 1`,
-        [userId]
-      );
-      if (staffEvt && staffEvt.slug) {
-        const orgSlug = staffEvt.organizer_id
-          ? (staffEvt.organizer_id.startsWith('org-') ? staffEvt.organizer_id : `org-${staffEvt.organizer_id}`)
-          : 'event';
-        return `/${orgSlug}/${staffEvt.slug}/scanner`;
-      }
-    } catch (e) {}
-
-    // B. Check mockStore
-    const cleanEmail = (email || '').toLowerCase();
-    const mockEvt = mockStore.events.find((e: any) => {
-      const sEmail = (e.credentials?.scanner?.email || '').toLowerCase();
-      return sEmail === cleanEmail || e.id === userId;
-    });
-
-    if (mockEvt && mockEvt.slug) {
-      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
-      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
-      return `/${orgSlug}/${mockEvt.slug}/scanner`;
-    }
-
-    return '/scanner';
+    return `/event/${finalEventId}/scanner`;
   }
 
-  // 5. LIVE STREAMER
+  // 5. LIVE STREAMER -> /event/${finalEventId}/live-streamer
   if (role === 'LIVE_STREAMER') {
-    if (slug) return `/event/${slug}/live-streamer`;
-
-    // A. Check DB staff assignment
-    try {
-      const staffEvt = await queryOne<{ slug: string; organizer_id: string }>(
-        `SELECT e.slug, e.organizer_id FROM events e
-         JOIN event_staff es ON es.event_id = e.id
-         WHERE es.user_id = $1 AND es.role = 'LIVE_STREAMER'
-         LIMIT 1`,
-        [userId]
-      );
-      if (staffEvt && staffEvt.slug) {
-        const orgSlug = staffEvt.organizer_id
-          ? (staffEvt.organizer_id.startsWith('org-') ? staffEvt.organizer_id : `org-${staffEvt.organizer_id}`)
-          : 'event';
-        return `/${orgSlug}/${staffEvt.slug}/live-streamer`;
-      }
-    } catch (e) {}
-
-    // B. Check mockStore
-    const cleanEmail = (email || '').toLowerCase();
-    const mockEvt = mockStore.events.find((e: any) => {
-      const sEmail = (e.credentials?.streamer?.email || '').toLowerCase();
-      return sEmail === cleanEmail || e.id === userId;
-    });
-
-    if (mockEvt && mockEvt.slug) {
-      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
-      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
-      return `/${orgSlug}/${mockEvt.slug}/live-streamer`;
-    }
-
-    return '/live-streamer';
+    return `/event/${finalEventId}/live-streamer`;
   }
 
-  // 6. CONTENT / MEDIA MODERATOR
+  // 6. MEDIA MODERATOR -> /event/[eventId]/moderation
   if (role === 'MODERATOR' || role === 'CONTENT_MODERATOR' || (role as string) === 'MEDIA_MODERATOR') {
-    if (slug) return `/event/${slug}/moderation`;
-    const cleanEmail = (email || '').toLowerCase();
-    const mockEvt = mockStore.events.find((e: any) => {
-      const mEmail = (e.credentials?.moderator?.email || '').toLowerCase();
-      return mEmail === cleanEmail || e.id === userId;
-    });
-
-    if (mockEvt && mockEvt.slug) {
-      const mOrg = mockEvt.organizerId || (mockEvt as any).organizer_id || 'event';
-      const orgSlug = mOrg.startsWith('org-') ? mOrg : `org-${mOrg}`;
-      return `/${orgSlug}/${mockEvt.slug}/moderation`;
-    }
-    return '/moderation';
+    return `/event/${finalEventId}/moderation`;
   }
 
   return '/login';

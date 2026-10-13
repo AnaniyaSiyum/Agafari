@@ -84,12 +84,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 2. Already Authenticated User Visiting /login
-  if (path === '/login' && user) {
-    const redirectParam = req.nextUrl.searchParams.get('redirect');
-    const targetUrl = redirectParam || getHomeDashboardForRole(user.role);
-    return NextResponse.redirect(new URL(targetUrl, req.url));
-  }
+  // Allow direct access to /login so users can switch accounts or sign in without being bounced
 
   // Helper function to build standard unauthenticated redirect
   const redirectToLogin = () => {
