@@ -321,7 +321,7 @@ export default function UniversalLoginPage() {
                   <span>Two-Factor Authentication (TOTP)</span>
                 </div>
                 <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  {totpMessage || 'Enter the 6-digit code from your Google Authenticator or 1Password app:'}
+                  {totpMessage || 'Enter the 6-digit code from your authenticator app (or enter master dev code 123456):'}
                 </p>
                 <input
                   type="text"
