@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     // 1. Look up user by email or phone or id
     const user = await queryOne<any>(
-      `SELECT id, email, phone, full_name, password_hash, status, totp_secret, totp_enabled, session_version
+      `SELECT id, email, phone, full_name, role, password_hash, status, totp_secret, totp_enabled, session_version
        FROM users
        WHERE LOWER(email) = $1 OR LOWER(phone) = $1 OR id = $1
        LIMIT 1`,
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     );
 
     // Uniform failure defense: non-existent, pending, disabled, or missing password_hash
-    if (!user || user.status !== 'ACTIVE' || !user.password_hash) {
+    if (!user || (user.status && user.status !== 'ACTIVE' && user.status !== 'active') || !user.password_hash) {
       recordFailedLogin(rateLimitKey);
       await logAudit({
         actorId: null,
@@ -93,6 +93,14 @@ export async function POST(req: NextRequest) {
         metaJson: { identifier, reason: !user ? 'USER_NOT_FOUND' : user.status },
       });
       return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+    }
+
+    // Ensure status is explicitly ACTIVE if previously unset
+    if (!user.status) {
+      try {
+        await query('UPDATE users SET status = $1 WHERE id = $2', ['ACTIVE', user.id]);
+        user.status = 'ACTIVE';
+      } catch (e) {}
     }
 
     // 2. Verify password hash
@@ -123,7 +131,7 @@ export async function POST(req: NextRequest) {
     );
 
     const now = new Date();
-    const activeMemberships: UserMembership[] = allMemberships
+    let activeMemberships: UserMembership[] = allMemberships
       .filter((m) => !m.expires_at || new Date(m.expires_at) >= now)
       .map((m) => ({
         id: m.id,
@@ -134,6 +142,55 @@ export async function POST(req: NextRequest) {
         status: m.status,
         expiresAt: m.expires_at,
       }));
+
+    // Auto-reconciliation: If user exists with valid credentials but lacks membership record, heal automatically
+    if (activeMemberships.length === 0) {
+      const userRole = user.role || 'EVENT_ORGANIZER';
+      const isOrganizer = userRole === 'EVENT_ORGANIZER' || userRole === 'ORGANIZER_OWNER';
+      const isCouple = userRole === 'BRIDE_GROOM' || userRole === 'COUPLE';
+      const isStreamer = userRole === 'LIVE_STREAMER' || userRole === 'MEDIA_MODERATOR';
+      const isScanner = userRole === 'GATE_SCANNER';
+      const isAdmin = userRole === 'SYSTEM_ADMIN';
+
+      const memRole = isOrganizer ? 'ORGANIZER_OWNER' : (isCouple ? 'COUPLE' : (isStreamer ? 'MEDIA_MODERATOR' : (isScanner ? 'GATE_SCANNER' : (isAdmin ? 'SYSTEM_ADMIN' : 'ORGANIZER_OWNER'))));
+      const scopeType = isAdmin ? 'PLATFORM' : (isOrganizer ? 'ORGANIZER' : 'EVENT');
+      let scopeId = isAdmin ? 'global' : (isOrganizer ? `org-${user.id}` : 'event-default');
+
+      try {
+        if (isCouple) {
+          const evt = await queryOne<any>(
+            `SELECT id, slug FROM events WHERE couple_user_id = $1 OR LOWER(couple_email) = LOWER($2) LIMIT 1`,
+            [user.id, user.email]
+          );
+          if (evt) scopeId = evt.id || evt.slug;
+        } else if (isOrganizer) {
+          const org = await queryOne<any>(
+            `SELECT id FROM organizers WHERE owner_user_id = $1 OR id = $2 LIMIT 1`,
+            [user.id, `org-${user.id}`]
+          );
+          if (org) scopeId = org.id;
+        }
+      } catch (e) {}
+
+      const memId = `mem-${user.id}`;
+      try {
+        await query(
+          `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status)
+           VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+           ON DUPLICATE KEY UPDATE status = 'ACTIVE', role = $3, scope_id = $5`,
+          [memId, user.id, memRole, scopeType, scopeId]
+        );
+      } catch (e) {}
+
+      activeMemberships = [{
+        id: memId,
+        userId: user.id,
+        role: memRole,
+        scopeType,
+        scopeId,
+        status: 'ACTIVE',
+      }];
+    }
 
     if (activeMemberships.length === 0) {
       return NextResponse.json({ error: 'No active access.' }, { status: 403 });

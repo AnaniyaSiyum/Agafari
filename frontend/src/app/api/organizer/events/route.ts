@@ -442,14 +442,24 @@ export async function POST(req: NextRequest) {
         if (!coupleUser) {
           const coupleUserId = `usr-couple-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           await client.query(
-            `INSERT INTO users (id, email, password_hash, full_name, role)
-             VALUES ($1,$2,$3,$4,'BRIDE_GROOM')`,
-            [coupleUserId, targetCoupleEmail, hashPassword(tempPassword), `${brideName.trim()} & ${groomName.trim()}`]
+            `INSERT INTO users (id, email, password_hash, full_name, role, status, temporary_password)
+             VALUES ($1,$2,$3,$4,'BRIDE_GROOM','ACTIVE',$5)
+             ON DUPLICATE KEY UPDATE status = 'ACTIVE'`,
+            [coupleUserId, targetCoupleEmail, hashPassword(tempPassword), `${brideName.trim()} & ${groomName.trim()}`, tempPassword]
           );
           coupleUser = (await client.query('SELECT id, email FROM users WHERE id = $1', [coupleUserId])).rows[0];
         }
 
         const newEventId = `evt-${cleanSlug}`;
+        const coupleMemId = `mem-${coupleUser.id}`;
+        try {
+          await client.query(
+            `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status)
+             VALUES ($1, $2, 'COUPLE', 'EVENT', $3, 'ACTIVE')
+             ON DUPLICATE KEY UPDATE status = 'ACTIVE', scope_id = $3`,
+            [coupleMemId, coupleUser.id, newEventId]
+          );
+        } catch (memE) {}
         let formattedDate: string;
         try {
           formattedDate = new Date(eventDate).toISOString().slice(0, 19).replace('T', ' ');

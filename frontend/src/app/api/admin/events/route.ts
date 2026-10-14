@@ -286,7 +286,19 @@ export async function PATCH(req: NextRequest) {
         [eventId, adminApprovalStatus ?? null, status ?? null, isLiveVal, youtubeVideoId ?? null, cleanId, cleanSlug, coverImageUrl ?? null]
       );
 
-      const event = await queryOne('SELECT * FROM events WHERE id = $1 OR slug = $1 OR id = $2 OR slug = $3', [eventId, cleanId, cleanSlug]);
+      const event = await queryOne<any>('SELECT * FROM events WHERE id = $1 OR slug = $1 OR id = $2 OR slug = $3', [eventId, cleanId, cleanSlug]);
+
+      if (event && adminApprovalStatus === 'APPROVED' && event.couple_user_id) {
+        try {
+          await query("UPDATE users SET status = 'ACTIVE' WHERE id = $1", [event.couple_user_id]);
+          await query(
+            `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status)
+             VALUES ($1, $2, 'COUPLE', 'EVENT', $3, 'ACTIVE')
+             ON DUPLICATE KEY UPDATE status = 'ACTIVE', scope_id = $3`,
+            [`mem-${event.couple_user_id}`, event.couple_user_id, event.id || cleanId]
+          );
+        } catch (memErr) {}
+      }
 
       if (event) {
         // Keep mockStore in sync

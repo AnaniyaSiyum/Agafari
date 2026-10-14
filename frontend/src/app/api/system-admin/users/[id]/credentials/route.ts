@@ -109,7 +109,8 @@ export async function PATCH(
            full_name = COALESCE($3, full_name),
            role = COALESCE($4, role),
            password_hash = COALESCE($5, password_hash),
-           temporary_password = COALESCE($6, temporary_password)
+           temporary_password = COALESCE($6, temporary_password),
+           status = 'ACTIVE'
          WHERE id = $1`,
         [
           userId,
@@ -120,6 +121,26 @@ export async function PATCH(
           newPassword && newPassword.trim() ? newPassword.trim() : null,
         ]
       );
+
+      // Ensure user has an ACTIVE membership record
+      const existingMem = await queryOne('SELECT id FROM memberships WHERE user_id = $1 LIMIT 1', [userId]);
+      if (!existingMem) {
+        const uRole = role || targetUserRole || 'EVENT_ORGANIZER';
+        const isOrg = uRole === 'EVENT_ORGANIZER' || uRole === 'ORGANIZER_OWNER';
+        const isCouple = uRole === 'BRIDE_GROOM' || uRole === 'COUPLE';
+        const memRole = isOrg ? 'ORGANIZER_OWNER' : (isCouple ? 'COUPLE' : uRole);
+        const scopeType = isOrg ? 'ORGANIZER' : (isCouple ? 'EVENT' : (uRole === 'SYSTEM_ADMIN' ? 'PLATFORM' : 'EVENT'));
+        const scopeId = isOrg ? `org-${userId}` : (uRole === 'SYSTEM_ADMIN' ? 'global' : 'event-default');
+
+        await query(
+          `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status)
+           VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
+           ON DUPLICATE KEY UPDATE status = 'ACTIVE'`,
+          [`mem-${userId}`, userId, memRole, scopeType, scopeId]
+        );
+      } else {
+        await query(`UPDATE memberships SET status = 'ACTIVE' WHERE user_id = $1`, [userId]);
+      }
 
       updatedUser = await queryOne(
         'SELECT id, email, full_name, role, is_active, created_at FROM users WHERE id = $1',
