@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import DashboardSecurityGate from '@/components/DashboardSecurityGate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -140,6 +140,7 @@ function formatEvent(e: any): EventData {
 
 function OrganizerDashboardContent() {
   const router = useRouter();
+  const routeParams = useParams();
   const { t } = useTranslation();
 
   // Navigation: 'WEDDINGS' (Pillar 2) | 'CREDENTIALS' (Pillar 1)
@@ -195,7 +196,8 @@ function OrganizerDashboardContent() {
 
       try {
         const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-        const orgId = urlParams?.get('id') || urlParams?.get('organizerId');
+        const paramId = routeParams?.id ? String(routeParams.id) : null;
+        const orgId = paramId || urlParams?.get('id') || urlParams?.get('organizerId');
 
         const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
         const userObj = userStr ? JSON.parse(userStr) : null;

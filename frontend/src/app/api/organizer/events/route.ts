@@ -30,7 +30,8 @@ function cleanAgencyName(name?: string, email?: string, rawId?: string): string 
 }
 
 async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?: string | null) {
-  const rawInput = (targetOrgId || userId || 'org-default').trim();
+  const actualUserId = (userId || '').trim();
+  const rawInput = (targetOrgId || actualUserId || 'org-default').trim();
   const cleanKey = rawInput.startsWith('org-') ? rawInput : `org-${rawInput}`;
   const rawUserId = rawInput.replace(/^org-/, '');
   const normalizedKey = rawInput.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
@@ -44,16 +45,18 @@ async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?:
        WHERE o.id = $1 
           OR o.owner_user_id = $1 
           OR o.owner_user_id = $2
+          OR (length($4) > 0 AND o.owner_user_id = $4)
           OR CONCAT('org-', o.owner_user_id) = $1 
           OR CONCAT('org-', o.id) = $1
           OR u.id = $1
           OR u.id = $2
+          OR (length($4) > 0 AND u.id = $4)
           OR lower(u.email) = lower($1)
           OR lower(u.email) = lower($2)
           OR lower(replace(u.id, '-', '')) = $3
           OR lower(replace(o.id, '-', '')) = $3
           OR lower(replace(o.owner_user_id, '-', '')) = $3`,
-      [rawInput, rawUserId, normalizedKey]
+      [rawInput, rawUserId, normalizedKey, actualUserId]
     );
 
     if (!orgRow) {
@@ -330,12 +333,12 @@ export async function GET(req: NextRequest) {
               OR e.organizer_id = $2 
               OR e.organizer_id = $3
               OR e.organizer_id IN (
-                SELECT o.id FROM organizers o WHERE o.id = $1 OR o.id = $2 OR o.id = $3 OR o.owner_user_id = $1 OR o.owner_user_id = $2 OR o.owner_user_id = $3
-                UNION SELECT o.owner_user_id FROM organizers o WHERE o.id = $1 OR o.id = $2 OR o.id = $3 OR o.owner_user_id = $1 OR o.owner_user_id = $2 OR o.owner_user_id = $3
-                UNION SELECT m.scope_id FROM memberships m WHERE m.user_id = $1 OR m.user_id = $2 OR m.user_id = $3
+                SELECT o.id FROM organizers o WHERE o.id = $1 OR o.id = $2 OR o.id = $3 OR o.owner_user_id = $1 OR o.owner_user_id = $2 OR o.owner_user_id = $3 OR o.owner_user_id = $4
+                UNION SELECT o.owner_user_id FROM organizers o WHERE o.id = $1 OR o.id = $2 OR o.id = $3 OR o.owner_user_id = $1 OR o.owner_user_id = $2 OR o.owner_user_id = $3 OR o.owner_user_id = $4
+                UNION SELECT m.scope_id FROM memberships m WHERE m.user_id = $1 OR m.user_id = $2 OR m.user_id = $3 OR m.user_id = $4
               )
            ORDER BY e.event_date ASC`,
-          [dbOrganizerId || cleanKey, cleanKey, rawUserId]
+          [dbOrganizerId || cleanKey, cleanKey, rawUserId, userId || '']
         );
         dbSuccess = true;
       } catch (e) {

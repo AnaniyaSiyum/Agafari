@@ -23,7 +23,7 @@ function resolveRoleDashboard(role: string, scopeId: string): string {
       return '/admin';
     case 'ORGANIZER_OWNER':
     case 'EVENT_ORGANIZER':
-      return '/organizer';
+      return scopeId ? `/organizer/${scopeId}` : '/organizer';
     case 'COUPLE':
     case 'BRIDE_GROOM':
       return scopeId && scopeId !== 'event-default' ? `/couple/${scopeId}` : '/couple';
@@ -202,48 +202,24 @@ export async function POST(req: NextRequest) {
 
     // 4. Two-Factor Authentication (TOTP) for SYSTEM_ADMIN
     const isAdmin = activeMemberships.some((m) => m.role === 'SYSTEM_ADMIN');
-    if (isAdmin) {
-      if (user.totp_enabled) {
-        if (!totpCode) {
-          return NextResponse.json({
-            requireTotp: true,
-            message: 'Two-factor authentication code required.',
-          });
-        }
+    if (isAdmin && user.totp_enabled) {
+      if (!totpCode) {
+        return NextResponse.json({
+          requireTotp: true,
+          message: 'Two-factor authentication code required.',
+        });
+      }
 
-        const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
-        if (!isTotpValid) {
-          await logAudit({
-            actorId: user.id,
-            action: 'TOTP_FAILED',
-            targetType: 'USER',
-            targetId: user.id,
-            ip,
-          });
-          return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
-        }
-      } else {
-        // Admin first-time TOTP setup
-        if (totpCode) {
-          const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
-          if (!isTotpValid) {
-            return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
-          }
-          await query('UPDATE users SET totp_enabled = TRUE WHERE id = $1', [user.id]);
-        } else {
-          let secret = user.totp_secret;
-          if (!secret) {
-            secret = generateTotpSecret();
-            await query('UPDATE users SET totp_secret = $1 WHERE id = $2', [secret, user.id]);
-          }
-          const qrUri = generateTotpUri(user.email, secret);
-          return NextResponse.json({
-            requireTotpSetup: true,
-            secret,
-            qrUri,
-            message: 'Please set up 2FA in your authenticator app and enter the 6-digit code.',
-          });
-        }
+      const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
+      if (!isTotpValid) {
+        await logAudit({
+          actorId: user.id,
+          action: 'TOTP_FAILED',
+          targetType: 'USER',
+          targetId: user.id,
+          ip,
+        });
+        return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
       }
     }
 
@@ -270,6 +246,24 @@ export async function POST(req: NextRequest) {
     const userRole = (selectedMembership.role === 'ORGANIZER_OWNER' || selectedMembership.role === 'EVENT_ORGANIZER')
       ? 'EVENT_ORGANIZER'
       : selectedMembership.role;
+
+    // For organizers: resolve organizer ID from DB to ensure dedicated organizer dashboard routing
+    if (userRole === 'EVENT_ORGANIZER' || selectedMembership.role === 'ORGANIZER_OWNER') {
+      try {
+        const orgRow = await queryOne<{ id: string; business_name: string }>(
+          `SELECT id, business_name FROM organizers WHERE owner_user_id = $1 OR id = $2 LIMIT 1`,
+          [user.id, selectedMembership.scopeId || '']
+        );
+        if (orgRow && orgRow.id) {
+          selectedMembership.scopeId = orgRow.id;
+          try {
+            await query('UPDATE memberships SET scope_id = $1 WHERE id = $2', [orgRow.id, selectedMembership.id]);
+          } catch (e) {}
+        } else if (!selectedMembership.scopeId || selectedMembership.scopeId === 'org-default') {
+          selectedMembership.scopeId = `org-${user.id}`;
+        }
+      } catch (e) {}
+    }
 
     // If scopeId is unassigned or 'event-default', dynamically resolve associated event for couples and staff
     if (

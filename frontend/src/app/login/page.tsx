@@ -70,6 +70,9 @@ function resolveDestination(userRole?: string, redirectParam?: string | null, se
     if (cleanRedirect.startsWith('/admin') || cleanRedirect.startsWith('/system-admin') || cleanRedirect.startsWith('/couple')) {
       return serverRedirectUrl || '/organizer';
     }
+    if ((cleanRedirect === '/organizer' || cleanRedirect === '/organizer/') && serverRedirectUrl) {
+      return serverRedirectUrl;
+    }
     return redirectParam;
   }
 
@@ -166,7 +169,7 @@ export default function UniversalLoginPage() {
       }
 
       // Check if Admin TOTP is required
-      if (data.requireTotp) {
+      if (data.requireTotp || data.requireTotpSetup) {
         setRequireTotp(true);
         setTotpMessage(data.message || 'Two-Factor Authentication required for System Admin.');
         setLoading(false);
