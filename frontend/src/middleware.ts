@@ -95,62 +95,78 @@ export async function middleware(req: NextRequest) {
     pathSegments.length === 2 &&
     !['admin', 'system-admin', 'organizer', 'login', 'api', 'event', 'couple', '_next', 'branding', 'images', 'favicon.ico'].includes(pathSegments[0].toLowerCase());
 
+  // Helper for authenticated role redirects to prevent login loop
+  const redirectAuthenticatedUser = (u: JwtPayload) => {
+    if (u.role === 'COUPLE' || u.role === 'BRIDE_GROOM') {
+      return NextResponse.redirect(new URL('/couple', req.url));
+    }
+    if (u.role === 'EVENT_ORGANIZER' || u.role === 'ORGANIZER_OWNER') {
+      return NextResponse.redirect(new URL('/organizer', req.url));
+    }
+    if (u.role === 'SYSTEM_ADMIN') {
+      return NextResponse.redirect(new URL('/admin', req.url));
+    }
+    return redirectToLogin();
+  };
+
   // 3. Protect Dedicated Organizer Event Control Pages (e.g., /[organizerSlug]/[eventSlug])
   if (isDedicatedOrganizerControlPage) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER'];
     if (!allowedRoles.includes(user.role)) {
-      return redirectToLogin();
+      return redirectAuthenticatedUser(user);
     }
   }
 
   // 4. Protect System Admin routes (/system-admin, /system-admin/*)
   if (isSystemAdminRoute) {
-    if (!user || user.role !== 'SYSTEM_ADMIN') {
-      return redirectToLogin();
+    if (!user) return redirectToLogin();
+    if (user.role !== 'SYSTEM_ADMIN') {
+      return redirectAuthenticatedUser(user);
     }
   }
 
   // 5. Protect General Admin routes (/admin, /admin/*)
   if (isAdminRoute) {
-    if (!user || user.role !== 'SYSTEM_ADMIN') {
-      return redirectToLogin();
+    if (!user) return redirectToLogin();
+    if (user.role !== 'SYSTEM_ADMIN') {
+      return redirectAuthenticatedUser(user);
     }
   }
 
   // 6. Protect Couple Dashboard & Portal Routes (/couple, /couple/*, */couple, */couple-portal)
   if (isCoupleDashboard) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['BRIDE_GROOM', 'COUPLE'];
+    const allowedRoles = ['BRIDE_GROOM', 'COUPLE', 'SYSTEM_ADMIN'];
     if (!allowedRoles.includes(user.role)) {
-      return redirectToLogin();
+      return redirectAuthenticatedUser(user);
     }
   }
 
   // 7. Protect Gate Scanner Control Routes (/scanner, */scanner)
   if (isScannerRoute) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['GATE_SCANNER'];
+    const allowedRoles = ['GATE_SCANNER', 'SYSTEM_ADMIN'];
     if (!allowedRoles.includes(user.role)) {
-      return redirectToLogin();
+      return redirectAuthenticatedUser(user);
     }
   }
 
   // 8. Protect Live Streamer Studio Routes (/live-streamer, */live-streamer)
   if (isLiveStreamerRoute) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['LIVE_STREAMER'];
+    const allowedRoles = ['LIVE_STREAMER', 'SYSTEM_ADMIN'];
     if (!allowedRoles.includes(user.role)) {
-      return redirectToLogin();
+      return redirectAuthenticatedUser(user);
     }
   }
 
   // 9. Protect Media Moderation Suite Routes (/moderation, */moderation)
   if (isModerationRoute) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['MEDIA_MODERATOR', 'MODERATOR'];
+    const allowedRoles = ['MEDIA_MODERATOR', 'MODERATOR', 'SYSTEM_ADMIN'];
     if (!allowedRoles.includes(user.role)) {
-      return redirectToLogin();
+      return redirectAuthenticatedUser(user);
     }
   }
 
@@ -159,7 +175,7 @@ export async function middleware(req: NextRequest) {
     if (!user) return redirectToLogin();
     const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER'];
     if (!allowedRoles.includes(user.role)) {
-      return redirectToLogin();
+      return redirectAuthenticatedUser(user);
     }
   }
 

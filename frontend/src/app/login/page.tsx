@@ -44,6 +44,49 @@ const TEST_ACCOUNTS: TestAccount[] = [
   },
 ];
 
+function resolveDestination(userRole?: string, redirectParam?: string | null, serverRedirectUrl?: string): string {
+  const defaultDestination = serverRedirectUrl || '/couple';
+  if (!redirectParam || redirectParam === '/login') {
+    return defaultDestination;
+  }
+
+  const cleanRedirect = redirectParam.toLowerCase().split('?')[0];
+
+  // System Admin can visit any requested dashboard
+  if (userRole === 'SYSTEM_ADMIN') {
+    return redirectParam;
+  }
+
+  // Couples can only visit couple routes; ignore incompatible redirects like /organizer or /admin
+  if (userRole === 'COUPLE' || userRole === 'BRIDE_GROOM') {
+    if (cleanRedirect === '/couple' || cleanRedirect.startsWith('/couple/') || cleanRedirect.includes('/couple')) {
+      return redirectParam;
+    }
+    return serverRedirectUrl || '/couple';
+  }
+
+  // Organizers can visit organizer routes; ignore admin/couple redirects
+  if (userRole === 'EVENT_ORGANIZER' || userRole === 'ORGANIZER_OWNER') {
+    if (cleanRedirect.startsWith('/admin') || cleanRedirect.startsWith('/system-admin') || cleanRedirect.startsWith('/couple')) {
+      return serverRedirectUrl || '/organizer';
+    }
+    return redirectParam;
+  }
+
+  // Staff roles (Scanner, Moderator, Streamer)
+  if (userRole === 'GATE_SCANNER') {
+    return cleanRedirect.includes('/scanner') ? redirectParam : (serverRedirectUrl || '/login');
+  }
+  if (userRole === 'LIVE_STREAMER') {
+    return cleanRedirect.includes('/live-streamer') ? redirectParam : (serverRedirectUrl || '/login');
+  }
+  if (userRole === 'MEDIA_MODERATOR' || userRole === 'MODERATOR' || userRole === 'CONTENT_MODERATOR') {
+    return cleanRedirect.includes('/moderation') ? redirectParam : (serverRedirectUrl || '/login');
+  }
+
+  return defaultDestination;
+}
+
 export default function UniversalLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -141,6 +184,7 @@ export default function UniversalLoginPage() {
         return;
       }
 
+
       // Save user session
       if (data.token) {
         localStorage.setItem('agafari_token', data.token);
@@ -148,12 +192,15 @@ export default function UniversalLoginPage() {
       if (data.user) {
         localStorage.setItem('agafari_user', JSON.stringify(data.user));
         localStorage.setItem('agafari_role', data.user.role);
+        if (data.user.eventSlug || data.user.slug) {
+          localStorage.setItem('agafari_couple_slug', data.user.eventSlug || data.user.slug);
+        }
       }
 
-      // Redirect to dedicated dashboard
+      // Redirect to dedicated dashboard based on authorized role
       const redirectParam = searchParams.get('redirect');
-      const finalDestination = redirectParam && redirectParam !== '/login' ? redirectParam : data.redirectUrl || '/admin';
-      router.push(finalDestination);
+      const finalDestination = resolveDestination(data.user?.role, redirectParam, data.redirectUrl);
+      window.location.href = finalDestination;
     } catch (err) {
       console.error('Login error:', err);
       setError('Network connection error. Please try again.');
@@ -194,13 +241,30 @@ export default function UniversalLoginPage() {
                 Active: <strong className="text-white">{currentUser.email}</strong>
               </span>
             </div>
-            <button
-              onClick={handleLogout}
-              className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  const role = currentUser.role || localStorage.getItem('agafari_role') || '';
+                  const dest = (role === 'COUPLE' || role === 'BRIDE_GROOM') 
+                    ? (localStorage.getItem('agafari_couple_slug') ? `/couple/${localStorage.getItem('agafari_couple_slug')}` : '/couple')
+                    : (role === 'SYSTEM_ADMIN' ? '/admin' : '/organizer');
+                  window.location.href = dest;
+                }}
+                className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition"
+              >
+                <span>Dashboard</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="text-neutral-400 hover:text-rose-400 font-semibold flex items-center gap-1 transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </motion.div>
         )}
 
