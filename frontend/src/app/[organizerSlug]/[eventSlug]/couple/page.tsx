@@ -914,16 +914,20 @@ function ScopedCouplePortalContent({ params }: { params: { organizerSlug: string
   );
 }
 
-export default function ScopedCouplePortalPage({ params }: { params: { organizerSlug: string; eventSlug: string } }) {
+export default function ScopedCouplePortalPage({ params }: { params: Promise<{ organizerSlug: string; eventSlug: string }> | { organizerSlug: string; eventSlug: string } }) {
+  const unwrappedParams = typeof (params as any)?.then === 'function' ? React.use(params as any) : params;
+  const eventSlug = unwrappedParams?.eventSlug || '';
+  const organizerSlug = unwrappedParams?.organizerSlug || 'org';
+
   return (
     <DashboardSecurityGate
       dashboardTitle="Bride & Groom Wedding Portal"
-      dashboardId={`couple:${params.eventSlug}`}
+      dashboardId={`couple:${eventSlug}`}
       dashboardType="couple"
-      slug={params.eventSlug}
-      defaultEmail={`couple@${params.eventSlug}.com`}
+      slug={eventSlug}
+      defaultEmail={`couple@${eventSlug}.com`}
     >
-      <ScopedCouplePortalContent params={params} />
+      <ScopedCouplePortalContent params={{ organizerSlug, eventSlug }} />
     </DashboardSecurityGate>
   );
 }

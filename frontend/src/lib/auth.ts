@@ -472,7 +472,7 @@ export async function resolveUserDashboardUrl(options: {
         `SELECT e.slug, e.id FROM events e 
          LEFT JOIN users cu ON cu.id = e.couple_user_id 
          LEFT JOIN event_staff es ON es.event_id = e.id
-         WHERE e.couple_user_id = $1 OR lower(cu.email) = lower($2) OR lower(e.couple_email) = lower($2) OR es.user_id = $1
+         WHERE e.couple_user_id = $1 OR lower(cu.email) = lower($2) OR es.user_id = $1
          ORDER BY e.created_at DESC LIMIT 1`,
         [userId, email]
       );

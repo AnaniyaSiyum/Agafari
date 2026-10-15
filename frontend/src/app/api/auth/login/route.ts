@@ -26,7 +26,7 @@ function resolveRoleDashboard(role: string, scopeId: string): string {
       return '/organizer';
     case 'COUPLE':
     case 'BRIDE_GROOM':
-      return `/couple/${scopeId}`;
+      return scopeId && scopeId !== 'event-default' ? `/couple/${scopeId}` : '/couple';
     case 'GATE_SCANNER':
       return `/event/${scopeId}/scanner`;
     case 'MEDIA_MODERATOR':
@@ -159,10 +159,14 @@ export async function POST(req: NextRequest) {
       try {
         if (isCouple) {
           const evt = await queryOne<any>(
-            `SELECT id, slug FROM events WHERE couple_user_id = $1 OR LOWER(couple_email) = LOWER($2) LIMIT 1`,
+            `SELECT e.id, e.slug 
+             FROM events e 
+             LEFT JOIN users u ON u.id = e.couple_user_id 
+             WHERE e.couple_user_id = $1 OR LOWER(u.email) = LOWER($2) 
+             LIMIT 1`,
             [user.id, user.email]
           );
-          if (evt) scopeId = evt.id || evt.slug;
+          if (evt) scopeId = evt.slug || evt.id;
         } else if (isOrganizer) {
           const org = await queryOne<any>(
             `SELECT id FROM organizers WHERE owner_user_id = $1 OR id = $2 LIMIT 1`,
@@ -267,6 +271,39 @@ export async function POST(req: NextRequest) {
       ? 'EVENT_ORGANIZER'
       : selectedMembership.role;
 
+    // If scopeId is unassigned or 'event-default', dynamically resolve associated event for couples and staff
+    if (
+      !selectedMembership.scopeId ||
+      selectedMembership.scopeId === 'event-default' ||
+      userRole === 'COUPLE' ||
+      userRole === 'BRIDE_GROOM'
+    ) {
+      try {
+        const evt = await queryOne<any>(
+          `SELECT e.id, e.slug 
+           FROM events e 
+           LEFT JOIN users u ON u.id = e.couple_user_id 
+           LEFT JOIN event_staff es ON es.event_id = e.id
+           WHERE e.couple_user_id = $1 
+              OR LOWER(u.email) = LOWER($2) 
+              OR es.user_id = $1
+           ORDER BY e.created_at DESC 
+           LIMIT 1`,
+          [user.id, user.email]
+        );
+        if (evt && (evt.slug || evt.id)) {
+          const resolvedSlug = evt.slug || evt.id;
+          selectedMembership.scopeId = resolvedSlug;
+          try {
+            await query('UPDATE memberships SET scope_id = $1 WHERE id = $2', [
+              resolvedSlug,
+              selectedMembership.id,
+            ]);
+          } catch (e) {}
+        }
+      } catch (e) {}
+    }
+
     // 6. Issue signed session token in httpOnly, Secure cookie
     const sessionToken = signSessionToken({
       userId: user.id,
@@ -307,6 +344,8 @@ export async function POST(req: NextRequest) {
         role: userRole,
         membershipRole: selectedMembership.role,
         scopeId: selectedMembership.scopeId,
+        eventSlug: selectedMembership.scopeId && selectedMembership.scopeId !== 'event-default' ? selectedMembership.scopeId : undefined,
+        slug: selectedMembership.scopeId && selectedMembership.scopeId !== 'event-default' ? selectedMembership.scopeId : undefined,
         organizerId: selectedMembership.scopeId || user.id,
         tenantId: selectedMembership.scopeId || user.id,
       },
