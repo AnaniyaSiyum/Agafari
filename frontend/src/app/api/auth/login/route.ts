@@ -235,7 +235,7 @@ export async function POST(req: NextRequest) {
     let coupleEvent: any = null;
     try {
       coupleEvent = await queryOne<any>(
-        `SELECT e.id, e.slug, e.organizer_id, o.id as org_id, o.business_name
+        `SELECT e.id, e.slug, e.organizer_id, e.couple_user_id, o.id as org_id, o.business_name
          FROM events e
          LEFT JOIN organizers o ON o.id = e.organizer_id
          WHERE e.couple_user_id = $1
@@ -243,6 +243,56 @@ export async function POST(req: NextRequest) {
          LIMIT 1`,
         [user.id]
       );
+
+      // Fallback 1: Check memberships table
+      if (!coupleEvent) {
+        coupleEvent = await queryOne<any>(
+          `SELECT e.id, e.slug, e.organizer_id, e.couple_user_id, o.id as org_id, o.business_name
+           FROM memberships m
+           JOIN events e ON e.id = m.scope_id
+           LEFT JOIN organizers o ON o.id = e.organizer_id
+           WHERE m.user_id = $1 AND (m.role = 'COUPLE' OR m.role = 'BRIDE_GROOM')
+           ORDER BY e.created_at DESC
+           LIMIT 1`,
+          [user.id]
+        );
+        if (coupleEvent && !coupleEvent.couple_user_id) {
+          await query('UPDATE events SET couple_user_id = $1 WHERE id = $2', [user.id, coupleEvent.id]);
+        }
+      }
+
+      // Fallback 2: If role is couple but couple_user_id was unlinked, find matching event and auto-heal
+      if (!coupleEvent && (effectiveRole === 'BRIDE_GROOM' || (effectiveRole as any) === 'COUPLE')) {
+        const eventsList = await query<any>(
+          `SELECT e.id, e.slug, e.title, e.organizer_id, e.couple_user_id, o.id as org_id, o.business_name
+           FROM events e
+           LEFT JOIN organizers o ON o.id = e.organizer_id
+           ORDER BY e.created_at DESC`
+        );
+
+        const emailPrefix = user.email.toLowerCase().split('@')[0];
+        for (const evt of eventsList) {
+          const slugClean = (evt.slug || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          if (
+            !evt.couple_user_id ||
+            evt.couple_user_id === user.id ||
+            slugClean.includes(emailPrefix) ||
+            emailPrefix.includes(slugClean.slice(0, 4))
+          ) {
+            coupleEvent = evt;
+            if (!evt.couple_user_id) {
+              await query('UPDATE events SET couple_user_id = $1 WHERE id = $2', [user.id, evt.id]);
+            }
+            break;
+          }
+        }
+        if (!coupleEvent && eventsList.length > 0) {
+          coupleEvent = eventsList[0];
+          if (!coupleEvent.couple_user_id) {
+            await query('UPDATE events SET couple_user_id = $1 WHERE id = $2', [user.id, coupleEvent.id]);
+          }
+        }
+      }
     } catch (e) {
       console.warn('Failed querying couple events table:', e);
     }
@@ -282,7 +332,15 @@ export async function POST(req: NextRequest) {
       effectiveRole = 'COUPLE';
       if (coupleEvent) {
         eventSlug = coupleEvent.slug || coupleEvent.id;
-        organizerSlug = coupleEvent.org_id || coupleEvent.organizer_id || 'agafari';
+        let orgSlug = 'kebkab';
+        if (coupleEvent.business_name) {
+          orgSlug = coupleEvent.business_name.toLowerCase().trim().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+        } else if (coupleEvent.org_id) {
+          orgSlug = String(coupleEvent.org_id).replace(/^org-/, '');
+        } else if (coupleEvent.organizer_id) {
+          orgSlug = String(coupleEvent.organizer_id).replace(/^org-/, '');
+        }
+        organizerSlug = orgSlug;
         tenantScope = coupleEvent.id;
         redirectUrl = `/${encodeURIComponent(organizerSlug)}/${encodeURIComponent(eventSlug)}/couple`;
       } else {

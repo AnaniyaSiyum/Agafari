@@ -442,15 +442,23 @@ export async function POST(req: NextRequest) {
 
         // Reuse user if email already exists in DB
         let coupleUser = (await client.query('SELECT id, email FROM users WHERE email = $1', [targetCoupleEmail])).rows[0];
+        const coupleFullName = `${brideName.trim()} & ${groomName.trim()}`;
         if (!coupleUser) {
           const coupleUserId = `usr-couple-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
           await client.query(
             `INSERT INTO users (id, email, password_hash, full_name, role, status, temporary_password)
              VALUES ($1,$2,$3,$4,'BRIDE_GROOM','ACTIVE',$5)
-             ON DUPLICATE KEY UPDATE status = 'ACTIVE'`,
-            [coupleUserId, targetCoupleEmail, hashPassword(tempPassword), `${brideName.trim()} & ${groomName.trim()}`, tempPassword]
+             ON DUPLICATE KEY UPDATE status = 'ACTIVE', role = 'BRIDE_GROOM', full_name = $4, temporary_password = $5`,
+            [coupleUserId, targetCoupleEmail, hashPassword(tempPassword), coupleFullName, tempPassword]
           );
           coupleUser = (await client.query('SELECT id, email FROM users WHERE id = $1', [coupleUserId])).rows[0];
+        } else {
+          await client.query(
+            `UPDATE users 
+             SET role = 'BRIDE_GROOM', full_name = $1, password_hash = $2, temporary_password = $3, status = 'ACTIVE'
+             WHERE id = $4`,
+            [coupleFullName, hashPassword(tempPassword), tempPassword, coupleUser.id]
+          );
         }
 
         const newEventId = `evt-${cleanSlug}`;

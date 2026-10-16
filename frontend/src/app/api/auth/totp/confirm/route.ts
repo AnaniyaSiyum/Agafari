@@ -5,6 +5,7 @@ import { signSessionToken, verifySessionToken } from '@/lib/requireMembership';
 import { verifyPassword } from '@/lib/passwords';
 import { getClientIp } from '@/lib/rateLimit';
 import { logAudit } from '@/lib/audit';
+import { setAuthCookie } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   const ip = getClientIp(req);
@@ -118,19 +119,13 @@ export async function POST(req: NextRequest) {
         organizerId: 'global',
         tenantId: 'global',
       },
-      redirectUrl: '/admin',
+      redirectUrl: '/admin/dashboard',
     });
 
-    // Clear limited setup session cookie and set full production session cookie
+    // Clear limited setup session cookie and set full production session cookies
     response.cookies.delete('agafari_setup_session');
 
-    response.cookies.set('agafari_session', fullSessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 86400,
-      path: '/',
-    });
+    setAuthCookie(response, fullSessionToken);
 
     return response;
   } catch (err: any) {

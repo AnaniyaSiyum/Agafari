@@ -153,16 +153,39 @@ export async function POST(req: NextRequest) {
         const coupleEmailVal = coupleEmail?.trim() || `couple@${cleanSlug}.com`;
         const coupleName = `${brideName.trim()} & ${groomName.trim()}`;
 
-        await client.query(
-          `INSERT INTO users (id, email, password_hash, full_name, role)
-           VALUES ($1, $2, $3, $4, 'BRIDE_GROOM')`,
-          [
-            coupleUserId,
-            coupleEmailVal,
-            hashPassword(tempPassword),
-            coupleName,
-          ]
-        );
+        const existingCoupleUser = (await client.query('SELECT id FROM users WHERE email = $1', [coupleEmailVal])).rows[0];
+        let finalCoupleUserId = coupleUserId;
+        if (existingCoupleUser) {
+          finalCoupleUserId = existingCoupleUser.id;
+          await client.query(
+            `UPDATE users 
+             SET role = 'BRIDE_GROOM', full_name = $1, password_hash = $2, temporary_password = $3, status = 'ACTIVE'
+             WHERE id = $4`,
+            [coupleName, hashPassword(tempPassword), tempPassword, finalCoupleUserId]
+          );
+        } else {
+          await client.query(
+            `INSERT INTO users (id, email, password_hash, full_name, role, status, temporary_password)
+             VALUES ($1, $2, $3, $4, 'BRIDE_GROOM', 'ACTIVE', $5)
+             ON DUPLICATE KEY UPDATE role = 'BRIDE_GROOM', full_name = $4, status = 'ACTIVE', temporary_password = $5`,
+            [
+              finalCoupleUserId,
+              coupleEmailVal,
+              hashPassword(tempPassword),
+              coupleName,
+              tempPassword,
+            ]
+          );
+        }
+
+        try {
+          await client.query(
+            `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status)
+             VALUES ($1, $2, 'COUPLE', 'EVENT', $3, 'ACTIVE')
+             ON DUPLICATE KEY UPDATE status = 'ACTIVE', scope_id = $3`,
+            [`mem-${finalCoupleUserId}`, finalCoupleUserId, eventId]
+          );
+        } catch (e) {}
 
         let formattedDate: string;
         try {
@@ -179,7 +202,7 @@ export async function POST(req: NextRequest) {
            ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'COMING_SOON','APPROVED')`,
           [
             eventId, cleanSlug, title.trim(), managedBy === 'ORGANIZER' ? 'ORGANIZER' : 'ADMIN',
-            managedBy === 'ORGANIZER' ? (organizerId || null) : null, coupleUserId, templateId || null,
+            managedBy === 'ORGANIZER' ? (organizerId || null) : null, finalCoupleUserId, templateId || null,
             brideName.trim(), groomName.trim(), formattedDate,
             venueName.trim(), venueAddress?.trim() || null,
             dressCode?.trim() || null, welcomeMessage?.trim() || null, numExpectedGuests

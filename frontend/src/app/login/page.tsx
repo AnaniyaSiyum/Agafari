@@ -27,45 +27,25 @@ import {
   Check
 } from 'lucide-react';
 
-interface TestAccount {
-  role: string;
-  badge: string;
-  email: string;
-  pass: string;
-  destination: string;
-  icon: React.ComponentType<{ className?: string }>;
-}
-
-const TEST_ACCOUNTS: TestAccount[] = [
-  {
-    role: 'System Super Admin',
-    badge: '1 Platform Admin',
-    email: 'admin@agafari.com',
-    pass: 'admin123',
-    destination: '/admin',
-    icon: Crown,
-  },
-];
-
 function resolveDestination(userRole?: string, redirectParam?: string | null, serverRedirectUrl?: string): string {
   const defaultDestination = serverRedirectUrl || '/login';
-  if (!redirectParam || redirectParam === '/login') {
+  if (!redirectParam || redirectParam === '/login' || redirectParam.endsWith('/login') || redirectParam.includes('/login?')) {
     return defaultDestination;
   }
 
   const cleanRedirect = redirectParam.toLowerCase().split('?')[0];
 
-  // System Admin can visit any requested dashboard; prefer /admin/dashboard if accessing root admin
+  // System Admin can visit any requested dashboard; prefer /admin/dashboard if accessing root admin or login routes
   if (userRole === 'SYSTEM_ADMIN') {
-    if (cleanRedirect === '/admin' || cleanRedirect === '/admin/' || cleanRedirect === '/system-admin') {
+    if (cleanRedirect === '/admin' || cleanRedirect === '/admin/' || cleanRedirect === '/system-admin' || cleanRedirect.includes('/login')) {
       return serverRedirectUrl || '/admin/dashboard';
     }
     return redirectParam;
   }
 
-  // Couples can only visit couple routes; prefer scoped wedding couple URL
+  // Couples can only visit couple routes; prefer scoped wedding couple URL from server
   if (userRole === 'COUPLE' || userRole === 'BRIDE_GROOM') {
-    if (cleanRedirect === '/couple' || cleanRedirect === '/couple/' || cleanRedirect === '/couple/dashboard') {
+    if (cleanRedirect === '/couple' || cleanRedirect === '/couple/' || cleanRedirect === '/couple/dashboard' || cleanRedirect.includes('/login')) {
       return serverRedirectUrl || '/couple';
     }
     if (cleanRedirect.includes('/couple')) {
@@ -76,7 +56,7 @@ function resolveDestination(userRole?: string, redirectParam?: string | null, se
 
   // Organizers can visit organizer routes; prefer scoped organizer dashboard with ?id=
   if (userRole === 'EVENT_ORGANIZER' || userRole === 'ORGANIZER_OWNER') {
-    if (cleanRedirect.startsWith('/admin') || cleanRedirect.startsWith('/system-admin') || cleanRedirect.startsWith('/couple')) {
+    if (cleanRedirect.startsWith('/admin') || cleanRedirect.startsWith('/system-admin') || cleanRedirect.startsWith('/couple') || cleanRedirect.includes('/login')) {
       return serverRedirectUrl || '/organizer/dashboard';
     }
     if (cleanRedirect === '/organizer' || cleanRedirect === '/organizer/' || cleanRedirect === '/organizer/dashboard') {
@@ -87,13 +67,13 @@ function resolveDestination(userRole?: string, redirectParam?: string | null, se
 
   // Staff roles (Scanner, Moderator, Streamer)
   if (userRole === 'GATE_SCANNER') {
-    return cleanRedirect.includes('/scanner') ? redirectParam : (serverRedirectUrl || '/login');
+    return cleanRedirect.includes('/scanner') && !cleanRedirect.includes('/login') ? redirectParam : (serverRedirectUrl || '/login');
   }
   if (userRole === 'LIVE_STREAMER') {
-    return cleanRedirect.includes('/live-streamer') ? redirectParam : (serverRedirectUrl || '/login');
+    return cleanRedirect.includes('/live-streamer') && !cleanRedirect.includes('/login') ? redirectParam : (serverRedirectUrl || '/login');
   }
   if (userRole === 'MEDIA_MODERATOR' || userRole === 'MODERATOR' || userRole === 'CONTENT_MODERATOR') {
-    return cleanRedirect.includes('/moderation') ? redirectParam : (serverRedirectUrl || '/login');
+    return cleanRedirect.includes('/moderation') && !cleanRedirect.includes('/login') ? redirectParam : (serverRedirectUrl || '/login');
   }
 
   return defaultDestination;
@@ -116,31 +96,6 @@ export default function UniversalLoginPage() {
   const [copiedSecret, setCopiedSecret] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [totpMessage, setTotpMessage] = useState<string | null>(null);
-
-  // Active session check
-  const [currentUser, setCurrentUser] = useState<{ email?: string; role?: string } | null>(null);
-  const [showDirectory, setShowDirectory] = useState(false);
-
-  useEffect(() => {
-    // Check if user has active session in localStorage
-    const savedUser = localStorage.getItem('agafari_user');
-    if (savedUser) {
-      try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch {}
-    }
-  }, []);
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {}
-    localStorage.removeItem('agafari_user');
-    localStorage.removeItem('agafari_role');
-    localStorage.removeItem('agafari_token');
-    sessionStorage.clear();
-    setCurrentUser(null);
-  };
 
   const handleConfirmTotpSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -180,7 +135,7 @@ export default function UniversalLoginPage() {
         localStorage.setItem('agafari_role', data.user.role);
       }
 
-      window.location.href = data.redirectUrl || '/admin';
+      window.location.href = data.redirectUrl || '/admin/dashboard';
     } catch (err) {
       console.error('TOTP confirm error:', err);
       setError('Network connection error. Please try again.');
@@ -295,15 +250,6 @@ export default function UniversalLoginPage() {
     }
   };
 
-  const handleUseAccount = (acc: TestAccount) => {
-    setIdentifier(acc.email);
-    setPassword(acc.pass);
-    setRequireTotp(false);
-    setRequireTotpSetup(false);
-    setTotpCode('');
-    setError(null);
-  };
-
   const redirectTarget = searchParams.get('redirect');
 
   return (
@@ -315,45 +261,6 @@ export default function UniversalLoginPage() {
       </div>
 
       <div className="relative w-full max-w-md space-y-6">
-        {/* Active Session Notice Banner */}
-        {currentUser && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-3.5 bg-neutral-900/90 border border-amber-500/30 rounded-2xl flex items-center justify-between text-xs backdrop-blur-md shadow-lg"
-          >
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-neutral-300">
-                Active: <strong className="text-white">{currentUser.email}</strong>
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  const role = currentUser.role || localStorage.getItem('agafari_role') || '';
-                  const dest = (role === 'COUPLE' || role === 'BRIDE_GROOM') 
-                    ? (localStorage.getItem('agafari_couple_slug') ? `/couple/${localStorage.getItem('agafari_couple_slug')}` : '/couple')
-                    : (role === 'SYSTEM_ADMIN' ? '/admin' : '/organizer');
-                  window.location.href = dest;
-                }}
-                className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1 transition"
-              >
-                <span>Dashboard</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="text-neutral-400 hover:text-rose-400 font-semibold flex items-center gap-1 transition"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Sign Out</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
 
         {/* Security Gate Banner for Protected Dashboards */}
         {redirectTarget && (
@@ -590,67 +497,6 @@ export default function UniversalLoginPage() {
               )}
             </button>
           </form>
-        </div>
-
-        {/* Collapsible Test Accounts Quick Reference */}
-        <div className="bg-neutral-900/60 border border-neutral-800 rounded-2xl overflow-hidden backdrop-blur-md">
-          <button
-            type="button"
-            onClick={() => setShowDirectory(!showDirectory)}
-            className="w-full p-4 flex items-center justify-between text-xs font-semibold text-neutral-300 hover:text-white transition"
-          >
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>Testing Accounts Directory (5 Roles)</span>
-            </div>
-            {showDirectory ? <ChevronUp className="w-4 h-4 text-neutral-400" /> : <ChevronDown className="w-4 h-4 text-neutral-400" />}
-          </button>
-
-          <AnimatePresence>
-            {showDirectory && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="px-4 pb-4 space-y-2 border-t border-neutral-800/80 pt-3"
-              >
-                <p className="text-[11px] text-neutral-400 pb-1">
-                  Click any account below to populate fields for testing:
-                </p>
-
-                {TEST_ACCOUNTS.map((acc) => {
-                  const Icon = acc.icon;
-                  return (
-                    <div
-                      key={acc.email}
-                      className="p-3 bg-neutral-950/80 border border-neutral-800 rounded-xl flex items-center justify-between text-xs hover:border-amber-500/40 transition group"
-                    >
-                      <div className="space-y-0.5">
-                        <div className="font-semibold text-white flex items-center gap-1.5">
-                          <Icon className="w-3.5 h-3.5 text-amber-500" />
-                          <span>{acc.role}</span>
-                          <span className="text-[10px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20">
-                            {acc.badge}
-                          </span>
-                        </div>
-                        <div className="font-mono text-[11px] text-neutral-400">
-                          {acc.email} • pass: <strong className="text-neutral-200">{acc.pass}</strong>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleUseAccount(acc)}
-                        className="px-2.5 py-1.5 bg-neutral-800 hover:bg-amber-500 hover:text-black text-neutral-300 rounded-lg text-[11px] font-semibold transition"
-                      >
-                        Use Account
-                      </button>
-                    </div>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </div>

@@ -239,17 +239,56 @@ function SystemAdminDashboardContent() {
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
+    let isMounted = true;
+
+    async function checkAdminAuth() {
+      if (typeof window === 'undefined') return;
+
       let userStr = localStorage.getItem('agafari_user');
       let token = localStorage.getItem('agafari_token');
       let role = localStorage.getItem('agafari_role');
 
-      // 1. Fallback: Parse token from document.cookie if missing in localStorage
-      if (!token) {
+      // 1. Direct validation via /api/auth/me (using session cookies / bearer)
+      try {
+        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        const res = await fetch('/api/auth/me', { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.user?.role === 'SYSTEM_ADMIN' || data?.user?.role === 'ADMIN') {
+            if (!isMounted) return;
+            localStorage.setItem('agafari_user', JSON.stringify(data.user));
+            localStorage.setItem('agafari_role', 'SYSTEM_ADMIN');
+            if (data.token) {
+              localStorage.setItem('agafari_token', data.token);
+            }
+            fetchAdminData();
+            return;
+          } else if (data?.user?.role === 'EVENT_ORGANIZER' || data?.user?.role === 'ORGANIZER_OWNER') {
+            // Strictly non-admin organizer account authenticated
+            router.push('/organizer/dashboard');
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn('Admin auth session check failed:', err);
+      }
+
+      // 2. Fallback check on localStorage if network/API temporarily unavailable
+      const allowedRoles = ['SYSTEM_ADMIN', 'ADMIN'];
+      if (userStr && token && allowedRoles.includes(role || '')) {
+        if (!isMounted) return;
+        fetchAdminData();
+        return;
+      }
+
+      // 3. Fallback: Parse token from document.cookie
+      if (!token && typeof document !== 'undefined') {
         const cookies = document.cookie.split(';');
         for (const c of cookies) {
           const [key, val] = c.trim().split('=');
-          if (key === 'agafari_token' && val) {
+          if ((key === 'agafari_token' || key === 'agafari_session') && val) {
             token = val;
             localStorage.setItem('agafari_token', val);
             break;
@@ -257,7 +296,6 @@ function SystemAdminDashboardContent() {
         }
       }
 
-      // 2. Fallback: If token exists but userStr or role is missing, set default admin user session
       if (token && (!userStr || !role)) {
         const defaultAdmin = {
           id: 'usr-admin-1',
@@ -265,27 +303,26 @@ function SystemAdminDashboardContent() {
           fullName: 'System Super Admin',
           role: 'SYSTEM_ADMIN'
         };
-        userStr = JSON.stringify(defaultAdmin);
-        role = 'SYSTEM_ADMIN';
-        localStorage.setItem('agafari_user', userStr);
+        localStorage.setItem('agafari_user', JSON.stringify(defaultAdmin));
         localStorage.setItem('agafari_role', 'SYSTEM_ADMIN');
-      }
-
-      const allowedRoles = ['SYSTEM_ADMIN', 'ADMIN'];
-      if (!userStr || !token || !allowedRoles.includes(role || '')) {
-        if (role === 'EVENT_ORGANIZER' || role === 'ORGANIZER_OWNER') {
-          router.push('/organizer/dashboard');
-          return;
-        }
-        localStorage.removeItem('agafari_user');
-        localStorage.removeItem('agafari_role');
-        localStorage.removeItem('agafari_token');
-        document.cookie = 'agafari_token=; path=/; max-age=0';
-        router.push('/login?redirect=%2Fadmin%2Fdashboard');
+        if (!isMounted) return;
+        fetchAdminData();
         return;
       }
+
+      // Not authenticated as system admin - redirect cleanly to login
+      localStorage.removeItem('agafari_user');
+      localStorage.removeItem('agafari_role');
+      localStorage.removeItem('agafari_token');
+      document.cookie = 'agafari_token=; path=/; max-age=0';
+      router.push('/login?redirect=%2Fadmin%2Fdashboard');
     }
-    fetchAdminData();
+
+    checkAdminAuth();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleSignOut = () => {

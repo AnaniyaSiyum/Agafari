@@ -25,53 +25,131 @@ export async function GET(req: NextRequest) {
   await ensureTemporaryPasswordColumn();
 
   try {
+    // 1. Auto-sync unlinked organizers into users table
+    try {
+      const unlinkedOrgs = await query<any>(`
+        SELECT o.id, o.business_name, o.contact_phone, o.owner_user_id
+        FROM organizers o
+        LEFT JOIN users u ON u.id = o.owner_user_id
+        WHERE u.id IS NULL
+      `);
+      for (const org of unlinkedOrgs) {
+        const orgUserId = `usr-org-${org.id.replace(/^org-/, '')}`;
+        const orgEmail = `${org.business_name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'organizer'}@agafari.com`;
+        const tempPass = 'org123';
+        const hash = await hashPassword(tempPass);
+        await query(
+          `INSERT INTO users (id, email, phone, full_name, role, password_hash, temporary_password, status, created_at)
+           VALUES ($1, $2, $3, $4, 'EVENT_ORGANIZER', $5, $6, 'ACTIVE', NOW())
+           ON DUPLICATE KEY UPDATE role = 'EVENT_ORGANIZER', status = 'ACTIVE'`,
+          [orgUserId, orgEmail, org.contact_phone || null, org.business_name, hash, tempPass]
+        );
+        await query('UPDATE organizers SET owner_user_id = $1 WHERE id = $2', [orgUserId, org.id]);
+        await query(
+          `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status, created_at)
+           VALUES ($1, $2, 'ORGANIZER_OWNER', 'ORGANIZER', $3, 'ACTIVE', NOW())
+           ON DUPLICATE KEY UPDATE status = 'ACTIVE'`,
+          [`mem-${orgUserId}`, orgUserId, org.id]
+        );
+      }
+    } catch (e) {
+      console.warn('Auto-syncing unlinked organizers failed:', e);
+    }
+
+    // 2. Auto-sync unlinked wedding couple events into users table
+    try {
+      const unlinkedEvents = await query<any>(`
+        SELECT e.id, e.slug, e.title, e.bride_name, e.groom_name, e.couple_user_id
+        FROM events e
+        LEFT JOIN users u ON u.id = e.couple_user_id
+        WHERE u.id IS NULL
+      `);
+      for (const evt of unlinkedEvents) {
+        const coupleUserId = `usr-couple-${evt.id.replace(/^evt-/, '')}`;
+        const coupleEmail = `couple@${evt.slug}.com`;
+        const coupleName = evt.bride_name && evt.groom_name ? `${evt.bride_name} & ${evt.groom_name}` : evt.title;
+        const tempPass = 'couple123';
+        const hash = await hashPassword(tempPass);
+        await query(
+          `INSERT INTO users (id, email, full_name, role, password_hash, temporary_password, status, created_at)
+           VALUES ($1, $2, $3, 'BRIDE_GROOM', $4, $5, 'ACTIVE', NOW())
+           ON DUPLICATE KEY UPDATE role = 'BRIDE_GROOM', status = 'ACTIVE'`,
+          [coupleUserId, coupleEmail, coupleName, hash, tempPass]
+        );
+        await query('UPDATE events SET couple_user_id = $1 WHERE id = $2', [coupleUserId, evt.id]);
+        await query(
+          `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status, created_at)
+           VALUES ($1, $2, 'COUPLE', 'EVENT', $3, 'ACTIVE', NOW())
+           ON DUPLICATE KEY UPDATE status = 'ACTIVE'`,
+          [`mem-${coupleUserId}`, coupleUserId, evt.id]
+        );
+      }
+    } catch (e) {
+      console.warn('Auto-syncing unlinked events failed:', e);
+    }
+
+    // 3. Query all users joined with memberships, organizers, and events
     const rawUsers = await query<any>(`
       SELECT u.id, u.email, u.phone, u.full_name, u.role AS user_role, u.status, u.temporary_password,
              u.password_set_by, u.password_set_at, u.totp_enabled, u.created_at,
              m.id AS membership_id, m.role AS membership_role, m.scope_type, m.scope_id,
              m.status AS membership_status, m.expires_at,
-             o.id AS organizer_id, o.business_name
+             o.id AS organizer_id, o.business_name,
+             e.id AS event_id, e.slug AS event_slug
       FROM users u
       LEFT JOIN memberships m ON u.id = m.user_id
       LEFT JOIN organizers o ON u.id = o.owner_user_id
+      LEFT JOIN events e ON u.id = e.couple_user_id
       ORDER BY u.created_at DESC
     `);
 
-    const users = rawUsers.map((u) => {
-      let displayRole: string = u.user_role || 'GUEST';
-      if (u.user_role === 'EVENT_ORGANIZER' || u.membership_role === 'ORGANIZER_OWNER') {
-        displayRole = 'EVENT_ORGANIZER';
-      } else if (u.user_role === 'BRIDE_GROOM' || u.membership_role === 'COUPLE') {
-        displayRole = 'BRIDE_GROOM';
-      } else if (u.user_role === 'LIVE_STREAMER' || u.membership_role === 'MEDIA_MODERATOR') {
-        displayRole = 'LIVE_STREAMER';
-      } else if (u.user_role === 'GATE_SCANNER' || u.membership_role === 'GATE_SCANNER') {
-        displayRole = 'GATE_SCANNER';
-      } else if (u.user_role === 'SYSTEM_ADMIN' || u.membership_role === 'SYSTEM_ADMIN') {
-        displayRole = 'SYSTEM_ADMIN';
-      }
+    // Deduplicate by user id
+    const userMap = new Map<string, any>();
+    for (const u of rawUsers) {
+      if (!userMap.has(u.id)) {
+        let displayRole: string = u.user_role || 'GUEST';
+        if (u.user_role === 'EVENT_ORGANIZER' || u.membership_role === 'ORGANIZER_OWNER') {
+          displayRole = 'EVENT_ORGANIZER';
+        } else if (u.user_role === 'BRIDE_GROOM' || u.membership_role === 'COUPLE') {
+          displayRole = 'BRIDE_GROOM';
+        } else if (u.user_role === 'LIVE_STREAMER' || u.membership_role === 'MEDIA_MODERATOR') {
+          displayRole = 'LIVE_STREAMER';
+        } else if (u.user_role === 'GATE_SCANNER' || u.membership_role === 'GATE_SCANNER') {
+          displayRole = 'GATE_SCANNER';
+        } else if (u.user_role === 'SYSTEM_ADMIN' || u.membership_role === 'SYSTEM_ADMIN') {
+          displayRole = 'SYSTEM_ADMIN';
+        }
 
-      return {
-        id: u.id,
-        email: u.email,
-        phone: u.phone,
-        fullName: u.full_name,
-        companyName: u.business_name || u.full_name,
-        description: u.business_name ? `Official certified event management partner (${u.business_name}).` : undefined,
-        role: displayRole,
-        status: u.status,
-        temporaryPassword: u.temporary_password || undefined,
-        passwordSetBy: u.password_set_by,
-        passwordSetAt: u.password_set_at,
-        totpEnabled: !!u.totp_enabled,
-        createdAt: u.created_at,
-        membershipId: u.membership_id,
-        membershipRole: u.membership_role,
-        scopeType: u.scope_type,
-        scopeId: u.scope_id,
-        organizerId: u.organizer_id,
-      };
-    });
+        userMap.set(u.id, {
+          id: u.id,
+          email: u.email,
+          phone: u.phone,
+          fullName: u.full_name,
+          companyName: u.business_name || (displayRole === 'EVENT_ORGANIZER' ? u.full_name : undefined),
+          description: u.business_name ? `Official certified event management partner (${u.business_name}).` : undefined,
+          role: displayRole,
+          status: u.status,
+          temporaryPassword: u.temporary_password || undefined,
+          passwordSetBy: u.password_set_by,
+          passwordSetAt: u.password_set_at,
+          totpEnabled: !!u.totp_enabled,
+          createdAt: u.created_at,
+          membershipId: u.membership_id,
+          membershipRole: u.membership_role,
+          scopeType: u.scope_type,
+          scopeId: u.scope_id,
+          organizerId: u.organizer_id,
+          eventId: u.event_id || (u.scope_type === 'EVENT' ? u.scope_id : undefined),
+        });
+      } else {
+        const existing = userMap.get(u.id);
+        if (!existing.organizerId && u.organizer_id) existing.organizerId = u.organizer_id;
+        if (!existing.companyName && u.business_name) existing.companyName = u.business_name;
+        if (!existing.eventId && u.event_id) existing.eventId = u.event_id;
+      }
+    }
+
+    const users = Array.from(userMap.values());
 
     return NextResponse.json({ success: true, users });
   } catch (err: any) {
@@ -164,9 +242,13 @@ export async function POST(req: NextRequest) {
       await query(
         `INSERT INTO organizers (id, owner_user_id, business_name, contact_phone, created_by_admin_id, created_at)
          VALUES ($1, $2, $3, $4, $5, NOW())
-         ON DUPLICATE KEY UPDATE business_name = $3`,
+         ON DUPLICATE KEY UPDATE business_name = $3, owner_user_id = $2`,
         [organizerId, userId, businessName, phone || null, adminId]
       );
+    }
+
+    if (isCouple && scopeId && scopeId !== 'event-default') {
+      await query('UPDATE events SET couple_user_id = $1 WHERE id = $2 OR slug = $2', [userId, scopeId]);
     }
 
     // 4. Immutable audit log

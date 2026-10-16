@@ -132,12 +132,15 @@ export async function middleware(req: NextRequest) {
     if (user.role !== 'SYSTEM_ADMIN') {
       return redirectAuthenticatedUser(user);
     }
+    if (path === '/admin') {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.url));
+    }
   }
 
   // 6. Protect Couple Dashboard & Portal Routes (/couple, /couple/*, */couple, */couple-portal)
   if (isCoupleDashboard) {
     if (!user) return redirectToLogin();
-    const allowedRoles = ['BRIDE_GROOM', 'COUPLE', 'SYSTEM_ADMIN'];
+    const allowedRoles = ['BRIDE_GROOM', 'COUPLE', 'SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER'];
     if (!allowedRoles.includes(user.role)) {
       return redirectAuthenticatedUser(user);
     }
