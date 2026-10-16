@@ -5,9 +5,13 @@
 export type AppRole =
   | 'SYSTEM_ADMIN'
   | 'ORGANIZER_OWNER'
+  | 'EVENT_ORGANIZER'
   | 'COUPLE'
+  | 'BRIDE_GROOM'
   | 'GATE_SCANNER'
-  | 'MEDIA_MODERATOR';
+  | 'MEDIA_MODERATOR'
+  | 'LIVE_STREAMER'
+  | 'TOTP_SETUP';
 
 export type ScopeType = 'PLATFORM' | 'ORGANIZER' | 'EVENT';
 
@@ -76,6 +80,7 @@ export interface AuthSessionPayload {
   role: AppRole;
   scopeType: ScopeType;
   scopeId: string;
+  tenantId?: string;
   sessionVersion: number;
   isViewAs?: boolean;
   viewAsOriginalAdminId?: string;

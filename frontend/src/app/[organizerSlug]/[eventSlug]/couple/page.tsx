@@ -915,7 +915,7 @@ function ScopedCouplePortalContent({ params }: { params: { organizerSlug: string
 }
 
 export default function ScopedCouplePortalPage({ params }: { params: Promise<{ organizerSlug: string; eventSlug: string }> | { organizerSlug: string; eventSlug: string } }) {
-  const unwrappedParams = typeof (params as any)?.then === 'function' ? React.use(params as any) : params;
+  const unwrappedParams = (typeof (params as any)?.then === 'function' ? React.use(params as any) : params) as { organizerSlug?: string; eventSlug?: string };
   const eventSlug = unwrappedParams?.eventSlug || '';
   const organizerSlug = unwrappedParams?.organizerSlug || 'org';
 

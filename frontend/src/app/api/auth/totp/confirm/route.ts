@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { verifyTotpCode } from '@/lib/totp';
-import { signSessionToken, verifySessionToken, verifyPassword, getClientIp } from '@/lib/auth';
+import { signSessionToken, verifySessionToken } from '@/lib/requireMembership';
+import { verifyPassword } from '@/lib/passwords';
+import { getClientIp } from '@/lib/rateLimit';
 import { logAudit } from '@/lib/audit';
 
 export async function POST(req: NextRequest) {

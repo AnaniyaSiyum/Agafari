@@ -12,10 +12,13 @@ import { mockStore } from '@/lib/mockData';
 export type UserRole =
   | 'SYSTEM_ADMIN'
   | 'ORGANIZER_OWNER'
+  | 'EVENT_ORGANIZER'
   | 'COUPLE'
+  | 'BRIDE_GROOM'
   | 'LIVE_STREAMER'
   | 'GATE_SCANNER'
   | 'MODERATOR'
+  | 'CONTENT_MODERATOR'
   | 'GUEST'
   | 'TOTP_SETUP';
 
@@ -44,10 +47,13 @@ export type Permission =
 export const ROLE_RANKS: Record<UserRole, number> = {
   SYSTEM_ADMIN: 100,
   ORGANIZER_OWNER: 50,
+  EVENT_ORGANIZER: 50,
   COUPLE: 20,
+  BRIDE_GROOM: 20,
   LIVE_STREAMER: 10,
   GATE_SCANNER: 10,
   MODERATOR: 10,
+  CONTENT_MODERATOR: 10,
   GUEST: 0,
   TOTP_SETUP: 0,
 };
@@ -83,11 +89,26 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'stream:manage',
     'media:moderate',
   ],
+  EVENT_ORGANIZER: [
+    'tenants:manage',
+    'events:manage',
+    'events:read',
+    'events:write',
+    'staff:manage',
+    'reports:view',
+    'credentials:manage_scoped',
+    'gate:scan',
+    'stream:manage',
+    'media:moderate',
+  ],
   COUPLE: ['events:read', 'events:write', 'media:moderate', 'reports:view'],
+  BRIDE_GROOM: ['events:read', 'events:write', 'media:moderate', 'reports:view'],
   LIVE_STREAMER: ['stream:manage', 'events:read'],
   GATE_SCANNER: ['gate:scan', 'events:read'],
   MODERATOR: ['media:moderate', 'events:read'],
+  CONTENT_MODERATOR: ['media:moderate', 'events:read'],
   GUEST: [],
+  TOTP_SETUP: [],
 };
 
 export interface AuthTokenPayload {
@@ -252,27 +273,54 @@ export function getAuthUser(req: NextRequest): AuthTokenPayload | null {
     if (verified) return verified;
   }
 
-  // 2. Check session cookie
-  const cookieToken = req.cookies.get('agafari_token')?.value;
+  // 2. Check session cookies
+  const cookieToken = req.cookies.get('agafari_token')?.value || req.cookies.get('agafari_session')?.value;
   if (cookieToken) {
     const verified = verifyToken(cookieToken);
     if (verified) return verified;
+  }
+
+  // 3. Optional local dev bypass strictly gated behind ALLOW_DEV_BYPASS flag
+  if (process.env.NODE_ENV === 'development' && process.env.ALLOW_DEV_BYPASS === 'true') {
+    const devRoleHeader = req.headers.get('x-dev-role') as UserRole | null;
+    if (devRoleHeader) {
+      return {
+        userId: `usr_${devRoleHeader.toLowerCase()}_001`,
+        email: `${devRoleHeader.toLowerCase()}@agafari.com`,
+        role: devRoleHeader,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 86400,
+      };
+    }
   }
 
   return null;
 }
 
 export function setAuthCookie(response: NextResponse, token: string): void {
+  // Set primary agafari_token cookie (HttpOnly, SameSite=Strict, 24h expiry)
   response.cookies.set({
     name: 'agafari_token',
     value: token,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    maxAge: 86400 * 30, // 30 days
+    sameSite: 'strict',
+    maxAge: 86400, // 24 hours
+    path: '/',
+  });
+
+  // Also sync agafari_session for compatibility across edge middleware
+  response.cookies.set({
+    name: 'agafari_session',
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 86400,
     path: '/',
   });
 }
+
 
 // -----------------------------------------------------------------------------
 // 4. GRANULAR CAPABILITY & HIERARCHY CHECKS (HRBAC)

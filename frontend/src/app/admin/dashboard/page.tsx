@@ -271,13 +271,17 @@ function SystemAdminDashboardContent() {
         localStorage.setItem('agafari_role', 'SYSTEM_ADMIN');
       }
 
-      const allowedRoles = ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'ADMIN'];
+      const allowedRoles = ['SYSTEM_ADMIN', 'ADMIN'];
       if (!userStr || !token || !allowedRoles.includes(role || '')) {
+        if (role === 'EVENT_ORGANIZER' || role === 'ORGANIZER_OWNER') {
+          router.push('/organizer/dashboard');
+          return;
+        }
         localStorage.removeItem('agafari_user');
         localStorage.removeItem('agafari_role');
         localStorage.removeItem('agafari_token');
         document.cookie = 'agafari_token=; path=/; max-age=0';
-        router.push('/admin/login');
+        router.push('/login?redirect=%2Fadmin%2Fdashboard');
         return;
       }
     }
@@ -291,7 +295,7 @@ function SystemAdminDashboardContent() {
       localStorage.removeItem('agafari_token');
       document.cookie = 'agafari_token=; path=/; max-age=0';
     }
-    router.push('/admin/login');
+    router.push('/login');
   };
 
   const getAdminAuthHeaders = () => {

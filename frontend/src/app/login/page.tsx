@@ -48,33 +48,39 @@ const TEST_ACCOUNTS: TestAccount[] = [
 ];
 
 function resolveDestination(userRole?: string, redirectParam?: string | null, serverRedirectUrl?: string): string {
-  const defaultDestination = serverRedirectUrl || '/couple';
+  const defaultDestination = serverRedirectUrl || '/login';
   if (!redirectParam || redirectParam === '/login') {
     return defaultDestination;
   }
 
   const cleanRedirect = redirectParam.toLowerCase().split('?')[0];
 
-  // System Admin can visit any requested dashboard
+  // System Admin can visit any requested dashboard; prefer /admin/dashboard if accessing root admin
   if (userRole === 'SYSTEM_ADMIN') {
+    if (cleanRedirect === '/admin' || cleanRedirect === '/admin/' || cleanRedirect === '/system-admin') {
+      return serverRedirectUrl || '/admin/dashboard';
+    }
     return redirectParam;
   }
 
-  // Couples can only visit couple routes; ignore incompatible redirects like /organizer or /admin
+  // Couples can only visit couple routes; prefer scoped wedding couple URL
   if (userRole === 'COUPLE' || userRole === 'BRIDE_GROOM') {
-    if (cleanRedirect === '/couple' || cleanRedirect.startsWith('/couple/') || cleanRedirect.includes('/couple')) {
+    if (cleanRedirect === '/couple' || cleanRedirect === '/couple/' || cleanRedirect === '/couple/dashboard') {
+      return serverRedirectUrl || '/couple';
+    }
+    if (cleanRedirect.includes('/couple')) {
       return redirectParam;
     }
     return serverRedirectUrl || '/couple';
   }
 
-  // Organizers can visit organizer routes; ignore admin/couple redirects
+  // Organizers can visit organizer routes; prefer scoped organizer dashboard with ?id=
   if (userRole === 'EVENT_ORGANIZER' || userRole === 'ORGANIZER_OWNER') {
     if (cleanRedirect.startsWith('/admin') || cleanRedirect.startsWith('/system-admin') || cleanRedirect.startsWith('/couple')) {
-      return serverRedirectUrl || '/organizer';
+      return serverRedirectUrl || '/organizer/dashboard';
     }
-    if ((cleanRedirect === '/organizer' || cleanRedirect === '/organizer/') && serverRedirectUrl) {
-      return serverRedirectUrl;
+    if (cleanRedirect === '/organizer' || cleanRedirect === '/organizer/' || cleanRedirect === '/organizer/dashboard') {
+      return serverRedirectUrl || redirectParam;
     }
     return redirectParam;
   }

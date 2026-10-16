@@ -169,7 +169,7 @@ export async function PATCH(
     if (mockIdx >= 0) {
       if (email) mockStore.users[mockIdx].email = email.trim().toLowerCase();
       if (fullName) mockStore.users[mockIdx].fullName = fullName.trim();
-      if (role) mockStore.users[mockIdx].role = role as UserRole;
+      if (role) mockStore.users[mockIdx].role = role as any;
       if (hashedPassword) {
         mockStore.users[mockIdx].passwordHash = hashedPassword;
         mockStore.users[mockIdx].temporaryPassword = newPassword.trim();

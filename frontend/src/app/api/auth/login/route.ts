@@ -5,9 +5,9 @@ import { query, queryOne } from '@/lib/db';
 import { verifyPassword } from '@/lib/passwords';
 import { verifyTotpCode, generateTotpSecret, generateTotpUri } from '@/lib/totp';
 import { signSessionToken } from '@/lib/requireMembership';
+import { generateToken, setAuthCookie, UserRole } from '@/lib/auth';
 import { isRateLimited, recordFailedLogin, resetFailedLogins, getRateLimitKey } from '@/lib/rateLimit';
 import { logAudit } from '@/lib/audit';
-import { AppRole, UserMembership } from '@/types/auth';
 
 function getClientIp(req: NextRequest): string {
   return (
@@ -17,26 +17,16 @@ function getClientIp(req: NextRequest): string {
   );
 }
 
-function resolveRoleDashboard(role: string, scopeId: string): string {
-  switch (role) {
-    case 'SYSTEM_ADMIN':
-      return '/admin';
-    case 'ORGANIZER_OWNER':
-    case 'EVENT_ORGANIZER':
-      return scopeId ? `/organizer/${scopeId}` : '/organizer';
-    case 'COUPLE':
-    case 'BRIDE_GROOM':
-      return scopeId && scopeId !== 'event-default' ? `/couple/${scopeId}` : '/couple';
-    case 'GATE_SCANNER':
-      return `/event/${scopeId}/scanner`;
-    case 'MEDIA_MODERATOR':
-    case 'MODERATOR':
-      return `/event/${scopeId}/moderation`;
-    case 'LIVE_STREAMER':
-      return `/event/${scopeId}/live-streamer`;
-    default:
-      return '/login';
-  }
+function clearAuthCookies(res: NextResponse): void {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+    maxAge: 0,
+    path: '/',
+  };
+  res.cookies.set('agafari_token', '', cookieOptions);
+  res.cookies.set('agafari_session', '', cookieOptions);
 }
 
 export async function POST(req: NextRequest) {
@@ -44,16 +34,20 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const identifier = (body.username || body.email || body.identifier || '').trim().toLowerCase();
+    const email = (body.email || body.username || body.identifier || '').trim().toLowerCase();
     const password = (body.password || '').trim();
     const totpCode = body.totpCode ? String(body.totpCode).trim() : null;
-    const requestedMembershipId = body.membershipId ? String(body.membershipId).trim() : null;
 
-    if (!identifier || !password) {
-      return NextResponse.json({ error: 'Username/Email and Password are required.' }, { status: 400 });
+    // 1. Validate Input Presence
+    if (!email || !password) {
+      return NextResponse.json(
+        { error: 'Email and password are required.' },
+        { status: 400 }
+      );
     }
 
-    const rateLimitKey = getRateLimitKey(ip, identifier);
+    // 2. Rate Limiting Protection (5 attempts / 60 seconds)
+    const rateLimitKey = getRateLimitKey(ip, email);
     const rateCheck = isRateLimited(rateLimitKey);
 
     if (rateCheck.limited) {
@@ -61,49 +55,45 @@ export async function POST(req: NextRequest) {
         actorId: null,
         action: 'LOGIN_RATE_LIMITED',
         ip,
-        metaJson: { identifier, attempts: rateCheck.attempts },
+        metaJson: { email, attempts: rateCheck.attempts },
       });
       return NextResponse.json(
         {
-          error: 'Too many failed login attempts. Please complete CAPTCHA or wait before retrying.',
+          error: 'Too many failed login attempts. Please wait before retrying.',
           rateLimited: true,
-          requireCaptcha: true,
           retryAfterSeconds: rateCheck.retryAfterSeconds,
         },
         { status: 429 }
       );
     }
 
-    // 1. Look up user by email or phone or id
+    // 3. Query MySQL users table by email (or phone/id)
     const user = await queryOne<any>(
-      `SELECT id, email, phone, full_name, role, password_hash, status, totp_secret, totp_enabled, session_version
+      `SELECT id, email, phone, full_name, role, password_hash, is_active, status, totp_secret, totp_enabled, session_version
        FROM users
        WHERE LOWER(email) = $1 OR LOWER(phone) = $1 OR id = $1
        LIMIT 1`,
-      [identifier]
+      [email]
     );
 
-    // Uniform failure defense: non-existent, pending, disabled, or missing password_hash
-    if (!user || (user.status && user.status !== 'ACTIVE' && user.status !== 'active') || !user.password_hash) {
+    // Uniform Failure Defense: user not found or missing password_hash
+    if (!user || !user.password_hash) {
       recordFailedLogin(rateLimitKey);
       await logAudit({
         actorId: null,
         action: 'LOGIN_FAILED',
         ip,
-        metaJson: { identifier, reason: !user ? 'USER_NOT_FOUND' : user.status },
+        metaJson: { email, reason: 'USER_NOT_FOUND' },
       });
-      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+      const response = NextResponse.json(
+        { error: 'Invalid email or password.' },
+        { status: 401 }
+      );
+      clearAuthCookies(response);
+      return response;
     }
 
-    // Ensure status is explicitly ACTIVE if previously unset
-    if (!user.status) {
-      try {
-        await query('UPDATE users SET status = $1 WHERE id = $2', ['ACTIVE', user.id]);
-        user.status = 'ACTIVE';
-      } catch (e) {}
-    }
-
-    // 2. Verify password hash
+    // 4. Verify Credentials (PBKDF2-SHA512 + Bcrypt fallback)
     const isPasswordValid = await verifyPassword(password, user.password_hash);
     if (!isPasswordValid) {
       recordFailedLogin(rateLimitKey);
@@ -113,96 +103,49 @@ export async function POST(req: NextRequest) {
         targetType: 'USER',
         targetId: user.id,
         ip,
-        metaJson: { identifier, reason: 'BAD_PASSWORD' },
+        metaJson: { email, reason: 'BAD_PASSWORD' },
       });
-      return NextResponse.json({ error: 'Invalid credentials.' }, { status: 401 });
+      const response = NextResponse.json(
+        { error: 'Invalid email or password.' },
+        { status: 401 }
+      );
+      clearAuthCookies(response);
+      return response;
     }
 
-    // Password verified: reset failed attempts
+    // 5. Check Account Status (active check)
+    const isActive =
+      user.is_active === true ||
+      user.is_active === 1 ||
+      user.is_active === '1' ||
+      user.is_active === undefined ||
+      user.status === 'ACTIVE' ||
+      user.status === 'active';
+    const isSuspended = user.status === 'DISABLED' || user.status === 'disabled';
+
+    if (!isActive || isSuspended) {
+      recordFailedLogin(rateLimitKey);
+      await logAudit({
+        actorId: user.id,
+        action: 'LOGIN_FAILED',
+        targetType: 'USER',
+        targetId: user.id,
+        ip,
+        metaJson: { email, reason: 'ACCOUNT_SUSPENDED' },
+      });
+      const response = NextResponse.json(
+        { error: 'Account is suspended or inactive.' },
+        { status: 403 }
+      );
+      clearAuthCookies(response);
+      return response;
+    }
+
+    // Password verified: Reset failed attempts
     resetFailedLogins(rateLimitKey);
 
-    // 3. Load active, non-expired memberships
-    const allMemberships = await query<any>(
-      `SELECT id, user_id, role, scope_type, scope_id, status, expires_at
-       FROM memberships
-       WHERE user_id = $1 AND status = 'ACTIVE'
-       ORDER BY created_at ASC`,
-      [user.id]
-    );
-
-    const now = new Date();
-    let activeMemberships: UserMembership[] = allMemberships
-      .filter((m) => !m.expires_at || new Date(m.expires_at) >= now)
-      .map((m) => ({
-        id: m.id,
-        userId: m.user_id,
-        role: m.role,
-        scopeType: m.scope_type,
-        scopeId: m.scope_id,
-        status: m.status,
-        expiresAt: m.expires_at,
-      }));
-
-    // Auto-reconciliation: If user exists with valid credentials but lacks membership record, heal automatically
-    if (activeMemberships.length === 0) {
-      const userRole = user.role || 'EVENT_ORGANIZER';
-      const isOrganizer = userRole === 'EVENT_ORGANIZER' || userRole === 'ORGANIZER_OWNER';
-      const isCouple = userRole === 'BRIDE_GROOM' || userRole === 'COUPLE';
-      const isStreamer = userRole === 'LIVE_STREAMER' || userRole === 'MEDIA_MODERATOR';
-      const isScanner = userRole === 'GATE_SCANNER';
-      const isAdmin = userRole === 'SYSTEM_ADMIN';
-
-      const memRole = isOrganizer ? 'ORGANIZER_OWNER' : (isCouple ? 'COUPLE' : (isStreamer ? 'MEDIA_MODERATOR' : (isScanner ? 'GATE_SCANNER' : (isAdmin ? 'SYSTEM_ADMIN' : 'ORGANIZER_OWNER'))));
-      const scopeType = isAdmin ? 'PLATFORM' : (isOrganizer ? 'ORGANIZER' : 'EVENT');
-      let scopeId = isAdmin ? 'global' : (isOrganizer ? `org-${user.id}` : 'event-default');
-
-      try {
-        if (isCouple) {
-          const evt = await queryOne<any>(
-            `SELECT e.id, e.slug 
-             FROM events e 
-             LEFT JOIN users u ON u.id = e.couple_user_id 
-             WHERE e.couple_user_id = $1 OR LOWER(u.email) = LOWER($2) 
-             LIMIT 1`,
-            [user.id, user.email]
-          );
-          if (evt) scopeId = evt.slug || evt.id;
-        } else if (isOrganizer) {
-          const org = await queryOne<any>(
-            `SELECT id FROM organizers WHERE owner_user_id = $1 OR id = $2 LIMIT 1`,
-            [user.id, `org-${user.id}`]
-          );
-          if (org) scopeId = org.id;
-        }
-      } catch (e) {}
-
-      const memId = `mem-${user.id}`;
-      try {
-        await query(
-          `INSERT INTO memberships (id, user_id, role, scope_type, scope_id, status)
-           VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
-           ON DUPLICATE KEY UPDATE status = 'ACTIVE', role = $3, scope_id = $5`,
-          [memId, user.id, memRole, scopeType, scopeId]
-        );
-      } catch (e) {}
-
-      activeMemberships = [{
-        id: memId,
-        userId: user.id,
-        role: memRole,
-        scopeType,
-        scopeId,
-        status: 'ACTIVE',
-      }];
-    }
-
-    if (activeMemberships.length === 0) {
-      return NextResponse.json({ error: 'No active access.' }, { status: 403 });
-    }
-
-    // 4. Two-Factor Authentication (TOTP) for SYSTEM_ADMIN
-    const isAdmin = activeMemberships.some((m) => m.role === 'SYSTEM_ADMIN');
-    if (isAdmin) {
+    // 6. Two-Factor Authentication (TOTP) for SYSTEM_ADMIN
+    if (user.role === 'SYSTEM_ADMIN') {
       if (user.totp_enabled) {
         if (!totpCode) {
           return NextResponse.json({
@@ -220,11 +163,15 @@ export async function POST(req: NextRequest) {
             targetId: user.id,
             ip,
           });
-          return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
+          const response = NextResponse.json(
+            { error: 'Invalid two-factor authentication code.' },
+            { status: 401 }
+          );
+          clearAuthCookies(response);
+          return response;
         }
       } else {
-        // Admin first-time TOTP setup / enrollment:
-        // Admin WITHOUT TOTP gets a limited setup session that can ONLY call the TOTP enrollment endpoints
+        // First-time enrollment for admin
         let secret = user.totp_secret;
         if (!secret) {
           secret = generateTotpSecret();
@@ -232,11 +179,10 @@ export async function POST(req: NextRequest) {
         }
         const qrUri = generateTotpUri(user.email, secret);
 
-        // Generate limited setup token
         const setupToken = signSessionToken({
           userId: user.id,
           email: user.email,
-          membershipId: activeMemberships[0].id,
+          membershipId: `mem-${user.id}`,
           role: 'TOTP_SETUP' as any,
           scopeType: 'PLATFORM',
           scopeId: 'setup',
@@ -250,13 +196,14 @@ export async function POST(req: NextRequest) {
           setupToken,
           secret,
           qrUri,
-          message: 'Two-Factor Authentication enrollment is required for System Admin. Scan the QR code or enter the key into your authenticator app, then enter the 6-digit code to complete setup.',
+          message:
+            'Two-Factor Authentication enrollment is required for System Admin. Scan the QR code with your authenticator app and enter the 6-digit code.',
         });
 
         res.cookies.set('agafari_setup_session', setupToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
+          sameSite: 'strict',
           maxAge: 600,
           path: '/',
         });
@@ -265,95 +212,123 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. Select active membership
-    let selectedMembership: UserMembership = activeMemberships[0];
+    // 7. Retrieve Roles & Check Event Access (Multi-Tenant Scoping)
+    let effectiveRole: UserRole = (user.role as UserRole) || 'GUEST';
+    let tenantScope = 'global';
+    let organizerId: string | undefined = undefined;
+    let eventSlug: string | undefined = undefined;
+    let organizerSlug = 'agafari';
+    let redirectUrl = '/login';
 
-    if (activeMemberships.length > 1) {
-      if (requestedMembershipId) {
-        const found = activeMemberships.find((m) => m.id === requestedMembershipId);
-        if (found) {
-          selectedMembership = found;
-        } else {
-          return NextResponse.json({ error: 'Requested membership not found or inactive.' }, { status: 403 });
-        }
+    // Query organizers profile
+    let organizer: any = null;
+    try {
+      organizer = await queryOne<any>(
+        `SELECT id, business_name FROM organizers WHERE owner_user_id = $1 LIMIT 1`,
+        [user.id]
+      );
+    } catch (e) {
+      console.warn('Failed querying organizers table:', e);
+    }
+
+    // Query couple assignment from events
+    let coupleEvent: any = null;
+    try {
+      coupleEvent = await queryOne<any>(
+        `SELECT e.id, e.slug, e.organizer_id, o.id as org_id, o.business_name
+         FROM events e
+         LEFT JOIN organizers o ON o.id = e.organizer_id
+         WHERE e.couple_user_id = $1
+         ORDER BY e.created_at DESC
+         LIMIT 1`,
+        [user.id]
+      );
+    } catch (e) {
+      console.warn('Failed querying couple events table:', e);
+    }
+
+    // Query staff assignments from event_staff
+    let staffRecord: any = null;
+    try {
+      staffRecord = await queryOne<any>(
+        `SELECT es.role as staff_role, es.event_id, e.slug as event_slug, o.id as org_id
+         FROM event_staff es
+         JOIN events e ON e.id = es.event_id
+         LEFT JOIN organizers o ON o.id = e.organizer_id
+         WHERE es.user_id = $1
+         ORDER BY es.created_at DESC
+         LIMIT 1`,
+        [user.id]
+      );
+    } catch (e) {
+      console.warn('Failed querying event_staff table:', e);
+    }
+
+    // 8. Resolve Exact Scoped Dashboard Routing:
+    // A. Platform Admin (SYSTEM_ADMIN) -> /admin/dashboard
+    if (effectiveRole === 'SYSTEM_ADMIN') {
+      redirectUrl = '/admin/dashboard';
+      tenantScope = 'PLATFORM';
+    }
+    // B. Event Organizer (EVENT_ORGANIZER) -> /organizer/dashboard?id=<organizer_id>
+    else if (effectiveRole === 'EVENT_ORGANIZER' || (effectiveRole as any) === 'ORGANIZER_OWNER') {
+      effectiveRole = 'EVENT_ORGANIZER';
+      organizerId = organizer?.id || `org-${user.id}`;
+      tenantScope = organizerId;
+      redirectUrl = `/organizer/dashboard?id=${encodeURIComponent(organizerId)}`;
+    }
+    // C. Couple (BRIDE_GROOM) -> /<organizerSlug>/<eventSlug>/couple
+    else if (effectiveRole === 'BRIDE_GROOM' || (effectiveRole as any) === 'COUPLE' || coupleEvent) {
+      effectiveRole = 'COUPLE';
+      if (coupleEvent) {
+        eventSlug = coupleEvent.slug || coupleEvent.id;
+        organizerSlug = coupleEvent.org_id || coupleEvent.organizer_id || 'agafari';
+        tenantScope = coupleEvent.id;
+        redirectUrl = `/${encodeURIComponent(organizerSlug)}/${encodeURIComponent(eventSlug)}/couple`;
       } else {
-        return NextResponse.json({
-          requireSelectAccess: true,
-          memberships: activeMemberships,
-          redirectUrl: '/select-access',
-        });
+        redirectUrl = '/couple';
+        tenantScope = 'event-default';
       }
     }
-
-    const userRole = (selectedMembership.role === 'ORGANIZER_OWNER' || selectedMembership.role === 'EVENT_ORGANIZER')
-      ? 'EVENT_ORGANIZER'
-      : selectedMembership.role;
-
-    // For organizers: resolve organizer ID from DB to ensure dedicated organizer dashboard routing
-    if (userRole === 'EVENT_ORGANIZER' || selectedMembership.role === 'ORGANIZER_OWNER') {
-      try {
-        const orgRow = await queryOne<{ id: string; business_name: string }>(
-          `SELECT id, business_name FROM organizers WHERE owner_user_id = $1 OR id = $2 LIMIT 1`,
-          [user.id, selectedMembership.scopeId || '']
-        );
-        if (orgRow && orgRow.id) {
-          selectedMembership.scopeId = orgRow.id;
-          try {
-            await query('UPDATE memberships SET scope_id = $1 WHERE id = $2', [orgRow.id, selectedMembership.id]);
-          } catch (e) {}
-        } else if (!selectedMembership.scopeId || selectedMembership.scopeId === 'org-default') {
-          selectedMembership.scopeId = `org-${user.id}`;
-        }
-      } catch (e) {}
+    // D. Gate Scanner (GATE_SCANNER) -> /event/<eventSlug>/scanner
+    else if (effectiveRole === 'GATE_SCANNER' || staffRecord?.staff_role === 'GATE_SCANNER') {
+      effectiveRole = 'GATE_SCANNER';
+      eventSlug = staffRecord?.event_slug || 'event-default';
+      tenantScope = staffRecord?.event_id || 'event-default';
+      redirectUrl = `/event/${encodeURIComponent(eventSlug)}/scanner`;
     }
-
-    // If scopeId is unassigned or 'event-default', dynamically resolve associated event for couples and staff
-    if (
-      !selectedMembership.scopeId ||
-      selectedMembership.scopeId === 'event-default' ||
-      userRole === 'COUPLE' ||
-      userRole === 'BRIDE_GROOM'
+    // E. Media / Content Moderator (CONTENT_MODERATOR / MODERATOR) -> /event/<eventSlug>/moderation
+    else if (
+      (effectiveRole as any) === 'CONTENT_MODERATOR' ||
+      (effectiveRole as any) === 'MEDIA_MODERATOR' ||
+      effectiveRole === 'MODERATOR' ||
+      staffRecord?.staff_role === 'CONTENT_MODERATOR'
     ) {
-      try {
-        const evt = await queryOne<any>(
-          `SELECT e.id, e.slug 
-           FROM events e 
-           LEFT JOIN users u ON u.id = e.couple_user_id 
-           LEFT JOIN event_staff es ON es.event_id = e.id
-           WHERE e.couple_user_id = $1 
-              OR LOWER(u.email) = LOWER($2) 
-              OR es.user_id = $1
-           ORDER BY e.created_at DESC 
-           LIMIT 1`,
-          [user.id, user.email]
-        );
-        if (evt && (evt.slug || evt.id)) {
-          const resolvedSlug = evt.slug || evt.id;
-          selectedMembership.scopeId = resolvedSlug;
-          try {
-            await query('UPDATE memberships SET scope_id = $1 WHERE id = $2', [
-              resolvedSlug,
-              selectedMembership.id,
-            ]);
-          } catch (e) {}
-        }
-      } catch (e) {}
+      effectiveRole = 'MODERATOR';
+      eventSlug = staffRecord?.event_slug || 'event-default';
+      tenantScope = staffRecord?.event_id || 'event-default';
+      redirectUrl = `/event/${encodeURIComponent(eventSlug)}/moderation`;
+    }
+    // F. Live Streamer (LIVE_STREAMER) -> /live-streamer?event=<eventSlug>
+    else if (effectiveRole === 'LIVE_STREAMER' || staffRecord?.staff_role === 'LIVE_STREAMER') {
+      effectiveRole = 'LIVE_STREAMER';
+      eventSlug = staffRecord?.event_slug || 'event-default';
+      tenantScope = staffRecord?.event_id || 'event-default';
+      redirectUrl = `/live-streamer?event=${encodeURIComponent(eventSlug)}`;
+    } else {
+      redirectUrl = '/login';
     }
 
-    // 6. Issue signed session token in httpOnly, Secure cookie
-    const sessionToken = signSessionToken({
-      userId: user.id,
-      email: user.email,
-      membershipId: selectedMembership.id,
-      role: userRole,
-      scopeType: selectedMembership.scopeType,
-      scopeId: selectedMembership.scopeId,
-      tenantId: selectedMembership.scopeId || user.id,
-      sessionVersion: user.session_version || 1,
-      isViewAs: false,
-    });
-
-    const redirectUrl = resolveRoleDashboard(userRole, selectedMembership.scopeId);
+    // 9. Issue HttpOnly, SameSite=Strict signed JWT cookie (agafari_token, 24h expiry)
+    const token = generateToken(
+      {
+        userId: user.id,
+        email: user.email,
+        role: effectiveRole,
+        tenantId: tenantScope,
+      },
+      24
+    );
 
     await logAudit({
       actorId: user.id,
@@ -362,9 +337,8 @@ export async function POST(req: NextRequest) {
       targetId: user.id,
       ip,
       metaJson: {
-        role: userRole,
-        scopeType: selectedMembership.scopeType,
-        scopeId: selectedMembership.scopeId,
+        role: effectiveRole,
+        tenantScope,
         redirectUrl,
       },
     });
@@ -372,42 +346,29 @@ export async function POST(req: NextRequest) {
     const response = NextResponse.json({
       success: true,
       message: 'Authentication successful.',
-      token: sessionToken,
+      token,
+      redirectUrl,
       user: {
         id: user.id,
         email: user.email,
         fullName: user.full_name || user.email,
-        role: userRole,
-        membershipRole: selectedMembership.role,
-        scopeId: selectedMembership.scopeId,
-        eventSlug: selectedMembership.scopeId && selectedMembership.scopeId !== 'event-default' ? selectedMembership.scopeId : undefined,
-        slug: selectedMembership.scopeId && selectedMembership.scopeId !== 'event-default' ? selectedMembership.scopeId : undefined,
-        organizerId: selectedMembership.scopeId || user.id,
-        tenantId: selectedMembership.scopeId || user.id,
+        role: effectiveRole,
+        tenantId: tenantScope,
+        organizerId: organizerId || tenantScope,
+        eventSlug,
+        organizerSlug,
       },
-      redirectUrl,
     });
 
-    // Set signed httpOnly cookie
-    response.cookies.set('agafari_session', sessionToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 86400 * 7, // 7 days
-    });
-
-    response.cookies.set('agafari_token', sessionToken, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 86400 * 7,
-    });
+    // Set signed cookie (HttpOnly, SameSite=Strict, Secure in production, 24h)
+    setAuthCookie(response, token);
 
     return response;
   } catch (error: any) {
     console.error('Unified login error:', error);
-    return NextResponse.json({ error: 'An unexpected authentication error occurred.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'An unexpected authentication error occurred.' },
+      { status: 500 }
+    );
   }
 }
