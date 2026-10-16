@@ -202,24 +202,66 @@ export async function POST(req: NextRequest) {
 
     // 4. Two-Factor Authentication (TOTP) for SYSTEM_ADMIN
     const isAdmin = activeMemberships.some((m) => m.role === 'SYSTEM_ADMIN');
-    if (isAdmin && user.totp_enabled) {
-      if (!totpCode) {
-        return NextResponse.json({
-          requireTotp: true,
-          message: 'Two-factor authentication code required.',
-        });
-      }
+    if (isAdmin) {
+      if (user.totp_enabled) {
+        if (!totpCode) {
+          return NextResponse.json({
+            requireTotp: true,
+            message: 'Two-factor authentication code required for System Admin.',
+          });
+        }
 
-      const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
-      if (!isTotpValid) {
-        await logAudit({
-          actorId: user.id,
-          action: 'TOTP_FAILED',
-          targetType: 'USER',
-          targetId: user.id,
-          ip,
+        const isTotpValid = verifyTotpCode(user.totp_secret, totpCode);
+        if (!isTotpValid) {
+          await logAudit({
+            actorId: user.id,
+            action: 'TOTP_FAILED',
+            targetType: 'USER',
+            targetId: user.id,
+            ip,
+          });
+          return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
+        }
+      } else {
+        // Admin first-time TOTP setup / enrollment:
+        // Admin WITHOUT TOTP gets a limited setup session that can ONLY call the TOTP enrollment endpoints
+        let secret = user.totp_secret;
+        if (!secret) {
+          secret = generateTotpSecret();
+          await query('UPDATE users SET totp_secret = $1 WHERE id = $2', [secret, user.id]);
+        }
+        const qrUri = generateTotpUri(user.email, secret);
+
+        // Generate limited setup token
+        const setupToken = signSessionToken({
+          userId: user.id,
+          email: user.email,
+          membershipId: activeMemberships[0].id,
+          role: 'TOTP_SETUP' as any,
+          scopeType: 'PLATFORM',
+          scopeId: 'setup',
+          tenantId: 'setup',
+          sessionVersion: user.session_version || 1,
+          isViewAs: false,
         });
-        return NextResponse.json({ error: 'Invalid two-factor authentication code.' }, { status: 401 });
+
+        const res = NextResponse.json({
+          requireTotpSetup: true,
+          setupToken,
+          secret,
+          qrUri,
+          message: 'Two-Factor Authentication enrollment is required for System Admin. Scan the QR code or enter the key into your authenticator app, then enter the 6-digit code to complete setup.',
+        });
+
+        res.cookies.set('agafari_setup_session', setupToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 600,
+          path: '/',
+        });
+
+        return res;
       }
     }
 

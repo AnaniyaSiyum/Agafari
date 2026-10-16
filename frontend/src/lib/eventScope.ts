@@ -34,20 +34,19 @@ export async function checkEventAccess(
     );
 
     if (event) {
-      if (user.role === 'EVENT_ORGANIZER') {
+      if (user.role === 'ORGANIZER_OWNER' || (user.role as any) === 'EVENT_ORGANIZER') {
         const owns = await queryOne(
           'SELECT 1 FROM organizers WHERE id = $1 AND owner_user_id = $2',
           [event.organizer_id, user.userId]
         );
-        const eventOrgClean = (event.organizer_id || '').replace(/^org-/, '');
-        const isOwner = owns || (eventOrgClean && (eventOrgClean === userTenant || eventOrgClean === cleanUserId));
+        const isOwner = owns || (event.organizer_id && (event.organizer_id === user.tenantId || event.organizer_id === user.userId));
         if (isOwner) {
           return { allowed: true, via: 'ORGANIZER_OWNER' };
         }
         return { allowed: false };
       }
 
-      if (user.role === 'BRIDE_GROOM') {
+      if (user.role === 'COUPLE' || (user.role as any) === 'BRIDE_GROOM') {
         if (event.couple_user_id === user.userId) {
           return { allowed: true, via: 'COUPLE' };
         }
@@ -68,16 +67,16 @@ export async function checkEventAccess(
   // 2. MockStore Multi-Tenant Access Verification (Runtime Dev Fallback)
   const mockEvt = mockStore.events.find((e: any) => e.id === eventId || e.slug === eventId);
   if (mockEvt) {
-    if (user.role === 'EVENT_ORGANIZER') {
-      const eOrg = String(mockEvt.organizerId || (mockEvt as any).organizer_id || '').replace(/^org-/, '');
+    if (user.role === 'ORGANIZER_OWNER' || (user.role as any) === 'EVENT_ORGANIZER') {
+      const eOrg = String(mockEvt.organizerId || (mockEvt as any).organizer_id || '');
       const eEmail = (mockEvt.credentials?.organizer?.email || '').toLowerCase();
-      if ((eOrg && (eOrg === userTenant || eOrg === cleanUserId)) || (eEmail && eEmail === userEmail)) {
+      if ((eOrg && (eOrg === user.tenantId || eOrg === user.userId)) || (eEmail && eEmail === userEmail)) {
         return { allowed: true, via: 'ORGANIZER_OWNER' };
       }
       return { allowed: false };
     }
 
-    if (user.role === 'BRIDE_GROOM') {
+    if (user.role === 'COUPLE' || (user.role as any) === 'BRIDE_GROOM') {
       const coupleEmail = (mockEvt.credentials?.couple?.email || mockEvt.coupleCredentials?.email || '').toLowerCase();
       if (coupleEmail === userEmail || mockEvt.id === user.userId || (mockEvt as any).couple_user_id === user.userId) {
         return { allowed: true, via: 'COUPLE' };

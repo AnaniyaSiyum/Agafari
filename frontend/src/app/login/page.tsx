@@ -21,7 +21,10 @@ import {
   ChevronUp,
   LogOut,
   Sparkles,
-  ExternalLink
+  ExternalLink,
+  QrCode,
+  Copy,
+  Check
 } from 'lucide-react';
 
 interface TestAccount {
@@ -102,6 +105,9 @@ export default function UniversalLoginPage() {
 
   // 2FA TOTP state for Admin
   const [requireTotp, setRequireTotp] = useState(false);
+  const [requireTotpSetup, setRequireTotpSetup] = useState(false);
+  const [totpSetupData, setTotpSetupData] = useState<{ secret?: string; qrUri?: string; setupToken?: string } | null>(null);
+  const [copiedSecret, setCopiedSecret] = useState(false);
   const [totpCode, setTotpCode] = useState('');
   const [totpMessage, setTotpMessage] = useState<string | null>(null);
 
@@ -130,9 +136,60 @@ export default function UniversalLoginPage() {
     setCurrentUser(null);
   };
 
+  const handleConfirmTotpSetup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    if (!totpCode.trim() || totpCode.trim().length !== 6) {
+      setError('Please enter the 6-digit verification code from your authenticator app.');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/totp/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: totpCode.trim(),
+          setupToken: totpSetupData?.setupToken,
+          email: identifier.trim(),
+          password: password.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Invalid 6-digit code. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      if (data.token) {
+        localStorage.setItem('agafari_token', data.token);
+      }
+      if (data.user) {
+        localStorage.setItem('agafari_user', JSON.stringify(data.user));
+        localStorage.setItem('agafari_role', data.user.role);
+      }
+
+      window.location.href = data.redirectUrl || '/admin';
+    } catch (err) {
+      console.error('TOTP confirm error:', err);
+      setError('Network connection error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (requireTotpSetup) {
+      return handleConfirmTotpSetup(e);
+    }
 
     if (!identifier.trim()) {
       setError('Please enter your email, username, or phone number.');
@@ -163,14 +220,35 @@ export default function UniversalLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Invalid credentials.');
+        if (res.status === 429) {
+          setError(data.error || 'Too many failed attempts. Rate limited. Please try again later.');
+        } else if (res.status === 403) {
+          setError(data.error || 'Access denied. Account is inactive or unauthorized.');
+        } else {
+          setError(data.error || 'Invalid credentials.');
+        }
         setLoading(false);
         return;
       }
 
-      // Check if Admin TOTP is required
-      if (data.requireTotp || data.requireTotpSetup) {
+      // Check if Admin TOTP Setup is required (first-time enrollment)
+      if (data.requireTotpSetup) {
+        setRequireTotpSetup(true);
+        setRequireTotp(false);
+        setTotpSetupData({
+          secret: data.secret,
+          qrUri: data.qrUri,
+          setupToken: data.setupToken,
+        });
+        setTotpMessage(data.message || 'Two-Factor Authentication setup required for System Admin.');
+        setLoading(false);
+        return;
+      }
+
+      // Check if Admin TOTP Verification is required (subsequent logins)
+      if (data.requireTotp) {
         setRequireTotp(true);
+        setRequireTotpSetup(false);
         setTotpMessage(data.message || 'Two-Factor Authentication required for System Admin.');
         setLoading(false);
         return;
@@ -186,7 +264,6 @@ export default function UniversalLoginPage() {
         router.push('/select-access');
         return;
       }
-
 
       // Save user session
       if (data.token) {
@@ -216,6 +293,7 @@ export default function UniversalLoginPage() {
     setIdentifier(acc.email);
     setPassword(acc.pass);
     setRequireTotp(false);
+    setRequireTotpSetup(false);
     setTotpCode('');
     setError(null);
   };
@@ -323,7 +401,120 @@ export default function UniversalLoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!requireTotp ? (
+            {requireTotpSetup ? (
+              /* TOTP Setup / Enrollment Screen */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-4 p-5 bg-amber-500/10 border border-amber-500/30 rounded-2xl"
+              >
+                <div className="flex items-center gap-2 text-amber-400 font-semibold text-sm">
+                  <ShieldCheck className="w-5 h-5 shrink-0" />
+                  <span>System Admin 2FA Enrollment</span>
+                </div>
+                <p className="text-xs text-neutral-300 leading-relaxed">
+                  Two-factor authentication is required for System Administrators. Scan this QR code in your Authenticator app (Google Authenticator, Authy, etc.):
+                </p>
+
+                {totpSetupData?.qrUri && (
+                  <div className="flex flex-col items-center justify-center p-3 bg-white rounded-xl shadow-md mx-auto max-w-[200px]">
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(totpSetupData.qrUri)}`}
+                      alt="TOTP 2FA QR Code"
+                      className="w-40 h-40 object-contain"
+                    />
+                  </div>
+                )}
+
+                {totpSetupData?.secret && (
+                  <div className="space-y-1 bg-black/40 p-2.5 rounded-xl border border-neutral-800">
+                    <span className="text-[10px] text-neutral-400 uppercase tracking-wider block">Manual Key</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-amber-300 tracking-wider break-all select-all">
+                        {totpSetupData.secret}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (totpSetupData.secret) {
+                            navigator.clipboard.writeText(totpSetupData.secret);
+                            setCopiedSecret(true);
+                            setTimeout(() => setCopiedSecret(false), 2000);
+                          }
+                        }}
+                        className="text-xs text-neutral-400 hover:text-white p-1 rounded bg-neutral-800 shrink-0 flex items-center gap-1"
+                      >
+                        {copiedSecret ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span className="text-[10px]">{copiedSecret ? 'Copied' : 'Copy'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-xs font-semibold text-neutral-200">
+                    Enter 6-Digit Authenticator Code
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    autoFocus
+                    required
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="000000"
+                    className="w-full text-center tracking-[0.5em] text-xl font-mono py-2.5 bg-neutral-950 border border-amber-500/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequireTotpSetup(false);
+                    setRequireTotp(false);
+                    setTotpCode('');
+                  }}
+                  className="text-[11px] text-neutral-400 hover:text-white underline block mx-auto pt-1"
+                >
+                  Cancel & Return to Login
+                </button>
+              </motion.div>
+            ) : requireTotp ? (
+              /* TOTP Verification Screen */
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl"
+              >
+                <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Two-Factor Authentication (TOTP)</span>
+                </div>
+                <p className="text-[11px] text-neutral-400 leading-relaxed">
+                  {totpMessage || 'Enter the 6-digit code from your authenticator app (or enter master dev code 123456):'}
+                </p>
+                <input
+                  type="text"
+                  maxLength={6}
+                  autoFocus
+                  required
+                  value={totpCode}
+                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="000000"
+                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-2.5 bg-neutral-950 border border-amber-500/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRequireTotp(false);
+                    setTotpCode('');
+                  }}
+                  className="text-[11px] text-neutral-400 hover:text-white underline block mx-auto pt-1"
+                >
+                  Back to credentials
+                </button>
+              </motion.div>
+            ) : (
               <>
                 {/* Identifier Input */}
                 <div className="space-y-1.5">
@@ -369,41 +560,6 @@ export default function UniversalLoginPage() {
                   </div>
                 </div>
               </>
-            ) : (
-              /* TOTP 2FA Input */
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="space-y-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl"
-              >
-                <div className="flex items-center gap-2 text-amber-400 font-semibold text-xs">
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Two-Factor Authentication (TOTP)</span>
-                </div>
-                <p className="text-[11px] text-neutral-400 leading-relaxed">
-                  {totpMessage || 'Enter the 6-digit code from your authenticator app (or enter master dev code 123456):'}
-                </p>
-                <input
-                  type="text"
-                  maxLength={6}
-                  autoFocus
-                  required
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
-                  placeholder="000000"
-                  className="w-full text-center tracking-[0.5em] text-xl font-mono py-2.5 bg-neutral-950 border border-amber-500/50 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRequireTotp(false);
-                    setTotpCode('');
-                  }}
-                  className="text-[11px] text-neutral-400 hover:text-white underline block mx-auto pt-1"
-                >
-                  Back to credentials
-                </button>
-              </motion.div>
             )}
 
             {/* Submit Button */}
@@ -416,7 +572,13 @@ export default function UniversalLoginPage() {
                 <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{requireTotp ? 'Verify Code & Enter' : 'Sign In to Dashboard'}</span>
+                  <span>
+                    {requireTotpSetup
+                      ? 'Confirm & Enable 2FA'
+                      : requireTotp
+                      ? 'Verify Code & Enter'
+                      : 'Sign In to Dashboard'}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

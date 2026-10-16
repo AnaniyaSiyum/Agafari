@@ -44,3 +44,8 @@ Thumbs.db
 
 Agafari_Project_Clean_Shareable.zip
 
+# Database Backups
+db/backups/
+**/db/backups/
+
+

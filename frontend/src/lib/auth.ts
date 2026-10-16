@@ -11,12 +11,13 @@ import { mockStore } from '@/lib/mockData';
 
 export type UserRole =
   | 'SYSTEM_ADMIN'
-  | 'EVENT_ORGANIZER'
-  | 'BRIDE_GROOM'
+  | 'ORGANIZER_OWNER'
+  | 'COUPLE'
   | 'LIVE_STREAMER'
   | 'GATE_SCANNER'
   | 'MODERATOR'
-  | 'GUEST';
+  | 'GUEST'
+  | 'TOTP_SETUP';
 
 export type Permission =
   | 'system:manage'
@@ -42,12 +43,13 @@ export type Permission =
  */
 export const ROLE_RANKS: Record<UserRole, number> = {
   SYSTEM_ADMIN: 100,
-  EVENT_ORGANIZER: 50,
-  BRIDE_GROOM: 20,
+  ORGANIZER_OWNER: 50,
+  COUPLE: 20,
   LIVE_STREAMER: 10,
   GATE_SCANNER: 10,
   MODERATOR: 10,
   GUEST: 0,
+  TOTP_SETUP: 0,
 };
 
 /**
@@ -69,7 +71,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'media:moderate',
     'audit:read',
   ],
-  EVENT_ORGANIZER: [
+  ORGANIZER_OWNER: [
     'tenants:manage',
     'events:manage',
     'events:read',
@@ -81,7 +83,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'stream:manage',
     'media:moderate',
   ],
-  BRIDE_GROOM: ['events:read', 'events:write', 'media:moderate', 'reports:view'],
+  COUPLE: ['events:read', 'events:write', 'media:moderate', 'reports:view'],
   LIVE_STREAMER: ['stream:manage', 'events:read'],
   GATE_SCANNER: ['gate:scan', 'events:read'],
   MODERATOR: ['media:moderate', 'events:read'],
@@ -348,6 +350,99 @@ export function requireRole(req: NextRequest, allowedRoles: UserRole[]): AuthRes
   return { ok: true, user };
 }
 
+export type OrganizerAccessResult =
+  | {
+      allowed: true;
+      isSystemAdmin: boolean;
+      organizerId: string;
+      user: AuthTokenPayload;
+      readOnly: boolean;
+      response?: undefined;
+    }
+  | {
+      allowed: false;
+      isSystemAdmin?: boolean;
+      organizerId?: undefined;
+      user?: AuthTokenPayload;
+      readOnly?: boolean;
+      response: NextResponse;
+    };
+
+export function verifyOrganizerAccess(
+  req: NextRequest,
+  requestedOrganizerId?: string | null
+): OrganizerAccessResult {
+  const user = getAuthUser(req);
+  if (!user) {
+    return {
+      allowed: false,
+      response: NextResponse.json(
+        { error: 'Unauthorized — no valid session cookie or token.' },
+        { status: 401 }
+      ),
+    };
+  }
+
+  // 1. SYSTEM_ADMIN access: permitted for any organizer, read-only unless admin action, logs audit
+  if (user.role === 'SYSTEM_ADMIN') {
+    const targetOrgId = (requestedOrganizerId || 'global').trim();
+    logAuditAction({
+      actorId: user.userId,
+      action: 'ADMIN_VIEW_ORGANIZER_DASHBOARD',
+      targetUserId: targetOrgId,
+      details: {
+        requestedOrganizerId: targetOrgId,
+        readOnly: true,
+      },
+    }).catch(() => {});
+
+    return {
+      allowed: true,
+      isSystemAdmin: true,
+      organizerId: targetOrgId,
+      user,
+      readOnly: true,
+    };
+  }
+
+  // 2. ORGANIZER_OWNER access: strictly isolated to own organizerId / tenantId
+  if (user.role === 'ORGANIZER_OWNER' || (user.role as any) === 'EVENT_ORGANIZER') {
+    const sessionOrgId = user.tenantId || user.userId;
+    if (requestedOrganizerId && requestedOrganizerId !== 'global' && requestedOrganizerId !== 'all') {
+      const cleanRequested = requestedOrganizerId.replace(/^org-/, '');
+      const cleanSession = sessionOrgId.replace(/^org-/, '');
+      if (cleanRequested !== cleanSession && requestedOrganizerId !== sessionOrgId) {
+        return {
+          allowed: false,
+          user,
+          response: NextResponse.json(
+            { error: 'Forbidden — You are not authorized to access another organizer’s events or dashboard.' },
+            { status: 403 }
+          ),
+        };
+      }
+    }
+
+    return {
+      allowed: true,
+      isSystemAdmin: false,
+      organizerId: sessionOrgId,
+      user,
+      readOnly: false,
+    };
+  }
+
+  // 3. Other roles forbidden
+  return {
+    allowed: false,
+    user,
+    response: NextResponse.json(
+      { error: 'Forbidden — insufficient role authority.' },
+      { status: 403 }
+    ),
+  };
+}
+
 /**
  * Downwards-Only Rule Hierarchy Enforcement
  * Evaluates whether an actor can view, modify credentials for, or assign roles to a target user.
@@ -410,10 +505,12 @@ export function getAuthorizedDashboardUrl(role: UserRole | string, slug?: string
   switch (role) {
     case 'SYSTEM_ADMIN':
       return '/admin/dashboard';
+    case 'ORGANIZER_OWNER':
     case 'EVENT_ORGANIZER':
       if (orgSlug && slug) return `/${orgSlug}/${slug}`;
-      if (orgSlug) return `/organizer/dashboard?id=${encodeURIComponent(orgSlug)}`;
-      return '/organizer/dashboard';
+      if (orgSlug) return `/organizer/${encodeURIComponent(orgSlug)}`;
+      return '/organizer';
+    case 'COUPLE':
     case 'BRIDE_GROOM':
       if (orgSlug && slug) return `/${orgSlug}/${slug}/couple`;
       if (slug) return `/event/${slug}/couple`;
@@ -452,16 +549,16 @@ export async function resolveUserDashboardUrl(options: {
   tenantId?: string;
   slug?: string;
 }): Promise<string> {
-  const { role, userId, email, slug } = options;
+  const { role, userId, email, tenantId, slug } = options;
 
   // 1. SYSTEM ADMIN -> /admin
   if (role === 'SYSTEM_ADMIN') {
     return '/admin';
   }
 
-  // 2. EVENT ORGANIZER -> /organizer
-  if (role === 'EVENT_ORGANIZER' || role === 'ORGANIZER_OWNER') {
-    return '/organizer';
+  // 2. ORGANIZER -> /organizer/[id]
+  if (role === 'ORGANIZER_OWNER' || role === 'EVENT_ORGANIZER') {
+    return tenantId ? `/organizer/${tenantId}` : '/organizer';
   }
 
   // Resolve associated event ID or slug

@@ -1,7 +1,12 @@
 'use client';
 
-import OrganizerDashboardPage from '../dashboard/page';
+import React from 'react';
+import { useParams } from 'next/navigation';
+import OrganizerDashboardView from '@/components/organizer/OrganizerDashboardView';
 
 export default function SpecificOrganizerPage() {
-  return <OrganizerDashboardPage />;
+  const params = useParams();
+  const organizerId = params?.id ? String(params.id) : '';
+
+  return <OrganizerDashboardView organizerId={organizerId} />;
 }
