@@ -98,8 +98,17 @@ export async function GET(req: NextRequest) {
         (SELECT COUNT(*) FROM wishes w WHERE w.event_id = e.id) AS total_wishes,
         (SELECT COUNT(*) FROM media_assets m WHERE m.event_id = e.id) AS total_media
       FROM events e
-      LEFT JOIN organizers o ON o.id = e.organizer_id
-      LEFT JOIN users cu ON cu.id = e.couple_user_id
+      LEFT JOIN organizers o ON (
+        o.id = e.organizer_id OR 
+        o.id = CONCAT('org-', e.organizer_id) OR 
+        CONCAT('org-', o.id) = e.organizer_id OR
+        o.id = REPLACE(e.organizer_id, 'org-', '')
+      )
+      LEFT JOIN users cu ON (
+        cu.id = e.couple_user_id OR
+        cu.id = CONCAT('usr-', e.id) OR
+        cu.email = CONCAT('couple@', e.slug, '.com')
+      )
       ORDER BY e.created_at DESC
     `);
     dbSuccess = true;
@@ -152,6 +161,7 @@ export async function POST(req: NextRequest) {
         const eventId = `evt-${cleanSlug}`;
         const coupleEmailVal = coupleEmail?.trim() || `couple@${cleanSlug}.com`;
         const coupleName = `${brideName.trim()} & ${groomName.trim()}`;
+        const hashedPass = await hashPassword(tempPassword);
 
         const existingCoupleUser = (await client.query('SELECT id FROM users WHERE email = $1', [coupleEmailVal])).rows[0];
         let finalCoupleUserId = coupleUserId;
@@ -159,19 +169,19 @@ export async function POST(req: NextRequest) {
           finalCoupleUserId = existingCoupleUser.id;
           await client.query(
             `UPDATE users 
-             SET role = 'BRIDE_GROOM', full_name = $1, password_hash = $2, temporary_password = $3, status = 'ACTIVE'
+             SET role = 'BRIDE_GROOM', full_name = $1, password_hash = $2, temporary_password = $3, status = 'ACTIVE', session_version = 1
              WHERE id = $4`,
-            [coupleName, hashPassword(tempPassword), tempPassword, finalCoupleUserId]
+            [coupleName, hashedPass, tempPassword, finalCoupleUserId]
           );
         } else {
           await client.query(
-            `INSERT INTO users (id, email, password_hash, full_name, role, status, temporary_password)
-             VALUES ($1, $2, $3, $4, 'BRIDE_GROOM', 'ACTIVE', $5)
+            `INSERT INTO users (id, email, password_hash, full_name, role, status, session_version, temporary_password, created_at)
+             VALUES ($1, $2, $3, $4, 'BRIDE_GROOM', 'ACTIVE', 1, $5, NOW())
              ON DUPLICATE KEY UPDATE role = 'BRIDE_GROOM', full_name = $4, status = 'ACTIVE', temporary_password = $5`,
             [
               finalCoupleUserId,
               coupleEmailVal,
-              hashPassword(tempPassword),
+              hashedPass,
               coupleName,
               tempPassword,
             ]

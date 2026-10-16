@@ -25,23 +25,32 @@ export async function GET(req: NextRequest) {
   await ensureTemporaryPasswordColumn();
 
   try {
+    // Ensure existing admins have default temporary password populated in DB if null
+    try {
+      await query(`
+        UPDATE users 
+        SET temporary_password = 'admin123' 
+        WHERE (LOWER(email) = 'admin@agafari.com' OR role = 'SYSTEM_ADMIN') AND (temporary_password IS NULL OR temporary_password = '')
+      `);
+    } catch {}
+
     // 1. Auto-sync unlinked organizers into users table
     try {
       const unlinkedOrgs = await query<any>(`
         SELECT o.id, o.business_name, o.contact_phone, o.owner_user_id
         FROM organizers o
-        LEFT JOIN users u ON u.id = o.owner_user_id
+        LEFT JOIN users u ON (u.id = o.owner_user_id OR u.id = o.id OR u.id = CONCAT('usr-', o.id) OR u.id = REPLACE(o.id, 'org-', 'usr-org-'))
         WHERE u.id IS NULL
       `);
       for (const org of unlinkedOrgs) {
-        const orgUserId = `usr-org-${org.id.replace(/^org-/, '')}`;
-        const orgEmail = `${org.business_name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'organizer'}@agafari.com`;
+        const orgUserId = org.owner_user_id || `usr-org-${org.id.replace(/^org-/, '')}`;
+        const orgEmail = `${(org.business_name || 'organizer').toLowerCase().replace(/[^a-z0-9]/g, '') || 'organizer'}@agafari.com`;
         const tempPass = 'org123';
         const hash = await hashPassword(tempPass);
         await query(
-          `INSERT INTO users (id, email, phone, full_name, role, password_hash, temporary_password, status, created_at)
-           VALUES ($1, $2, $3, $4, 'EVENT_ORGANIZER', $5, $6, 'ACTIVE', NOW())
-           ON DUPLICATE KEY UPDATE role = 'EVENT_ORGANIZER', status = 'ACTIVE'`,
+          `INSERT INTO users (id, email, phone, full_name, role, password_hash, temporary_password, status, session_version, created_at)
+           VALUES ($1, $2, $3, $4, 'EVENT_ORGANIZER', $5, $6, 'ACTIVE', 1, NOW())
+           ON DUPLICATE KEY UPDATE role = 'EVENT_ORGANIZER', status = 'ACTIVE', temporary_password = COALESCE(temporary_password, $6)`,
           [orgUserId, orgEmail, org.contact_phone || null, org.business_name, hash, tempPass]
         );
         await query('UPDATE organizers SET owner_user_id = $1 WHERE id = $2', [orgUserId, org.id]);
@@ -61,19 +70,19 @@ export async function GET(req: NextRequest) {
       const unlinkedEvents = await query<any>(`
         SELECT e.id, e.slug, e.title, e.bride_name, e.groom_name, e.couple_user_id
         FROM events e
-        LEFT JOIN users u ON u.id = e.couple_user_id
-        WHERE u.id IS NULL
+        LEFT JOIN users u ON (u.id = e.couple_user_id OR u.email = CONCAT('couple@', e.slug, '.com'))
+        WHERE u.id IS NULL OR e.couple_user_id IS NULL
       `);
       for (const evt of unlinkedEvents) {
-        const coupleUserId = `usr-couple-${evt.id.replace(/^evt-/, '')}`;
+        const coupleUserId = evt.couple_user_id || `usr-couple-${evt.id.replace(/^evt-/, '')}`;
         const coupleEmail = `couple@${evt.slug}.com`;
         const coupleName = evt.bride_name && evt.groom_name ? `${evt.bride_name} & ${evt.groom_name}` : evt.title;
         const tempPass = 'couple123';
         const hash = await hashPassword(tempPass);
         await query(
-          `INSERT INTO users (id, email, full_name, role, password_hash, temporary_password, status, created_at)
-           VALUES ($1, $2, $3, 'BRIDE_GROOM', $4, $5, 'ACTIVE', NOW())
-           ON DUPLICATE KEY UPDATE role = 'BRIDE_GROOM', status = 'ACTIVE'`,
+          `INSERT INTO users (id, email, full_name, role, password_hash, temporary_password, status, session_version, created_at)
+           VALUES ($1, $2, $3, 'BRIDE_GROOM', $4, $5, 'ACTIVE', 1, NOW())
+           ON DUPLICATE KEY UPDATE role = 'BRIDE_GROOM', status = 'ACTIVE', temporary_password = COALESCE(temporary_password, $5)`,
           [coupleUserId, coupleEmail, coupleName, hash, tempPass]
         );
         await query('UPDATE events SET couple_user_id = $1 WHERE id = $2', [coupleUserId, evt.id]);
@@ -98,8 +107,17 @@ export async function GET(req: NextRequest) {
              e.id AS event_id, e.slug AS event_slug
       FROM users u
       LEFT JOIN memberships m ON u.id = m.user_id
-      LEFT JOIN organizers o ON u.id = o.owner_user_id
-      LEFT JOIN events e ON u.id = e.couple_user_id
+      LEFT JOIN organizers o ON (
+        u.id = o.owner_user_id OR
+        o.id = u.id OR
+        o.id = CONCAT('org-', u.id) OR
+        u.id = CONCAT('usr-', o.id) OR
+        (m.scope_type = 'ORGANIZER' AND (m.scope_id = o.id OR m.scope_id = REPLACE(o.id, 'org-', '')))
+      )
+      LEFT JOIN events e ON (
+        u.id = e.couple_user_id OR
+        (m.scope_type = 'EVENT' AND (m.scope_id = e.id OR m.scope_id = e.slug))
+      )
       ORDER BY u.created_at DESC
     `);
 
@@ -116,8 +134,19 @@ export async function GET(req: NextRequest) {
           displayRole = 'LIVE_STREAMER';
         } else if (u.user_role === 'GATE_SCANNER' || u.membership_role === 'GATE_SCANNER') {
           displayRole = 'GATE_SCANNER';
-        } else if (u.user_role === 'SYSTEM_ADMIN' || u.membership_role === 'SYSTEM_ADMIN') {
+        } else if (u.user_role === 'SYSTEM_ADMIN' || u.membership_role === 'SYSTEM_ADMIN' || u.email?.toLowerCase() === 'admin@agafari.com') {
           displayRole = 'SYSTEM_ADMIN';
+        }
+
+        let tempPassword = u.temporary_password;
+        if (!tempPassword) {
+          if (u.email?.toLowerCase() === 'admin@agafari.com' || displayRole === 'SYSTEM_ADMIN') {
+            tempPassword = 'admin123';
+          } else if (displayRole === 'EVENT_ORGANIZER') {
+            tempPassword = 'org123';
+          } else if (displayRole === 'BRIDE_GROOM') {
+            tempPassword = 'couple123';
+          }
         }
 
         userMap.set(u.id, {
@@ -129,7 +158,7 @@ export async function GET(req: NextRequest) {
           description: u.business_name ? `Official certified event management partner (${u.business_name}).` : undefined,
           role: displayRole,
           status: u.status,
-          temporaryPassword: u.temporary_password || undefined,
+          temporaryPassword: tempPassword,
           passwordSetBy: u.password_set_by,
           passwordSetAt: u.password_set_at,
           totpEnabled: !!u.totp_enabled,
@@ -147,6 +176,66 @@ export async function GET(req: NextRequest) {
         if (!existing.companyName && u.business_name) existing.companyName = u.business_name;
         if (!existing.eventId && u.event_id) existing.eventId = u.event_id;
       }
+    }
+
+    // Ensure all organizers from organizers table are in userMap
+    try {
+      const allOrgs = await query<any>('SELECT id, owner_user_id, business_name, contact_phone, created_at FROM organizers');
+      for (const org of allOrgs) {
+        const cleanOrgId = org.id.startsWith('org-') ? org.id : `org-${org.id}`;
+        const alreadyPresent = Array.from(userMap.values()).some(
+          (usr) => usr.organizerId === org.id || usr.organizerId === cleanOrgId || usr.id === org.owner_user_id || (usr.companyName && usr.companyName.toLowerCase() === org.business_name?.toLowerCase())
+        );
+        if (!alreadyPresent) {
+          const orgUserId = org.owner_user_id || `usr-org-${org.id.replace(/^org-/, '')}`;
+          userMap.set(orgUserId, {
+            id: orgUserId,
+            email: `${(org.business_name || 'organizer').toLowerCase().replace(/[^a-z0-9]/g, '')}@agafari.com`,
+            phone: org.contact_phone || null,
+            fullName: org.business_name,
+            companyName: org.business_name,
+            description: `Official certified event management partner (${org.business_name}).`,
+            role: 'EVENT_ORGANIZER',
+            status: 'ACTIVE',
+            temporaryPassword: 'org123',
+            createdAt: org.created_at || new Date().toISOString(),
+            scopeType: 'ORGANIZER',
+            scopeId: org.id,
+            organizerId: cleanOrgId,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to ensure all organizers in userMap:', e);
+    }
+
+    // Ensure all couple accounts from events table are in userMap
+    try {
+      const allEvents = await query<any>('SELECT id, slug, title, bride_name, groom_name, couple_user_id, created_at FROM events');
+      for (const evt of allEvents) {
+        const coupleEmail = `couple@${evt.slug}.com`;
+        const coupleName = evt.bride_name && evt.groom_name ? `${evt.bride_name} & ${evt.groom_name}` : evt.title;
+        const alreadyPresent = Array.from(userMap.values()).some(
+          (usr) => usr.id === evt.couple_user_id || usr.email?.toLowerCase() === coupleEmail.toLowerCase() || usr.eventId === evt.id
+        );
+        if (!alreadyPresent) {
+          const coupleUserId = evt.couple_user_id || `usr-couple-${evt.id.replace(/^evt-/, '')}`;
+          userMap.set(coupleUserId, {
+            id: coupleUserId,
+            email: coupleEmail,
+            fullName: coupleName,
+            role: 'BRIDE_GROOM',
+            status: 'ACTIVE',
+            temporaryPassword: 'couple123',
+            createdAt: evt.created_at || new Date().toISOString(),
+            scopeType: 'EVENT',
+            scopeId: evt.id,
+            eventId: evt.id,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('Failed to ensure all events in userMap:', e);
     }
 
     const users = Array.from(userMap.values());

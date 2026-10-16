@@ -378,15 +378,29 @@ export async function POST(req: NextRequest) {
     }
 
     // 9. Issue HttpOnly, SameSite=Strict signed JWT cookie (agafari_token, 24h expiry)
-    const token = generateToken(
-      {
-        userId: user.id,
-        email: user.email,
-        role: effectiveRole,
-        tenantId: tenantScope,
-      },
-      24
-    );
+    let membershipRecord: any = null;
+    try {
+      membershipRecord = await queryOne<any>(
+        `SELECT id, role, scope_type, scope_id FROM memberships WHERE user_id = $1 AND status = 'ACTIVE' LIMIT 1`,
+        [user.id]
+      );
+    } catch (e) {
+      console.warn('Membership query failed during login:', e);
+    }
+
+    const sessionPayload = {
+      userId: user.id,
+      email: user.email,
+      membershipId: membershipRecord?.id || `mem-${user.id}`,
+      role: (membershipRecord?.role as any) || (effectiveRole as any),
+      scopeType: (membershipRecord?.scope_type as any) || (effectiveRole === 'SYSTEM_ADMIN' ? 'PLATFORM' : effectiveRole === 'EVENT_ORGANIZER' ? 'ORGANIZER' : 'EVENT'),
+      scopeId: membershipRecord?.scope_id || tenantScope,
+      tenantId: tenantScope,
+      sessionVersion: user.session_version || 1,
+      isViewAs: false,
+    };
+
+    const token = signSessionToken(sessionPayload);
 
     await logAudit({
       actorId: user.id,

@@ -744,6 +744,9 @@ function SystemAdminDashboardContent() {
         setOrgAgencyName('');
         setOrgContactEmail('');
         setOrgCompanyDesc('');
+
+        // Refresh admin data fleet & RBAC
+        fetchAdminData();
       } else {
         setOrgErrorMsg(data.error || 'Failed to onboard agency partner.');
       }
@@ -899,11 +902,11 @@ function SystemAdminDashboardContent() {
     }
   };
 
-  // Metric Computations
   const pendingApprovals = events.filter((e) => e.adminApprovalStatus === 'PENDING');
   const activeHosting = events.filter((e) => e.status !== 'COMPLETED' && e.status !== 'ARCHIVED' && e.adminApprovalStatus === 'APPROVED');
   const hostedArchives = events.filter((e) => e.status === 'COMPLETED' || e.status === 'ARCHIVED');
-  const organizerUsers = users.filter((u) => u.role && u.role.toUpperCase() === 'EVENT_ORGANIZER');
+  const adminUsers = users.filter((u) => u.role && (u.role.toUpperCase() === 'SYSTEM_ADMIN' || u.email?.toLowerCase() === 'admin@agafari.com'));
+  const organizerUsers = users.filter((u) => (u.role && (u.role.toUpperCase() === 'EVENT_ORGANIZER' || u.role.toUpperCase() === 'ORGANIZER_OWNER')) || Boolean(u.organizerId));
 
   // Filtered Fleet
   const filteredEvents = events.filter((evt) => {
@@ -1812,6 +1815,57 @@ function SystemAdminDashboardContent() {
                             </p>
                           </div>
 
+                          {/* Interactive Credentials Card */}
+                          <div className="p-3.5 rounded-xl bg-gold-50/50 border border-gold-500/30 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="text-[10px] font-bold uppercase tracking-wider text-gold-800 flex items-center gap-1.5 font-mono">
+                                <ShieldCheck className="w-3.5 h-3.5 text-gold-600" />
+                                <span>Active Agency Credentials</span>
+                              </div>
+                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-mono font-bold">
+                                👔 EVENT_ORGANIZER
+                              </span>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                              {/* Email */}
+                              <div className="p-2 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-1 font-mono">
+                                <div className="truncate text-gray-700 text-[11px]">{org.email}</div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(org.email, `email-${org.id}`)}
+                                  className="px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-bold cursor-pointer shrink-0"
+                                >
+                                  {copiedKey === `email-${org.id}` ? '✓ Copied' : 'Copy'}
+                                </button>
+                              </div>
+
+                              {/* Active Password */}
+                              <div className="p-2 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-1 font-mono">
+                                <div className="text-gray-900 font-bold text-[11px] tracking-wider truncate">
+                                  {showPasswords[org.id] ? (org.temporaryPassword || 'org123') : '••••••••••••'}
+                                </div>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleShowPassword(org.id)}
+                                    className="p-1 text-gray-500 hover:text-gray-800 cursor-pointer"
+                                    title={showPasswords[org.id] ? "Hide Password" : "Show Password"}
+                                  >
+                                    {showPasswords[org.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCopy(org.temporaryPassword || 'org123', `pass-${org.id}`)}
+                                    className="px-2 py-0.5 rounded bg-black text-gold-400 hover:bg-gray-800 text-[10px] font-bold cursor-pointer"
+                                  >
+                                    {copiedKey === `pass-${org.id}` ? '✓ Copied' : 'Copy'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
                           <div className="p-2.5 rounded-xl bg-white border border-gray-200 text-xs font-mono text-gray-600 flex items-center justify-between">
                             <span className="truncate text-[11px]">{specificOrgUrl}</span>
                             <button
@@ -1837,10 +1891,10 @@ function SystemAdminDashboardContent() {
                             </button>
 
                             <Link
-                              href={`/login?redirect=${encodeURIComponent(specificOrgUrl)}`}
-                              className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30"
+                              href={specificOrgUrl}
+                              className="px-4 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/40 cursor-pointer"
                             >
-                              <span>Open Dedicated Dashboard</span>
+                              <span>Open Organizer Dashboard</span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </Link>
                           </div>
@@ -1932,6 +1986,185 @@ function SystemAdminDashboardContent() {
                 </div>
               </div>
 
+              {/* 👑 VIP System Admin & Event Organizer Interactive Credentials Cards */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                    <h3 className="font-serif font-bold text-base text-gray-900 flex items-center gap-1.5">
+                      <KeyRound className="w-4 h-4 text-gold-500" />
+                      <span>Executive Credentials & Direct Dashboards</span>
+                    </h3>
+                  </div>
+                  <span className="text-[11px] text-gray-500 font-mono">
+                    {adminUsers.length + organizerUsers.length} Active System Credentials
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* System Super Admin Cards */}
+                  {adminUsers.map((admin) => (
+                    <div
+                      key={admin.id}
+                      className="p-4 rounded-2xl border-2 border-purple-500/40 bg-purple-50/20 shadow-sm flex flex-col justify-between space-y-3 hover:shadow-md transition-all"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300 text-[10px] font-mono font-bold">
+                              👑 SYSTEM_ADMIN
+                            </span>
+                            <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              ACTIVE
+                            </span>
+                          </div>
+                          <div className="font-serif font-bold text-sm text-gray-900 mt-1.5">{admin.fullName || 'System Super Admin'}</div>
+                          <div className="text-xs text-gray-500 font-mono">{admin.email}</div>
+                        </div>
+                        <button
+                          onClick={() => handleCopy(admin.email, `email-${admin.id}`)}
+                          className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-[10px] font-bold cursor-pointer"
+                          title="Copy Email"
+                        >
+                          {copiedKey === `email-${admin.id}` ? '✓' : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+
+                      {/* Active Password Box */}
+                      <div className="p-2.5 rounded-xl bg-white border border-purple-200 text-xs font-mono space-y-1">
+                        <div className="text-[10px] text-gray-400 font-sans font-semibold uppercase tracking-wider flex items-center justify-between">
+                          <span>Active Password</span>
+                          <span className="text-purple-700 font-mono font-bold text-[9px]">Root Tier</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-bold text-gray-900 text-xs tracking-wider">
+                            {showPasswords[admin.id] ? (admin.temporaryPassword || 'admin123') : '••••••••••••'}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => toggleShowPassword(admin.id)}
+                              className="p-1 text-gray-500 hover:text-gray-800 cursor-pointer"
+                              title={showPasswords[admin.id] ? "Hide" : "Show"}
+                            >
+                              {showPasswords[admin.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(admin.temporaryPassword || 'admin123', `pass-${admin.id}`)}
+                              className="px-2 py-0.5 rounded bg-black text-gold-400 hover:bg-gray-800 text-[10px] font-bold cursor-pointer"
+                            >
+                              {copiedKey === `pass-${admin.id}` ? '✓ Copied' : 'Copy'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="pt-2 border-t border-purple-200/50 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => handleOpenEditModal(admin)}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+                        >
+                          <Edit className="w-3 h-3 text-gold-600" />
+                          <span>Edit</span>
+                        </button>
+                        <Link
+                          href="/admin/dashboard"
+                          className="px-3 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Open Admin Dashboard</span>
+                          <ExternalLink className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Organizer Cards */}
+                  {organizerUsers.map((org) => {
+                    const specificOrgId = org.id.startsWith('org-') ? org.id : `org-${org.id}`;
+                    const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
+                    const companyName = getOrganizerCompanyName(org);
+                    return (
+                      <div
+                        key={org.id}
+                        className="p-4 rounded-2xl border-2 border-amber-500/40 bg-amber-50/20 shadow-sm flex flex-col justify-between space-y-3 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-mono font-bold">
+                                👔 EVENT_ORGANIZER
+                              </span>
+                              <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                ACTIVE
+                              </span>
+                            </div>
+                            <div className="font-serif font-bold text-sm text-gray-900 mt-1.5">{companyName}</div>
+                            <div className="text-xs text-gray-500 font-mono">{org.email}</div>
+                          </div>
+                          <button
+                            onClick={() => handleCopy(org.email, `email-${org.id}`)}
+                            className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 text-[10px] font-bold cursor-pointer"
+                            title="Copy Email"
+                          >
+                            {copiedKey === `email-${org.id}` ? '✓' : <Copy className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+
+                        {/* Active Password Box */}
+                        <div className="p-2.5 rounded-xl bg-white border border-amber-200 text-xs font-mono space-y-1">
+                          <div className="text-[10px] text-gray-400 font-sans font-semibold uppercase tracking-wider flex items-center justify-between">
+                            <span>Active Password</span>
+                            <span className="text-amber-800 font-mono font-bold text-[9px]">Agency Tier</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-bold text-gray-900 text-xs tracking-wider">
+                              {showPasswords[org.id] ? (org.temporaryPassword || 'org123') : '••••••••••••'}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => toggleShowPassword(org.id)}
+                                className="p-1 text-gray-500 hover:text-gray-800 cursor-pointer"
+                                title={showPasswords[org.id] ? "Hide" : "Show"}
+                              >
+                                {showPasswords[org.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleCopy(org.temporaryPassword || 'org123', `pass-${org.id}`)}
+                                className="px-2 py-0.5 rounded bg-black text-gold-400 hover:bg-gray-800 text-[10px] font-bold cursor-pointer"
+                              >
+                                {copiedKey === `pass-${org.id}` ? '✓ Copied' : 'Copy'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="pt-2 border-t border-amber-200/50 flex items-center justify-between gap-2">
+                          <button
+                            onClick={() => handleOpenEditModal(org)}
+                            className="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 text-[11px] font-bold cursor-pointer flex items-center gap-1"
+                          >
+                            <Edit className="w-3 h-3 text-gold-600" />
+                            <span>Edit</span>
+                          </button>
+                          <Link
+                            href={specificOrgUrl}
+                            className="px-3 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer"
+                          >
+                            <span>Open Organizer Dashboard</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               {/* User Credentials Table */}
               <div className="overflow-x-auto rounded-2xl border border-gold-500/20 shadow-sm">
                 <table className="w-full text-left text-xs bg-white">
@@ -1939,8 +2172,8 @@ function SystemAdminDashboardContent() {
                     <tr className="border-b border-gray-100 text-[10px] text-gray-500 font-mono font-bold uppercase tracking-wider bg-gray-50/80">
                       <th className="py-3.5 px-4">USER ACCOUNT</th>
                       <th className="py-3.5 px-4">ROLE PERMISSION</th>
+                      <th className="py-3.5 px-4">ACTIVE PASSWORD</th>
                       <th className="py-3.5 px-4">ACCOUNT ID</th>
-                      <th className="py-3.5 px-4">DATE ADDED</th>
                       <th className="py-3.5 px-4 text-right">CREDENTIALS ACTIONS</th>
                     </tr>
                   </thead>
@@ -1955,6 +2188,10 @@ function SystemAdminDashboardContent() {
                       filteredUsers.map((u) => {
                         const nameVal = u.fullName || (u as any).full_name || u.email.split('@')[0];
                         const roleVal = u.role || (u as any).role || 'GUEST';
+                        const specificOrgId = u.organizerId || (u.id.startsWith('org-') ? u.id : `org-${u.id}`);
+                        const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
+                        const activePass = u.temporaryPassword || (roleVal === 'SYSTEM_ADMIN' ? 'admin123' : roleVal === 'EVENT_ORGANIZER' ? 'org123' : roleVal === 'BRIDE_GROOM' ? 'couple123' : 'agafari2026');
+
                         return (
                           <tr key={u.id} className="hover:bg-gray-50/80 transition-colors">
                             
@@ -2001,25 +2238,64 @@ function SystemAdminDashboardContent() {
                               )}
                             </td>
 
+                            {/* Active Password Column */}
+                            <td className="py-4 px-4 font-mono text-xs">
+                              <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200 w-fit">
+                                <span className="text-gray-900 font-bold tracking-wider text-[11px]">
+                                  {showPasswords[u.id] ? activePass : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword(u.id)}
+                                  className="p-0.5 text-gray-500 hover:text-gray-800 cursor-pointer"
+                                  title={showPasswords[u.id] ? "Hide" : "Show"}
+                                >
+                                  {showPasswords[u.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(activePass, `pass-tbl-${u.id}`)}
+                                  className="px-1.5 py-0.5 rounded bg-black text-gold-400 hover:bg-gray-800 text-[9px] font-bold cursor-pointer"
+                                >
+                                  {copiedKey === `pass-tbl-${u.id}` ? '✓' : 'Copy'}
+                                </button>
+                              </div>
+                            </td>
+
                             {/* Account ID */}
                             <td className="py-4 px-4 font-mono text-[11px] text-gray-500">
                               {u.id}
                             </td>
 
-                            {/* Date Added */}
-                            <td className="py-4 px-4 text-xs font-mono text-gray-600">
-                              {u.temporaryPassword ? '9/25/2026' : '9/20/2026'}
-                            </td>
-
                             {/* Credentials Actions */}
                             <td className="py-4 px-4 text-right">
                               <div className="flex items-center justify-end gap-2">
+                                {roleVal === 'SYSTEM_ADMIN' && (
+                                  <Link
+                                    href="/admin/dashboard"
+                                    className="px-2.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Crown className="w-3 h-3 text-purple-700" />
+                                    <span>Open Admin</span>
+                                  </Link>
+                                )}
+
+                                {roleVal === 'EVENT_ORGANIZER' && (
+                                  <Link
+                                    href={specificOrgUrl}
+                                    className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold flex items-center gap-1 cursor-pointer"
+                                  >
+                                    <Briefcase className="w-3 h-3 text-amber-700" />
+                                    <span>Open Org</span>
+                                  </Link>
+                                )}
+
                                 <button
                                   onClick={() => handleOpenEditModal(u)}
-                                  className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/30 text-[11px] font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                                  className="px-3 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/30 text-[11px] font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
                                 >
                                   <Edit className="w-3.5 h-3.5 text-gold-400" />
-                                  <span>Edit Credentials</span>
+                                  <span>Edit</span>
                                 </button>
 
                                 <button
