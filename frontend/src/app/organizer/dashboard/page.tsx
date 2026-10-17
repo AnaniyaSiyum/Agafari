@@ -738,9 +738,9 @@ function OrganizerDashboardContent() {
                     <div
                       key={evt.id}
                       onClick={() => {
-                        // Navigate to the dedicated event management page via login gate
+                        // Navigate directly to the dedicated event management page
                         const destination = `/${organizerUrlSlug}/${evt.slug}`;
-                        router.push(`/login?redirect=${encodeURIComponent(destination)}`);
+                        router.push(destination);
                       }}
                       className={`
                         rounded-3xl p-5 border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden bg-white

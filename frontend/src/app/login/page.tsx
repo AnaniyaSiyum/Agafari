@@ -28,55 +28,47 @@ import {
 } from 'lucide-react';
 
 function resolveDestination(userRole?: string, redirectParam?: string | null, serverRedirectUrl?: string): string {
-  const defaultDestination = serverRedirectUrl || '/login';
-  if (!redirectParam || redirectParam === '/login' || redirectParam.endsWith('/login') || redirectParam.includes('/login?')) {
-    return defaultDestination;
-  }
+  const cleanRedirect = redirectParam ? redirectParam.toLowerCase().split('?')[0] : '';
 
-  const cleanRedirect = redirectParam.toLowerCase().split('?')[0];
-
-  // System Admin can visit any requested dashboard; prefer /admin/dashboard if accessing root admin or login routes
+  // 1. System Admin: ALWAYS routes to the System Admin Dashboard
+  // Never hijacked by couple or organizer redirect parameters
   if (userRole === 'SYSTEM_ADMIN') {
-    if (cleanRedirect === '/admin' || cleanRedirect === '/admin/' || cleanRedirect === '/system-admin' || cleanRedirect.includes('/login')) {
-      return serverRedirectUrl || '/admin/dashboard';
-    }
-    return redirectParam;
+    return '/admin/dashboard';
   }
 
-  // Couples can only visit couple routes; prefer scoped wedding couple URL from server
+  // 2. Couple: ALWAYS routes to Couple Wedding Portal / Dashboard
+  // Only honor redirectParam if it specifically targets a couple portal route
   if (userRole === 'COUPLE' || userRole === 'BRIDE_GROOM') {
-    if (cleanRedirect === '/couple' || cleanRedirect === '/couple/' || cleanRedirect === '/couple/dashboard' || cleanRedirect.includes('/login')) {
-      return serverRedirectUrl || '/couple';
-    }
-    if (cleanRedirect.includes('/couple')) {
+    if (redirectParam && cleanRedirect.includes('/couple') && !cleanRedirect.startsWith('/admin') && !cleanRedirect.startsWith('/organizer')) {
       return redirectParam;
     }
     return serverRedirectUrl || '/couple';
   }
 
-  // Organizers can visit organizer routes; prefer scoped organizer dashboard with ?id=
+  // 3. Organizer: ALWAYS routes to Organizer Agency Dashboard
+  // Only honor redirectParam if it targets an organizer agency route
   if (userRole === 'EVENT_ORGANIZER' || userRole === 'ORGANIZER_OWNER') {
-    if (cleanRedirect.startsWith('/admin') || cleanRedirect.startsWith('/system-admin') || cleanRedirect.startsWith('/couple') || cleanRedirect.includes('/login')) {
-      return serverRedirectUrl || '/organizer/dashboard';
+    if (redirectParam && (cleanRedirect.startsWith('/organizer') || cleanRedirect.startsWith('/agency')) && !cleanRedirect.includes('/couple') && !cleanRedirect.startsWith('/admin')) {
+      return redirectParam;
     }
-    if (cleanRedirect === '/organizer' || cleanRedirect === '/organizer/' || cleanRedirect === '/organizer/dashboard') {
-      return serverRedirectUrl || redirectParam;
-    }
-    return redirectParam;
+    return serverRedirectUrl || '/organizer/dashboard';
   }
 
-  // Staff roles (Scanner, Moderator, Streamer)
+  // 4. Staff roles (Scanner, Moderator, Streamer)
   if (userRole === 'GATE_SCANNER') {
-    return cleanRedirect.includes('/scanner') && !cleanRedirect.includes('/login') ? redirectParam : (serverRedirectUrl || '/login');
+    if (redirectParam && cleanRedirect.includes('/scanner') && !cleanRedirect.includes('/login')) return redirectParam;
+    return serverRedirectUrl || '/login';
   }
   if (userRole === 'LIVE_STREAMER') {
-    return cleanRedirect.includes('/live-streamer') && !cleanRedirect.includes('/login') ? redirectParam : (serverRedirectUrl || '/login');
+    if (redirectParam && cleanRedirect.includes('/live-streamer') && !cleanRedirect.includes('/login')) return redirectParam;
+    return serverRedirectUrl || '/login';
   }
   if (userRole === 'MEDIA_MODERATOR' || userRole === 'MODERATOR' || userRole === 'CONTENT_MODERATOR') {
-    return cleanRedirect.includes('/moderation') && !cleanRedirect.includes('/login') ? redirectParam : (serverRedirectUrl || '/login');
+    if (redirectParam && cleanRedirect.includes('/moderation') && !cleanRedirect.includes('/login')) return redirectParam;
+    return serverRedirectUrl || '/login';
   }
 
-  return defaultDestination;
+  return serverRedirectUrl || '/login';
 }
 
 export default function UniversalLoginPage() {

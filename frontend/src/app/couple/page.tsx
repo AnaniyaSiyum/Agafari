@@ -26,6 +26,18 @@ export default function UniversalCouplePage() {
       userObj = JSON.parse(userStr);
     } catch (e) {}
 
+    // Strict role redirection: Admin and Organizer must not remain on universal couple portal
+    const effectiveRole = (role || userObj?.role || '').toUpperCase();
+    if (effectiveRole === 'SYSTEM_ADMIN') {
+      router.replace('/admin/dashboard');
+      return;
+    }
+    if (effectiveRole === 'EVENT_ORGANIZER' || effectiveRole === 'ORGANIZER_OWNER') {
+      const myOrgId = userObj?.organizerId || userObj?.scopeId || userObj?.tenantId;
+      router.replace(myOrgId ? `/organizer/dashboard?id=${encodeURIComponent(myOrgId)}` : '/organizer/dashboard');
+      return;
+    }
+
     const directSlug =
       userObj?.eventSlug ||
       userObj?.slug ||

@@ -599,14 +599,14 @@ export async function resolveUserDashboardUrl(options: {
 }): Promise<string> {
   const { role, userId, email, tenantId, slug } = options;
 
-  // 1. SYSTEM ADMIN -> /admin
+  // 1. SYSTEM ADMIN -> /admin/dashboard
   if (role === 'SYSTEM_ADMIN') {
-    return '/admin';
+    return '/admin/dashboard';
   }
 
-  // 2. ORGANIZER -> /organizer/[id]
+  // 2. ORGANIZER -> /organizer/dashboard?id=[id]
   if (role === 'ORGANIZER_OWNER' || role === 'EVENT_ORGANIZER') {
-    return tenantId ? `/organizer/${tenantId}` : '/organizer';
+    return tenantId ? `/organizer/dashboard?id=${encodeURIComponent(tenantId)}` : '/organizer/dashboard';
   }
 
   // Resolve associated event ID or slug

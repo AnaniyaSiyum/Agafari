@@ -1311,13 +1311,22 @@ function SystemAdminDashboardContent() {
                               <span>Delete Event</span>
                             </button>
 
-                            <Link
-                              href={`/login?redirect=${encodeURIComponent(dedicatedUrl)}`}
-                              className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30"
-                            >
-                              <span>Open Dedicated Dashboard</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Link>
+                            <div className="flex items-center gap-2">
+                              <Link
+                                href={`${dedicatedUrl}/couple`}
+                                className="px-3 py-2 rounded-xl bg-gold-500/10 hover:bg-gold-500/20 text-stone-900 text-xs font-bold flex items-center gap-1.5 border border-gold-500/30"
+                              >
+                                <span>Couple Portal</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </Link>
+                              <Link
+                                href={dedicatedUrl}
+                                className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30"
+                              >
+                                <span>Open Dedicated Dashboard</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </Link>
+                            </div>
                           </div>
                         </div>
                       );
@@ -2382,7 +2391,7 @@ function SystemAdminDashboardContent() {
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <Link
-                        href={`/login?redirect=${encodeURIComponent(`${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`)}`}
+                        href={`${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`}
                         onClick={() => {
                           setShowCreateModal(false);
                           setCreatedAdminControlUrl(null);
@@ -2394,7 +2403,7 @@ function SystemAdminDashboardContent() {
                       </Link>
 
                       <Link
-                        href={`/login?redirect=${encodeURIComponent(createdAdminControlUrl)}`}
+                        href={createdAdminControlUrl}
                         onClick={() => {
                           setShowCreateModal(false);
                           setCreatedAdminControlUrl(null);

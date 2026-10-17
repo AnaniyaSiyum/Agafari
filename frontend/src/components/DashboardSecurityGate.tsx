@@ -256,6 +256,9 @@ export default function DashboardSecurityGate({
         if (data.user) {
           localStorage.setItem('agafari_user', JSON.stringify(data.user));
           localStorage.setItem('agafari_role', data.user.role || data.role);
+          if (data.user.eventSlug || data.user.slug) {
+            localStorage.setItem('agafari_couple_slug', data.user.eventSlug || data.user.slug);
+          }
         }
         if (data.token) {
           localStorage.setItem('agafari_token', data.token);
@@ -263,12 +266,37 @@ export default function DashboardSecurityGate({
         }
       }
 
-      setIsUnlocked(true);
-
+      const authenticatedRole = (data.user?.role || data.role || '').toUpperCase();
       const targetUrl = data.redirectUrl || '/admin/dashboard';
       const currentFullUrl = typeof window !== 'undefined' ? `${window.location.pathname}${window.location.search}` : pathname;
+
+      // STRICT ROLE-BASED DASHBOARD ROUTING:
+      // If credentials entered are for System Admin, ALWAYS route to System Admin Dashboard!
+      if (authenticatedRole === 'SYSTEM_ADMIN') {
+        window.location.href = '/admin/dashboard';
+        return;
+      }
+
+      // If credentials entered are for Event Organizer, ALWAYS route to Organizer Agency Dashboard!
+      if (authenticatedRole === 'EVENT_ORGANIZER' || authenticatedRole === 'ORGANIZER_OWNER') {
+        if (!pathname?.startsWith('/organizer')) {
+          window.location.href = targetUrl.startsWith('/organizer') ? targetUrl : '/organizer/dashboard';
+          return;
+        }
+      }
+
+      // If credentials entered are for Couple, ALWAYS route to Couple Wedding Portal!
+      if (authenticatedRole === 'COUPLE' || authenticatedRole === 'BRIDE_GROOM') {
+        if (!pathname?.includes('/couple')) {
+          window.location.href = targetUrl.includes('/couple') ? targetUrl : '/couple';
+          return;
+        }
+      }
+
+      setIsUnlocked(true);
+
       if (pathname && (pathname.includes('/login') || (targetUrl && targetUrl !== currentFullUrl))) {
-        router.push(targetUrl);
+        window.location.href = targetUrl;
       }
     } catch (err) {
       console.error('Failed to verify dashboard credentials:', err);

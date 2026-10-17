@@ -7,6 +7,24 @@ export default function AdminRootRedirect() {
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem('agafari_user');
+      const token = localStorage.getItem('agafari_token');
+      if (userStr && token) {
+        try {
+          const userObj = JSON.parse(userStr);
+          if (userObj.role === 'EVENT_ORGANIZER' || userObj.role === 'ORGANIZER_OWNER') {
+            const myOrgId = userObj?.organizerId || userObj?.scopeId || userObj?.tenantId;
+            router.replace(myOrgId ? `/organizer/dashboard?id=${encodeURIComponent(myOrgId)}` : '/organizer/dashboard');
+            return;
+          }
+          if (userObj.role === 'COUPLE' || userObj.role === 'BRIDE_GROOM') {
+            router.replace('/couple');
+            return;
+          }
+        } catch {}
+      }
+    }
     router.replace('/admin/dashboard');
   }, [router]);
 

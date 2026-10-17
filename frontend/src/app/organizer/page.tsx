@@ -17,9 +17,17 @@ export default function OrganizerMainPage() {
       }
       try {
         const userObj = JSON.parse(userStr);
+        if (userObj?.role === 'SYSTEM_ADMIN') {
+          router.replace('/admin/dashboard');
+          return;
+        }
+        if (userObj?.role === 'COUPLE' || userObj?.role === 'BRIDE_GROOM') {
+          router.replace('/couple');
+          return;
+        }
         const myOrgId = userObj?.organizerId || userObj?.scopeId || userObj?.tenantId;
         if (myOrgId && (userObj.role === 'EVENT_ORGANIZER' || userObj.role === 'ORGANIZER_OWNER')) {
-          router.replace(`/organizer/${myOrgId}`);
+          router.replace(`/organizer/dashboard?id=${encodeURIComponent(myOrgId)}`);
         }
       } catch {}
     }

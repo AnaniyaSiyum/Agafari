@@ -922,7 +922,7 @@ export default function DedicatedEventControlPage({
 
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
-                    href={`/login?redirect=${encodeURIComponent(`/${organizerSlug}/${eventSlug}/couple`)}`}
+                    href={`/${organizerSlug}/${eventSlug}/couple`}
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Couple Portal</span>
@@ -981,7 +981,7 @@ export default function DedicatedEventControlPage({
 
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
-                    href={`/login?redirect=${encodeURIComponent(`/${organizerSlug}/${eventSlug}/live-streamer`)}`}
+                    href={`/${organizerSlug}/${eventSlug}/live-streamer`}
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Streamer Studio</span>
@@ -1040,7 +1040,7 @@ export default function DedicatedEventControlPage({
 
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
-                    href={`/login?redirect=${encodeURIComponent(`/${organizerSlug}/${eventSlug}/scanner`)}`}
+                    href={`/${organizerSlug}/${eventSlug}/scanner`}
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Scanner App</span>
@@ -1099,7 +1099,7 @@ export default function DedicatedEventControlPage({
 
                 <div className="flex items-center gap-2 pt-3 border-t border-slate-100">
                   <Link
-                    href={`/login?redirect=${encodeURIComponent(`/${organizerSlug}/${eventSlug}/moderation`)}`}
+                    href={`/${organizerSlug}/${eventSlug}/moderation`}
                     className="flex-1 py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all active:scale-95"
                   >
                     <span>Launch Moderation Hub</span>
