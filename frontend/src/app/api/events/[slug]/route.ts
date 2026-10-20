@@ -161,6 +161,68 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
         customization
       };
 
+      // Query database users and event_staff to dynamically resolve real credentials
+      let coupleUser: any = null;
+      let staffMembers: any[] = [];
+      try {
+        coupleUser = await queryOne(
+          `SELECT u.id, u.email, u.full_name, u.temporary_password
+           FROM events e
+           JOIN users u ON u.id = e.couple_user_id
+           WHERE e.id = $1`,
+          [event.id]
+        );
+        staffMembers = await query(
+          `SELECT es.id as assignment_id, es.role, u.id as user_id, u.email, u.full_name, u.temporary_password, es.created_at
+           FROM event_staff es
+           JOIN users u ON u.id = es.user_id
+           WHERE es.event_id = $1`,
+          [event.id]
+        );
+      } catch (err) {}
+
+      const streamerStaff = staffMembers.find((s) => s.role === 'LIVE_STREAMER');
+      const scannerStaff = staffMembers.find((s) => s.role === 'GATE_SCANNER');
+      const moderatorStaff = staffMembers.find((s) => s.role === 'CONTENT_MODERATOR');
+
+      const dynamicCredentials = {
+        couple: {
+          userId: coupleUser?.id || null,
+          fullName: coupleUser?.full_name || `${event.bride_name} & ${event.groom_name}`,
+          email: coupleUser?.email || `couple@${event.slug}.com`,
+          temporaryPassword: coupleUser?.temporary_password || 'agafari2026',
+          role: 'BRIDE_GROOM',
+        },
+        streamer: {
+          userId: streamerStaff?.user_id || null,
+          assignmentId: streamerStaff?.assignment_id || null,
+          fullName: streamerStaff?.full_name || 'Live Streamer Crew',
+          email: streamerStaff?.email || `streamer@${event.slug}.com`,
+          temporaryPassword: streamerStaff?.temporary_password || 'stream123',
+          role: 'LIVE_STREAMER',
+        },
+        scanner: {
+          userId: scannerStaff?.user_id || null,
+          assignmentId: scannerStaff?.assignment_id || null,
+          fullName: scannerStaff?.full_name || 'Gate QR Scanner',
+          email: scannerStaff?.email || `scanner@${event.slug}.com`,
+          temporaryPassword: scannerStaff?.temporary_password || 'scan123',
+          role: 'GATE_SCANNER',
+        },
+        moderator: {
+          userId: moderatorStaff?.user_id || null,
+          assignmentId: moderatorStaff?.assignment_id || null,
+          fullName: moderatorStaff?.full_name || 'Media Content Moderator',
+          email: moderatorStaff?.email || `moderator@${event.slug}.com`,
+          temporaryPassword: moderatorStaff?.temporary_password || 'mod123',
+          role: 'MEDIA_MODERATOR',
+        },
+      };
+
+      (formattedEvent as any).credentials = dynamicCredentials;
+      (formattedEvent as any).coupleCredentials = dynamicCredentials.couple;
+      (formattedEvent as any).team = staffMembers;
+
       let locations: any[] = [];
       try {
         locations = await query(
@@ -171,7 +233,7 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
         locations = customization.additionalLocations || [];
       }
 
-      return NextResponse.json({ event: formattedEvent, locations });
+      return NextResponse.json({ event: formattedEvent, locations, team: staffMembers });
     }
   } catch (err) {
     console.error('DB query error in GET /api/events/[slug]:', err);

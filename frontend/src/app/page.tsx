@@ -53,6 +53,16 @@ export default function HomePage() {
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('hero');
   const [consultationOpen, setConsultationOpen] = useState(false);
+  const [cmsData, setCmsData] = useState<Record<string, any>>({});
+
+  useEffect(() => {
+    fetch('/api/cms')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.cms) setCmsData(data.cms);
+      })
+      .catch((err) => console.error('Failed to fetch CMS on landing page:', err));
+  }, []);
 
   // Scroll spy tracking to detect which section the user is currently viewing
   useEffect(() => {
@@ -276,24 +286,30 @@ export default function HomePage() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/90 backdrop-blur-md text-gold-400 text-[11px] font-extrabold uppercase tracking-wider mb-5 border border-gold-500/40 shadow-md"
             >
               <Crown className="w-3.5 h-3.5 text-gold-400" />
-              {t('landing.hero.badge')}
+              {cmsData?.hero?.badge || t('landing.hero.badge')}
             </motion.div>
 
             {/* Headline */}
-            <h1 className={`font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-sage-dark leading-tight drop-shadow-sm ${locale === 'am' ? 'font-amharic-royal' : ''}`}>
-              {t('landing.hero.titlePart1')} <br />
-              <motion.span
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className={`font-script text-4xl sm:text-6xl md:text-7xl font-normal gold-metallic-solid mt-2 block leading-snug drop-shadow-md ${locale === 'am' ? 'font-amharic-script font-bold drop-shadow-md text-amber-600' : ''}`}
-              >
-                {t('landing.hero.titlePart2')}
-              </motion.span>
-            </h1>
+            {cmsData?.hero?.headline ? (
+              <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-sage-dark leading-tight drop-shadow-sm text-center">
+                {cmsData.hero.headline}
+              </h1>
+            ) : (
+              <h1 className={`font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-sage-dark leading-tight drop-shadow-sm ${locale === 'am' ? 'font-amharic-royal' : ''}`}>
+                {t('landing.hero.titlePart1')} <br />
+                <motion.span
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4, duration: 0.8 }}
+                  className={`font-script text-4xl sm:text-6xl md:text-7xl font-normal gold-metallic-solid mt-2 block leading-snug drop-shadow-md ${locale === 'am' ? 'font-amharic-script font-bold drop-shadow-md text-amber-600' : ''}`}
+                >
+                  {t('landing.hero.titlePart2')}
+                </motion.span>
+              </h1>
+            )}
 
             <p className={`max-w-2xl mx-auto text-sm sm:text-base text-charcoal-light mt-5 mb-8 font-light leading-relaxed drop-shadow-sm ${locale === 'am' ? 'font-amharic-body' : ''}`}>
-              {t('landing.hero.description')}
+              {cmsData?.hero?.subheadline || t('landing.hero.description')}
             </p>
 
             {/* CTA Buttons */}
@@ -304,9 +320,20 @@ export default function HomePage() {
                 href="#packages"
                 className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-950/90 backdrop-blur-md text-gold-300 font-bold text-xs sm:text-sm hover:bg-black transition-all shadow-xl flex items-center justify-center gap-2 border border-gold-500/40"
               >
-                {t('landing.hero.ctaPackages')}
+                {cmsData?.hero?.ctaPrimary || t('landing.hero.ctaPackages')}
                 <ArrowRight className="w-4 h-4 text-gold-400" />
               </motion.a>
+              {cmsData?.hero?.ctaSecondary && (
+                <motion.a
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.98 }}
+                  href="#demo"
+                  className="w-full sm:w-auto px-8 py-4 rounded-full bg-white/90 backdrop-blur-md text-slate-800 font-bold text-xs sm:text-sm hover:bg-white transition-all shadow-md flex items-center justify-center gap-2 border border-slate-200"
+                >
+                  {cmsData.hero.ctaSecondary}
+                  <Play className="w-3.5 h-3.5 text-amber-600" />
+                </motion.a>
+              )}
             </div>
           </motion.div>
 
@@ -473,7 +500,7 @@ export default function HomePage() {
             {t('landing.packagesSection.badge')}
           </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
-            {t('landing.packagesSection.title')}
+            {cmsData?.packages?.headline || t('landing.packagesSection.title')}
           </h2>
           <p className="text-gray-600 text-xs sm:text-sm font-light leading-relaxed">
             {t('landing.packagesSection.description')}
@@ -493,17 +520,17 @@ export default function HomePage() {
                   {t('landing.packagesSection.essentialTag')}
                 </span>
                 <span className="text-xs text-amber-700 font-bold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200">
-                  15k ETB
+                  {cmsData?.packages?.essentialPrice || '15k ETB'}
                 </span>
               </div>
               <h3 className="font-serif text-2xl font-bold text-gray-900 mb-1">
-                {t('landing.packagesSection.essentialTitle')}
+                {cmsData?.packages?.essentialTitle || t('landing.packagesSection.essentialTitle')}
               </h3>
               <div className="text-3xl font-extrabold text-slate-900 mb-3 flex items-baseline gap-1">
-                15k <span className="text-xs font-normal text-slate-500">/ event</span>
+                {cmsData?.packages?.essentialPrice || '15k'} <span className="text-xs font-normal text-slate-500">/ event</span>
               </div>
               <p className="text-gray-600 text-xs font-light mb-6 border-b border-slate-100 pb-4">
-                {t('landing.packagesSection.essentialDesc')}
+                {cmsData?.packages?.essentialDesc || t('landing.packagesSection.essentialDesc')}
               </p>
               <ul className="space-y-3 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5 font-medium">
@@ -538,7 +565,7 @@ export default function HomePage() {
             </div>
 
             <a
-              href="tel:+251911000000"
+              href={`tel:${cmsData?.contact_info?.phone || '+251911000000'}`}
               className="mt-8 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-center font-bold text-xs transition-colors block shadow-md"
             >
               {t('landing.packagesSection.essentialBtn')}
@@ -561,17 +588,17 @@ export default function HomePage() {
                   {t('landing.packagesSection.premiumTag')}
                 </span>
                 <span className="text-xs text-amber-900 font-extrabold bg-amber-200/80 px-2.5 py-1 rounded-full border border-amber-400">
-                  35k ETB
+                  {cmsData?.packages?.premiumPrice || '35k ETB'}
                 </span>
               </div>
               <h3 className="font-serif text-2xl font-bold text-gray-900 mb-1">
-                {t('landing.packagesSection.premiumTitle')}
+                {cmsData?.packages?.premiumTitle || t('landing.packagesSection.premiumTitle')}
               </h3>
               <div className="text-3xl font-extrabold text-slate-900 mb-3 flex items-baseline gap-1">
-                35k <span className="text-xs font-normal text-slate-500">/ event</span>
+                {cmsData?.packages?.premiumPrice || '35k'} <span className="text-xs font-normal text-slate-500">/ event</span>
               </div>
               <p className="text-gray-600 text-xs font-light mb-6 border-b border-amber-100 pb-4">
-                {t('landing.packagesSection.premiumDesc')}
+                {cmsData?.packages?.premiumDesc || t('landing.packagesSection.premiumDesc')}
               </p>
               <ul className="space-y-3 text-xs text-slate-800">
                 <li className="flex items-center gap-2.5 font-bold">
@@ -606,7 +633,7 @@ export default function HomePage() {
             </div>
 
             <a
-              href="tel:+251911000000"
+              href={`tel:${cmsData?.contact_info?.phone || '+251911000000'}`}
               className="mt-8 w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-center font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all block"
             >
               {t('landing.packagesSection.premiumBtn')}
@@ -624,17 +651,17 @@ export default function HomePage() {
                   {t('landing.packagesSection.goldenTag')}
                 </span>
                 <span className="text-xs text-amber-800 font-bold bg-amber-100/70 px-2.5 py-1 rounded-full border border-amber-300">
-                  45k ETB
+                  {cmsData?.packages?.goldenPrice || '45k ETB'}
                 </span>
               </div>
               <h3 className="font-serif text-2xl font-bold text-gray-900 mb-1">
-                {t('landing.packagesSection.goldenTitle')}
+                {cmsData?.packages?.goldenTitle || t('landing.packagesSection.goldenTitle')}
               </h3>
               <div className="text-3xl font-extrabold text-slate-900 mb-3 flex items-baseline gap-1">
-                45k <span className="text-xs font-normal text-slate-500">/ event</span>
+                {cmsData?.packages?.goldenPrice || '45k'} <span className="text-xs font-normal text-slate-500">/ event</span>
               </div>
               <p className="text-gray-600 text-xs font-light mb-6 border-b border-slate-100 pb-4">
-                {t('landing.packagesSection.goldenDesc')}
+                {cmsData?.packages?.goldenDesc || t('landing.packagesSection.goldenDesc')}
               </p>
               <ul className="space-y-3 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5 font-medium">
@@ -1342,15 +1369,15 @@ export default function HomePage() {
             </h4>
             <div className="flex items-center gap-2 text-[11px]">
               <Phone className="w-3.5 h-3.5 text-metallic shrink-0" />
-              <span>+251 911 000 000 / +251 922 000 000</span>
+              <span>{cmsData?.contact_info?.phone || '+251 911 000 000 / +251 922 000 000'}</span>
             </div>
             <div className="flex items-center gap-2 text-[11px]">
               <Mail className="w-3.5 h-3.5 text-metallic shrink-0" />
-              <span>info@hamelmal.com</span>
+              <span>{cmsData?.contact_info?.email || 'contact@agafari.com'}</span>
             </div>
             <div className="flex items-center gap-2 text-[11px]">
               <Building2 className="w-3.5 h-3.5 text-metallic shrink-0" />
-              <span>{t('landing.footer.address')}</span>
+              <span>{cmsData?.contact_info?.location || t('landing.footer.address')}</span>
             </div>
 
             <div className="pt-2 flex items-center gap-3">

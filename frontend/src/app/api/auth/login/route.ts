@@ -306,7 +306,7 @@ export async function POST(req: NextRequest) {
          JOIN events e ON e.id = es.event_id
          LEFT JOIN organizers o ON o.id = e.organizer_id
          WHERE es.user_id = $1
-         ORDER BY es.created_at DESC
+         ORDER BY es.id DESC
          LIMIT 1`,
         [user.id]
       );

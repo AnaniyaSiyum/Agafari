@@ -51,10 +51,92 @@ import {
   Edit,
   Mail,
   Upload,
+  Globe,
+  Save,
   Image as ImageIcon
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 import { inspectImageFile, IMAGE_SPECS } from '@/lib/imageInspector';
+
+interface CmsSectionState {
+  hero: {
+    badge: string;
+    headline: string;
+    subheadline: string;
+    ctaPrimary: string;
+    ctaSecondary: string;
+  };
+  packages: {
+    headline: string;
+    essentialTitle: string;
+    essentialPrice: string;
+    essentialDesc: string;
+    premiumTitle: string;
+    premiumPrice: string;
+    premiumDesc: string;
+    goldenTitle: string;
+    goldenPrice: string;
+    goldenDesc: string;
+  };
+  experience: {
+    headline: string;
+    body: string;
+    cta_label: string;
+    cta_url: string;
+  };
+  memories: {
+    headline: string;
+    body: string;
+    cta_label: string;
+    cta_url: string;
+  };
+  contact: {
+    phone: string;
+    email: string;
+    location: string;
+    telegram: string;
+  };
+}
+
+const DEFAULT_CMS_STATE: CmsSectionState = {
+  hero: {
+    badge: "Ethiopia's Premier Digital Wedding Sanctuary",
+    headline: "Elevate Every Sacred Ethiopian Wedding Moment",
+    subheadline: "A modern digital sanctuary for luxury Habesha weddings — from QR gate passes and digital invitations to live diaspora broadcasting and verified guest blessings.",
+    ctaPrimary: "Explore Live Demonstrations",
+    ctaSecondary: "Explore Packages",
+  },
+  packages: {
+    headline: "Transparent Packages Tailored for Habesha Elegance",
+    essentialTitle: "Essential Cultural",
+    essentialPrice: "15,000 ETB",
+    essentialDesc: "Digital invites, RSVP tracking, and guest countdown for intimate weddings.",
+    premiumTitle: "Signature Royal",
+    premiumPrice: "35,000 ETB",
+    premiumDesc: "Everything in Essential plus TikTok-style memory feed, video wishes, and gate scanner access.",
+    goldenTitle: "Platinum Executive",
+    goldenPrice: "60,000 ETB",
+    goldenDesc: "Complete VIP production, multi-camera live diaspora streaming, unlimited media, and white-glove concierge.",
+  },
+  experience: {
+    headline: "Experience Agafari Operation Live",
+    body: "Test drive our live interactive simulator demonstrating gate pass scanning, digital RSVPs, video blessings, and YouTube diaspora streaming.",
+    cta_label: "Open Live Simulator",
+    cta_url: "/#demo",
+  },
+  memories: {
+    headline: "Memories, Powered by Your Agafari Card",
+    body: "Every wedding on Agafari comes with a shareable digital keepsake card, permanent cloud archives, and guest blessing videos.",
+    cta_label: "See How It Works",
+    cta_url: "/#features",
+  },
+  contact: {
+    phone: "+251 911 234 567",
+    email: "contact@agafari.com",
+    location: "Bole Medhanialem, Addis Ababa, Ethiopia",
+    telegram: "@AgafariSupport",
+  },
+};
 
 interface EventCredential {
   fullName: string;
@@ -138,13 +220,19 @@ const DEFAULT_PLATFORM_USERS: UserData[] = [
 function SystemAdminDashboardContent() {
   const { t } = useTranslation();
   const router = useRouter();
-  // Navigation: 'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS'
-  const [activeTab, setActiveTab] = useState<'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS'>('APPROVALS');
+  // Navigation: 'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS' | 'CMS'
+  const [activeTab, setActiveTab] = useState<'APPROVALS' | 'EVENTS' | 'ORGANIZERS' | 'USERS' | 'CMS'>('APPROVALS');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   const [events, setEvents] = useState<EventData[]>([]);
   const [users, setUsers] = useState<UserData[]>(DEFAULT_PLATFORM_USERS);
   const [loading, setLoading] = useState(true);
+
+  // Dynamic CMS State
+  const [cmsState, setCmsState] = useState<CmsSectionState>(DEFAULT_CMS_STATE);
+  const [savingCmsSection, setSavingCmsSection] = useState<string | null>(null);
+  const [cmsSaveSuccess, setCmsSaveSuccess] = useState<string>('');
+  const [cmsSaveError, setCmsSaveError] = useState<string>('');
 
   // Selected Drill-Down Event & Impersonation Hub
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
@@ -376,11 +464,59 @@ function SystemAdminDashboardContent() {
       }
 
       setUsers(loadedUsers);
+      await fetchCmsData();
     } catch (err) {
       console.error('Failed to load admin data:', err);
       setUsers([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchCmsData() {
+    try {
+      const res = await fetch('/api/cms');
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.cms) {
+          setCmsState((prev) => ({
+            hero: { ...prev.hero, ...(data.cms.hero || {}) },
+            packages: { ...prev.packages, ...(data.cms.packages || {}) },
+            experience: { ...prev.experience, ...(data.cms.experience_agafari_live || {}) },
+            memories: { ...prev.memories, ...(data.cms.memories_powered_by_agafari_card || {}) },
+            contact: { ...prev.contact, ...(data.cms.contact_info || {}) },
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load CMS data:', err);
+    }
+  }
+
+  async function handleSaveCmsSection(sectionKey: string, contentJson: any) {
+    setSavingCmsSection(sectionKey);
+    setCmsSaveSuccess('');
+    setCmsSaveError('');
+    try {
+      const headers = {
+        ...getAdminAuthHeaders(),
+        'Content-Type': 'application/json',
+      };
+      const res = await fetch('/api/admin/cms', {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ sectionKey, contentJson }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update CMS section');
+      }
+      setCmsSaveSuccess(`CMS section "${sectionKey}" successfully saved to database!`);
+      setTimeout(() => setCmsSaveSuccess(''), 4000);
+    } catch (err: any) {
+      setCmsSaveError(err.message || 'Error saving CMS section');
+    } finally {
+      setSavingCmsSection(null);
     }
   }
 
@@ -1064,6 +1200,24 @@ function SystemAdminDashboardContent() {
                 {users.length}
               </span>
             </button>
+
+            {/* 5. Dynamic Content Management (CMS) */}
+            <button
+              onClick={() => { setActiveTab('CMS'); setMobileSidebarOpen(false); }}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
+                activeTab === 'CMS'
+                  ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold shadow-md'
+                  : 'text-white/80 hover:bg-white/5 hover:text-white'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Globe className="w-4 h-4 text-gold-400" />
+                <span>Content Management (CMS)</span>
+              </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                LIVE
+              </span>
+            </button>
           </nav>
         </div>
 
@@ -1105,6 +1259,7 @@ function SystemAdminDashboardContent() {
                 {activeTab === 'EVENTS' && t('adminDashboard.fleet.title')}
                 {activeTab === 'ORGANIZERS' && t('adminDashboard.agencies.title')}
                 {activeTab === 'USERS' && t('adminDashboard.users.title')}
+                {activeTab === 'CMS' && 'Dynamic Content Management (CMS)'}
               </h1>
             </div>
           </div>
@@ -2327,6 +2482,443 @@ function SystemAdminDashboardContent() {
             </div>
           )}
 
+          {/* =========================================================================
+              TAB 5: CONTENT MANAGEMENT SYSTEM (CMS)
+             ========================================================================= */}
+          {activeTab === 'CMS' && (
+            <div className="space-y-8">
+              
+              {/* Header Box */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/30 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200 uppercase tracking-wider">
+                      Live Database Sync
+                    </span>
+                    <span className="text-gray-400 text-xs">• MySQL Table: cms_sections</span>
+                  </div>
+                  <h2 className="font-serif font-bold text-xl sm:text-2xl text-gray-900 mt-2 flex items-center gap-2">
+                    <Globe className="w-6 h-6 text-gold-500" />
+                    <span>Public Landing Page & Platform CMS</span>
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-1 max-w-2xl leading-relaxed">
+                    Edit public landing page copy, packages pricing, interactive simulator text, and support channels. All updates are stored in the database and immediately reflected across the website.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={fetchCmsData}
+                    className="px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all flex items-center gap-2 border border-gray-300"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Reload from DB</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Alert Banners */}
+              {cmsSaveSuccess && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold flex items-center gap-2 shadow-sm animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{cmsSaveSuccess}</span>
+                </div>
+              )}
+              {cmsSaveError && (
+                <div className="p-4 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-bold flex items-center gap-2 shadow-sm animate-fadeIn">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{cmsSaveError}</span>
+                </div>
+              )}
+
+              {/* Section 1: Hero & Brand Sanctuary */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/20 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-gold-50 border border-gold-200 text-gold-600 flex items-center justify-center font-bold">
+                      1
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-gray-900">Hero Section & Headline</h3>
+                      <p className="text-xs text-gray-500">Above-the-fold public landing page branding and call-to-actions.</p>
+                    </div>
+                  </div>
+                  <button
+                    disabled={savingCmsSection === 'hero'}
+                    onClick={() => handleSaveCmsSection('hero', cmsState.hero)}
+                    className="px-5 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold transition-all flex items-center gap-2 border border-gold-500/40 disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingCmsSection === 'hero' ? 'Saving...' : 'Save Hero Copy'}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="font-semibold text-gray-700">Badge Text (Top Pill)</label>
+                    <input
+                      type="text"
+                      value={cmsState.hero.badge}
+                      onChange={(e) => setCmsState({ ...cmsState, hero: { ...cmsState.hero, badge: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="font-semibold text-gray-700">Main Title / Headline</label>
+                    <input
+                      type="text"
+                      value={cmsState.hero.headline}
+                      onChange={(e) => setCmsState({ ...cmsState, hero: { ...cmsState.hero, headline: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none text-sm font-bold"
+                    />
+                  </div>
+                  <div className="md:col-span-2 space-y-1">
+                    <label className="font-semibold text-gray-700">Subheadline / Paragraph Description</label>
+                    <textarea
+                      rows={3}
+                      value={cmsState.hero.subheadline}
+                      onChange={(e) => setCmsState({ ...cmsState, hero: { ...cmsState.hero, subheadline: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Primary CTA Button</label>
+                    <input
+                      type="text"
+                      value={cmsState.hero.ctaPrimary}
+                      onChange={(e) => setCmsState({ ...cmsState, hero: { ...cmsState.hero, ctaPrimary: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Secondary CTA Button</label>
+                    <input
+                      type="text"
+                      value={cmsState.hero.ctaSecondary}
+                      onChange={(e) => setCmsState({ ...cmsState, hero: { ...cmsState.hero, ctaSecondary: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Packages & Pricing Tiers */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/20 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center font-bold">
+                      2
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-gray-900">Packages & Pricing Tiers</h3>
+                      <p className="text-xs text-gray-500">Tier titles, starting prices, and features description.</p>
+                    </div>
+                  </div>
+                  <button
+                    disabled={savingCmsSection === 'packages'}
+                    onClick={() => handleSaveCmsSection('packages', cmsState.packages)}
+                    className="px-5 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold transition-all flex items-center gap-2 border border-gold-500/40 disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingCmsSection === 'packages' ? 'Saving...' : 'Save Packages'}</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Section Header Title</label>
+                    <input
+                      type="text"
+                      value={cmsState.packages.headline}
+                      onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, headline: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                    {/* Essential Package */}
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                      <div className="font-bold text-slate-800 text-sm">Tier 1: Essential Package</div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Title</label>
+                        <input
+                          type="text"
+                          value={cmsState.packages.essentialTitle}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, essentialTitle: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Price Display</label>
+                        <input
+                          type="text"
+                          value={cmsState.packages.essentialPrice}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, essentialPrice: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Description</label>
+                        <textarea
+                          rows={2}
+                          value={cmsState.packages.essentialDesc}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, essentialDesc: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Signature Royal Package */}
+                    <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-300 space-y-3">
+                      <div className="font-bold text-amber-900 text-sm">Tier 2: Signature Royal (Popular)</div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Title</label>
+                        <input
+                          type="text"
+                          value={cmsState.packages.premiumTitle}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, premiumTitle: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Price Display</label>
+                        <input
+                          type="text"
+                          value={cmsState.packages.premiumPrice}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, premiumPrice: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Description</label>
+                        <textarea
+                          rows={2}
+                          value={cmsState.packages.premiumDesc}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, premiumDesc: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Platinum Executive */}
+                    <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-200 space-y-3">
+                      <div className="font-bold text-purple-900 text-sm">Tier 3: Platinum Executive</div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Title</label>
+                        <input
+                          type="text"
+                          value={cmsState.packages.goldenTitle}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, goldenTitle: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Price Display</label>
+                        <input
+                          type="text"
+                          value={cmsState.packages.goldenPrice}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, goldenPrice: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200 font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-gray-500 text-[11px]">Description</label>
+                        <textarea
+                          rows={2}
+                          value={cmsState.packages.goldenDesc}
+                          onChange={(e) => setCmsState({ ...cmsState, packages: { ...cmsState.packages, goldenDesc: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg bg-white border border-gray-200"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Live Simulator & Keepsake Settings */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                {/* Live Simulator */}
+                <div className="p-6 rounded-3xl bg-white border border-gold-500/20 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <h3 className="font-serif font-bold text-sm text-gray-900 flex items-center gap-2">
+                      <Video className="w-4 h-4 text-gold-500" />
+                      <span>Live Operations Simulator</span>
+                    </h3>
+                    <button
+                      disabled={savingCmsSection === 'experience_agafari_live'}
+                      onClick={() => handleSaveCmsSection('experience_agafari_live', cmsState.experience)}
+                      className="px-3.5 py-1.5 rounded-xl bg-black text-gold-400 text-xs font-bold hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      {savingCmsSection === 'experience_agafari_live' ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <label className="font-semibold text-gray-600 text-[11px]">Headline</label>
+                      <input
+                        type="text"
+                        value={cmsState.experience.headline}
+                        onChange={(e) => setCmsState({ ...cmsState, experience: { ...cmsState.experience, headline: e.target.value } })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-gray-600 text-[11px]">Body Text</label>
+                      <textarea
+                        rows={2}
+                        value={cmsState.experience.body}
+                        onChange={(e) => setCmsState({ ...cmsState, experience: { ...cmsState.experience, body: e.target.value } })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-semibold text-gray-600 text-[11px]">Button Label</label>
+                        <input
+                          type="text"
+                          value={cmsState.experience.cta_label}
+                          onChange={(e) => setCmsState({ ...cmsState, experience: { ...cmsState.experience, cta_label: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold text-gray-600 text-[11px]">Button URL</label>
+                        <input
+                          type="text"
+                          value={cmsState.experience.cta_url}
+                          onChange={(e) => setCmsState({ ...cmsState, experience: { ...cmsState.experience, cta_url: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Keepsake Card Section */}
+                <div className="p-6 rounded-3xl bg-white border border-gold-500/20 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                    <h3 className="font-serif font-bold text-sm text-gray-900 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-gold-500" />
+                      <span>Memories & Keepsake Card</span>
+                    </h3>
+                    <button
+                      disabled={savingCmsSection === 'memories_powered_by_agafari_card'}
+                      onClick={() => handleSaveCmsSection('memories_powered_by_agafari_card', cmsState.memories)}
+                      className="px-3.5 py-1.5 rounded-xl bg-black text-gold-400 text-xs font-bold hover:bg-gray-800 disabled:opacity-50"
+                    >
+                      {savingCmsSection === 'memories_powered_by_agafari_card' ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                  <div className="space-y-2 text-xs">
+                    <div>
+                      <label className="font-semibold text-gray-600 text-[11px]">Headline</label>
+                      <input
+                        type="text"
+                        value={cmsState.memories.headline}
+                        onChange={(e) => setCmsState({ ...cmsState, memories: { ...cmsState.memories, headline: e.target.value } })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-semibold text-gray-600 text-[11px]">Body Text</label>
+                      <textarea
+                        rows={2}
+                        value={cmsState.memories.body}
+                        onChange={(e) => setCmsState({ ...cmsState, memories: { ...cmsState.memories, body: e.target.value } })}
+                        className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="font-semibold text-gray-600 text-[11px]">Button Label</label>
+                        <input
+                          type="text"
+                          value={cmsState.memories.cta_label}
+                          onChange={(e) => setCmsState({ ...cmsState, memories: { ...cmsState.memories, cta_label: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold text-gray-600 text-[11px]">Button URL</label>
+                        <input
+                          type="text"
+                          value={cmsState.memories.cta_url}
+                          onChange={(e) => setCmsState({ ...cmsState, memories: { ...cmsState.memories, cta_url: e.target.value } })}
+                          className="w-full px-3 py-2 rounded-lg border border-gray-200 font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Section 4: Contact & Support Channels */}
+              <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/20 shadow-sm space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center font-bold">
+                      3
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-base text-gray-900">Platform Support & Contact Channels</h3>
+                      <p className="text-xs text-gray-500">Public phone lines, official headquarters address, and Telegram support.</p>
+                    </div>
+                  </div>
+                  <button
+                    disabled={savingCmsSection === 'contact_info'}
+                    onClick={() => handleSaveCmsSection('contact_info', cmsState.contact)}
+                    className="px-5 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold transition-all flex items-center gap-2 border border-gold-500/40 disabled:opacity-50 cursor-pointer self-start sm:self-auto"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingCmsSection === 'contact_info' ? 'Saving...' : 'Save Contact Channels'}</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Official Support Phone</label>
+                    <input
+                      type="text"
+                      value={cmsState.contact.phone}
+                      onChange={(e) => setCmsState({ ...cmsState, contact: { ...cmsState.contact, phone: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Official Inquiries Email</label>
+                    <input
+                      type="email"
+                      value={cmsState.contact.email}
+                      onChange={(e) => setCmsState({ ...cmsState, contact: { ...cmsState.contact, email: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Headquarters Physical Location</label>
+                    <input
+                      type="text"
+                      value={cmsState.contact.location}
+                      onChange={(e) => setCmsState({ ...cmsState, contact: { ...cmsState.contact, location: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="font-semibold text-gray-700">Telegram Concierge Handle</label>
+                    <input
+                      type="text"
+                      value={cmsState.contact.telegram}
+                      onChange={(e) => setCmsState({ ...cmsState, contact: { ...cmsState.contact, telegram: e.target.value } })}
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-gold-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          )}
+
         </main>
       </div>
 
@@ -3042,6 +3634,18 @@ function SystemAdminDashboardContent() {
           title={t('adminDashboard.tabs.users')}
         >
           <Users className="w-5 h-5" />
+        </button>
+
+        <button
+          onClick={() => setActiveTab('CMS')}
+          className={`p-3 rounded-full transition-all flex items-center justify-center ${
+            activeTab === 'CMS'
+              ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black shadow-lg scale-110'
+              : 'text-gold-400/80 hover:text-gold-400 hover:bg-white/10'
+          }`}
+          title="Content Management (CMS)"
+        >
+          <Globe className="w-5 h-5" />
         </button>
 
         <Link
