@@ -611,49 +611,53 @@ export async function resolveUserDashboardUrl(options: {
 
   // Resolve associated event ID or slug
   let resolvedEventSlug = slug;
+  let resolvedOrganizerSlug = tenantId;
+
   if (!resolvedEventSlug) {
     try {
-      const evt = await queryOne<{ slug: string; id: string }>(
-        `SELECT e.slug, e.id FROM events e 
+      const evt = await queryOne<{ slug: string; id: string; tenant_id?: string; organizer_slug?: string }>(
+        `SELECT e.slug, e.id, e.tenant_id, t.slug as organizer_slug 
+         FROM events e 
+         LEFT JOIN tenants t ON t.id = e.tenant_id
          LEFT JOIN users cu ON cu.id = e.couple_user_id 
          LEFT JOIN event_staff es ON es.event_id = e.id
          WHERE e.couple_user_id = $1 OR lower(cu.email) = lower($2) OR es.user_id = $1
          ORDER BY e.created_at DESC LIMIT 1`,
         [userId, email]
       );
-      if (evt) resolvedEventSlug = evt.slug || evt.id;
+      if (evt) {
+        resolvedEventSlug = evt.slug || evt.id;
+        if (evt.organizer_slug) resolvedOrganizerSlug = evt.organizer_slug;
+      }
     } catch {}
-
-    if (!resolvedEventSlug) {
-      const cleanEmail = (email || '').toLowerCase();
-      const mockEvt = mockStore.events.find((e: any) => {
-        const cEmail = (e.credentials?.couple?.email || e.credentials?.scanner?.email || e.credentials?.moderator?.email || '').toLowerCase();
-        return cEmail === cleanEmail || e.id === userId;
-      });
-      if (mockEvt) resolvedEventSlug = mockEvt.slug || mockEvt.id;
-    }
   }
 
-  const finalEventId = resolvedEventSlug || 'evt-bethlehem-yonas';
+  if (!resolvedEventSlug) {
+    // If no event found in database for couple or event staff, return safe error
+    return '/login?error=no_event_assigned';
+  }
 
-  // 3. COUPLE -> /couple/[eventId]
+  const finalEventId = resolvedEventSlug;
+  const prefix = resolvedOrganizerSlug ? `/${resolvedOrganizerSlug}/${finalEventId}` : `/event/${finalEventId}`;
+
+  // 3. COUPLE -> /${organizerSlug}/${finalEventId}/couple or /couple/${finalEventId}
   if (role === 'BRIDE_GROOM' || role === 'COUPLE') {
-    return `/couple/${finalEventId}`;
+    return resolvedOrganizerSlug ? `${prefix}/couple` : `/couple/${finalEventId}`;
   }
 
-  // 4. GATE SCANNER -> /event/[eventId]/scanner
+  // 4. GATE SCANNER -> /event/[eventId]/scanner or /${organizerSlug}/${finalEventId}/scanner
   if (role === 'GATE_SCANNER') {
-    return `/event/${finalEventId}/scanner`;
+    return `${prefix}/scanner`;
   }
 
-  // 5. LIVE STREAMER -> /event/${finalEventId}/live-streamer
+  // 5. LIVE STREAMER -> /event/${finalEventId}/live-streamer or /${organizerSlug}/${finalEventId}/live-streamer
   if (role === 'LIVE_STREAMER') {
-    return `/event/${finalEventId}/live-streamer`;
+    return `${prefix}/live-streamer`;
   }
 
-  // 6. MEDIA MODERATOR -> /event/[eventId]/moderation
+  // 6. MEDIA MODERATOR -> /event/[eventId]/moderation or /${organizerSlug}/${finalEventId}/moderation
   if (role === 'MODERATOR' || role === 'CONTENT_MODERATOR' || (role as string) === 'MEDIA_MODERATOR') {
-    return `/event/${finalEventId}/moderation`;
+    return `${prefix}/moderation`;
   }
 
   return '/login';
