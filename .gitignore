@@ -42,7 +42,9 @@ Thumbs.db
 .idea/
 *.swp
 
+*.zip
 Agafari_Project_Clean_Shareable.zip
+Agafari_Project_Clean_Latest_Source.zip
 
 # Database Backups
 db/backups/
