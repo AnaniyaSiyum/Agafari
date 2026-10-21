@@ -515,31 +515,31 @@ export default function HomePage() {
               <ul className="space-y-3 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>💌 <strong>250</strong> {t('landing.packagesSection.digitalInvites')}</span>
+                  <span><strong>250</strong> {t('landing.packagesSection.digitalInvites')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎙️ {t('landing.packagesSection.personalGreeting')}</span>
+                  <span>{t('landing.packagesSection.personalGreeting')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🖼️ <strong>6</strong> {t('landing.packagesSection.galleryPhotos')}</span>
+                  <span><strong>6</strong> {t('landing.packagesSection.galleryPhotos')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>💭 <strong>{t('landing.packagesSection.unlimited')}</strong> {t('landing.packagesSection.textWishes')}</span>
+                  <span><strong>{t('landing.packagesSection.unlimited')}</strong> {t('landing.packagesSection.textWishes')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎥 <strong>100</strong> {t('landing.packagesSection.videoWishes')}</span>
+                  <span><strong>100</strong> {t('landing.packagesSection.videoWishes')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎬 <strong>8</strong> {t('landing.packagesSection.btsMoments')}</span>
+                  <span><strong>8</strong> {t('landing.packagesSection.btsMoments')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>⏳ {t('landing.packagesSection.weddingCountdown')}</span>
+                  <span>{t('landing.packagesSection.weddingCountdown')}</span>
                 </li>
               </ul>
             </div>
@@ -583,31 +583,31 @@ export default function HomePage() {
               <ul className="space-y-3 text-xs text-slate-800">
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>💌 <strong>400</strong> {t('landing.packagesSection.digitalInvites')}</span>
+                  <span><strong>400</strong> {t('landing.packagesSection.digitalInvites')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>📋 {t('landing.packagesSection.fullWeddingInfo')} & 💑 Journey</span>
+                  <span>{t('landing.packagesSection.fullWeddingInfo')} & Journey</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>🎙️ {t('landing.packagesSection.familyGreetings')}</span>
+                  <span>{t('landing.packagesSection.familyGreetings')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>🎤 <strong>100</strong> Voice & 🎥 <strong>230</strong> Video Wishes</span>
+                  <span><strong>100</strong> Voice & <strong>230</strong> Video Wishes</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>🎬 <strong>20</strong> BTS Moments & 📲 Telegram Sync</span>
+                  <span><strong>20</strong> BTS Moments & Telegram Sync</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>🎬 <strong>1</strong> Feed Video / Guest</span>
+                  <span><strong>1</strong> Feed Video / Guest</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-bold">
                   <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>🔴 <strong>2</strong> Live Stream Access Viewers</span>
+                  <span><strong>2</strong> Live Stream Access Viewers</span>
                 </li>
               </ul>
             </div>
@@ -646,31 +646,31 @@ export default function HomePage() {
               <ul className="space-y-3 text-xs text-slate-700">
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>💌 <strong>{t('landing.packagesSection.unlimited')}</strong> {t('landing.packagesSection.digitalInvites')}</span>
+                  <span><strong>{t('landing.packagesSection.unlimited')}</strong> {t('landing.packagesSection.digitalInvites')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎙️ {t('landing.packagesSection.extendedGreetings')}</span>
+                  <span>{t('landing.packagesSection.extendedGreetings')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🖼️ <strong>14</strong> {t('landing.packagesSection.galleryPhotos')}</span>
+                  <span><strong>14</strong> {t('landing.packagesSection.galleryPhotos')}</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎤 Voice & 🎥 Video Wishes <strong>{t('landing.packagesSection.unlimited')}</strong></span>
+                  <span>Voice & Video Wishes <strong>{t('landing.packagesSection.unlimited')}</strong></span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎬 BTS Moments <strong>{t('landing.packagesSection.unlimited')}</strong></span>
+                  <span>BTS Moments <strong>{t('landing.packagesSection.unlimited')}</strong></span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🎬 <strong>3</strong> Feed Videos / Guest</span>
+                  <span><strong>3</strong> Feed Videos / Guest</span>
                 </li>
                 <li className="flex items-center gap-2.5 font-medium">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>🔴 <strong>3</strong> Live Stream Viewers & 💍 Forever Countdown</span>
+                  <span><strong>3</strong> Live Stream Viewers & Forever Countdown</span>
                 </li>
               </ul>
             </div>
@@ -1383,7 +1383,7 @@ export default function HomePage() {
       </footer>
 
       {/* 10. LUXURY MOBILE FLOATING BOTTOM BAR NAVIGATION WITH ACTIVE SCROLL SPY & LIVE INDICATOR */}
-      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 p-1.5 rounded-2xl border-2 border-gold-500/50 shadow-[0_10px_35px_rgba(212,175,55,0.3)] flex items-center justify-between text-[10px] font-bold text-amber-950 bg-[#FAF2D4]/95 backdrop-blur-xl">
+      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 p-1.5 rounded-2xl border-2 border-gold-500/50 shadow-[0_10px_35px_rgba(212,175,55,0.3)] flex items-center justify-between text-[10px] font-bold text-black bg-[#FAF2D4]/95 backdrop-blur-xl">
 
         {/* 1) Features Tab */}
         <motion.a
@@ -1391,16 +1391,16 @@ export default function HomePage() {
           whileTap={{ scale: 0.94 }}
           href="#features"
           className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'features'
-            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            ? 'bg-metallic text-black shadow-accent font-extrabold scale-105'
+            : 'text-black hover:text-black hover:bg-black/5 font-semibold'
             }`}
         >
-          <Layers className={`w-4 h-4 ${activeSection === 'features' ? 'text-sage-dark' : 'text-metallic'}`} />
-          <span>{t('landing.mobileNav.features')}</span>
+          <Layers className={`w-4 h-4 ${activeSection === 'features' ? 'text-black' : 'text-amber-900'}`} />
+          <span className="text-black">{t('landing.mobileNav.features')}</span>
           {activeSection === 'features' && (
             <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-black"
             />
           )}
         </motion.a>
@@ -1411,16 +1411,16 @@ export default function HomePage() {
           whileTap={{ scale: 0.94 }}
           href="#packages"
           className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'packages'
-            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            ? 'bg-metallic text-black shadow-accent font-extrabold scale-105'
+            : 'text-black hover:text-black hover:bg-black/5 font-semibold'
             }`}
         >
-          <Award className={`w-4 h-4 ${activeSection === 'packages' ? 'text-sage-dark' : 'text-metallic'}`} />
-          <span>{t('landing.mobileNav.packages')}</span>
+          <Award className={`w-4 h-4 ${activeSection === 'packages' ? 'text-black' : 'text-amber-900'}`} />
+          <span className="text-black">{t('landing.mobileNav.packages')}</span>
           {activeSection === 'packages' && (
             <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-black"
             />
           )}
         </motion.a>
@@ -1431,21 +1431,21 @@ export default function HomePage() {
           whileTap={{ scale: 0.94 }}
           href="#demo"
           className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'demo'
-            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            ? 'bg-metallic text-black shadow-accent font-extrabold scale-105'
+            : 'text-black hover:text-black hover:bg-black/5 font-semibold'
             }`}
         >
           <div className="relative">
-            <Video className={`w-4 h-4 ${activeSection === 'demo' ? 'text-sage-dark' : 'text-rose-400'}`} />
+            <Video className={`w-4 h-4 ${activeSection === 'demo' ? 'text-black' : 'text-rose-500'}`} />
             <span className={`absolute -top-1 -right-1.5 w-2 h-2 rounded-full ${activeSection === 'demo' ? 'bg-rose-600' : 'bg-rose-500 animate-pulse'}`} />
           </div>
-          <span className="flex items-center gap-1">
+          <span className="flex items-center gap-1 text-black">
             {t('landing.mobileNav.demo')}
           </span>
           {activeSection === 'demo' && (
             <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-black"
             />
           )}
         </motion.a>
@@ -1456,16 +1456,16 @@ export default function HomePage() {
           whileTap={{ scale: 0.94 }}
           href="#portfolio"
           className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'portfolio'
-            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            ? 'bg-metallic text-black shadow-accent font-extrabold scale-105'
+            : 'text-black hover:text-black hover:bg-black/5 font-semibold'
             }`}
         >
-          <Star className={`w-4 h-4 ${activeSection === 'portfolio' ? 'text-sage-dark' : 'text-metallic'}`} />
-          <span>{t('landing.mobileNav.weddings')}</span>
+          <Star className={`w-4 h-4 ${activeSection === 'portfolio' ? 'text-black' : 'text-amber-900'}`} />
+          <span className="text-black">{t('landing.mobileNav.weddings')}</span>
           {activeSection === 'portfolio' && (
             <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-black"
             />
           )}
         </motion.a>
@@ -1476,16 +1476,16 @@ export default function HomePage() {
           whileTap={{ scale: 0.94 }}
           href="#about"
           className={`relative flex flex-col items-center gap-0.5 py-1.5 px-3 rounded-xl transition-all duration-300 ${activeSection === 'about'
-            ? 'bg-metallic text-sage-dark shadow-accent font-extrabold scale-105'
-            : 'text-neutral/80 hover:text-metallic hover:bg-white/10'
+            ? 'bg-metallic text-black shadow-accent font-extrabold scale-105'
+            : 'text-black hover:text-black hover:bg-black/5 font-semibold'
             }`}
         >
-          <Building2 className={`w-4 h-4 ${activeSection === 'about' ? 'text-sage-dark' : 'text-metallic'}`} />
-          <span>{t('landing.mobileNav.about')}</span>
+          <Building2 className={`w-4 h-4 ${activeSection === 'about' ? 'text-black' : 'text-amber-900'}`} />
+          <span className="text-black">{t('landing.mobileNav.about')}</span>
           {activeSection === 'about' && (
             <motion.span
               layoutId="mobileActiveDot"
-              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-sage-dark"
+              className="absolute -bottom-0.5 w-1.5 h-1.5 rounded-full bg-black"
             />
           )}
         </motion.a>
