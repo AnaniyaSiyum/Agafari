@@ -182,7 +182,7 @@ export default function HomePage() {
       </div>
 
       {/* 1. Header Navigation */}
-      <header className="sticky top-0 z-40 glass-panel border-b border-gold-500/30 px-4 sm:px-6 py-3.5 shadow-sm bg-white/95 backdrop-blur-md">
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-white/95 via-[#FAF6EC]/85 to-[#FAF6EC]/50 sm:bg-white/95 backdrop-blur-md border-b border-gold-500/20 px-4 sm:px-6 py-2.5 sm:py-3.5 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="flex items-center justify-center">
@@ -190,10 +190,10 @@ export default function HomePage() {
                 whileHover={{ scale: 1.05 }}
                 src="/branding/agafari-logo-transparent.png"
                 alt="Agafari (አጋፋሪ) Logo"
-                className="h-9 sm:h-10 w-auto object-contain drop-shadow-sm"
+                className="h-8 sm:h-10 w-auto object-contain drop-shadow-sm"
               />
             </div>
-            <div>
+            <div className="hidden sm:block">
               <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-gray-900 block leading-none">
                 {t('nav.brandTitle')}
               </span>
@@ -219,13 +219,6 @@ export default function HomePage() {
           {/* High-Contrast CTA Button & Language Switcher */}
           <div className="flex items-center gap-2.5">
             <LanguageSwitcher />
-
-            <Link
-              href="/event/sara-and-dawit-2026"
-              className="hidden sm:flex px-4 py-2 rounded-full bg-[#FAF2D4] text-amber-950 hover:bg-[#F3E7BE] border border-gold-500/50 text-xs font-bold shadow-sm transition-all items-center gap-1"
-            >
-              <span>{t('landing.nav.exploreCelebration')}</span>
-            </Link>
 
             <motion.a
               whileHover={{ scale: 1.05 }}
