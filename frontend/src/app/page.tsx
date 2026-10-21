@@ -185,12 +185,12 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 glass-panel border-b border-gold-500/30 px-4 sm:px-6 py-3.5 shadow-sm bg-white/95 backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="p-1.5 rounded-xl bg-black shadow-md flex items-center justify-center">
+            <div className="flex items-center justify-center">
               <motion.img
                 whileHover={{ scale: 1.05 }}
-                src="/branding/artboard-13.png"
+                src="/branding/agafari-logo-transparent.png"
                 alt="Agafari (አጋፋሪ) Logo"
-                className="h-8 sm:h-9 w-auto object-contain"
+                className="h-9 sm:h-10 w-auto object-contain drop-shadow-sm"
               />
             </div>
             <div>
@@ -273,7 +273,7 @@ export default function HomePage() {
               className="relative w-40 h-40 md:w-52 md:h-52 mb-3 drop-shadow-[0_15px_30px_rgba(212,175,55,0.35)]"
             >
               <img
-                src="/branding/artboard-13.png"
+                src="/branding/agafari-logo-transparent.png"
                 alt="Agafari Golden Logo"
                 className="w-full h-full object-contain filter drop-shadow-2xl"
               />
