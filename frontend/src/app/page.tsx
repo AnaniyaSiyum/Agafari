@@ -258,17 +258,21 @@ export default function HomePage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex flex-col items-center w-full"
           >
-            {/* Agafari Golden Logo */}
+            {/* Agafari Hero Animated Center Video */}
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
+              initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.8, ease: "easeOut" }}
-              className="relative w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52 mb-2 sm:mb-3 drop-shadow-[0_15px_30px_rgba(212,175,55,0.35)]"
+              className="relative w-64 sm:w-80 md:w-96 max-w-full aspect-video mb-2 sm:mb-4 flex items-center justify-center overflow-hidden rounded-2xl drop-shadow-[0_15px_35px_rgba(212,175,55,0.25)]"
             >
-              <img
-                src="/branding/agafari-logo-transparent.png"
-                alt="Agafari Golden Logo"
-                className="w-full h-full object-contain filter drop-shadow-2xl"
+              <video
+                src="/gemini_generated_video_6eafce35.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                preload="auto"
+                className="w-full h-full object-cover mix-blend-multiply filter contrast-105"
               />
             </motion.div>
 
