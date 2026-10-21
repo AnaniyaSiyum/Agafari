@@ -1163,19 +1163,6 @@ export default function HomePage() {
               {t('landing.aboutSection.description')}
             </p>
 
-            {/* Platform Engineering Showcase Card */}
-            <div className="mt-8 max-w-3xl mx-auto p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#FAF2D4]/95 via-[#FFFDF9] to-[#FAF2D4]/95 border border-amber-300/60 shadow-[0_8px_30px_rgba(212,175,55,0.12)] text-center relative overflow-hidden">
-              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-amber-950 font-serif font-bold text-sm sm:text-base">
-                <Zap className="w-4 h-4 text-amber-700" />
-                <span>Agafari Platform Architecture & Engineering</span>
-                <span className="hidden sm:inline text-amber-400">•</span>
-                <span className="text-amber-800 font-sans font-semibold text-xs sm:text-sm">Built by Hamelmal Creatives</span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-amber-950/80 mt-2 max-w-xl mx-auto leading-relaxed">
-                From high-concurrency event stream delivery and dynamic Ethiopian language localized RSVP systems to military-grade anti-passback QR access control, Agafari is engineered and maintained end-to-end by Hamelmal Creatives.
-              </p>
-            </div>
-
             {/* Official Website Button */}
             <div className="mt-7 flex items-center justify-center">
               <motion.a
