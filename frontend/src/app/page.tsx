@@ -1138,13 +1138,24 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="text-center mb-14"
           >
-            <div className="w-14 h-14 rounded-2xl bg-sage-dark text-metallic font-serif font-bold text-3xl flex items-center justify-center mx-auto mb-3 shadow-sage border border-metallic/30">
-              H
+            {/* Official Hamelmal Creatives Emblem & Logo */}
+            <div className="flex flex-col items-center justify-center mb-3">
+              <motion.img
+                whileHover={{ scale: 1.04 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                src="/branding/hamelmal-creatives-logo.png"
+                alt="Hamelmal Creatives"
+                className="h-28 sm:h-36 md:h-40 w-auto object-contain filter drop-shadow-[0_6px_20px_rgba(212,175,55,0.22)] cursor-pointer"
+              />
             </div>
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-sage-dark text-metallic text-[10px] font-bold uppercase tracking-widest mb-3 shadow-md border border-metallic/30">
-              <Sparkles className="w-3.5 h-3.5 text-metallic" />
-              {t('landing.aboutSection.badge')}
+
+            {/* Engineered & Built Badge */}
+            <div className="inline-flex items-center gap-2.5 px-5 py-2 rounded-full bg-[#FAF2D4] text-amber-950 text-[11px] sm:text-xs font-extrabold uppercase tracking-widest mb-4 shadow-sm border border-gold-500/50">
+              <Sparkles className="w-4 h-4 text-amber-800" />
+              <span>Engineered & Built by Hamelmal Creatives</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             </div>
+
             <h2 className="font-serif text-3xl sm:text-4xl md:text-5xl font-bold text-sage-dark">
               {t('landing.aboutSection.title')}
             </h2>
@@ -1152,19 +1163,32 @@ export default function HomePage() {
               {t('landing.aboutSection.description')}
             </p>
 
+            {/* Platform Engineering Showcase Card */}
+            <div className="mt-8 max-w-3xl mx-auto p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-[#FAF2D4]/95 via-[#FFFDF9] to-[#FAF2D4]/95 border border-amber-300/60 shadow-[0_8px_30px_rgba(212,175,55,0.12)] text-center relative overflow-hidden">
+              <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-amber-950 font-serif font-bold text-sm sm:text-base">
+                <Zap className="w-4 h-4 text-amber-700" />
+                <span>Agafari Platform Architecture & Engineering</span>
+                <span className="hidden sm:inline text-amber-400">•</span>
+                <span className="text-amber-800 font-sans font-semibold text-xs sm:text-sm">Built by Hamelmal Creatives</span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-amber-950/80 mt-2 max-w-xl mx-auto leading-relaxed">
+                From high-concurrency event stream delivery and dynamic Ethiopian language localized RSVP systems to military-grade anti-passback QR access control, Agafari is engineered and maintained end-to-end by Hamelmal Creatives.
+              </p>
+            </div>
+
             {/* Official Website Button */}
-            <div className="mt-6 flex items-center justify-center">
+            <div className="mt-7 flex items-center justify-center">
               <motion.a
-                whileHover={{ scale: 1.06, y: -2 }}
+                whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.98 }}
                 href="https://hamelmal.com"
                 target="_blank"
                 rel="noreferrer"
-                className="px-8 py-4 rounded-full bg-gradient-to-r from-metallic via-amber-400 to-metallic-dark hover:from-amber-300 hover:to-metallic text-sage-dark font-extrabold text-xs shadow-accent transition-all flex items-center gap-2 border border-amber-300/40"
+                className="px-8 py-3.5 rounded-full bg-[#FAF2D4] hover:bg-[#F7E5A1] text-amber-950 font-extrabold text-xs shadow-sm transition-all flex items-center gap-2.5 border border-amber-400/60 group"
               >
-                <Sparkles className="w-4 h-4 text-sage-dark" />
-                {t('landing.aboutSection.visitBtn')}
-                <ExternalLink className="w-4 h-4 ml-1" />
+                <Sparkles className="w-4 h-4 text-amber-800 group-hover:rotate-12 transition-transform" />
+                <span>{t('landing.aboutSection.visitBtn')}</span>
+                <ExternalLink className="w-4 h-4 ml-1 text-amber-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
               </motion.a>
             </div>
           </motion.div>
@@ -1257,15 +1281,17 @@ export default function HomePage() {
           {/* Brand Info Column */}
           <div className="space-y-4 md:col-span-1">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-metallic text-sage-dark font-serif font-bold text-lg flex items-center justify-center shadow-accent">
-                H
-              </div>
+              <img
+                src="/branding/hamelmal-creatives-logo.png"
+                alt="Hamelmal Creatives"
+                className="h-10 w-auto object-contain"
+              />
               <div>
                 <span className="font-serif text-xl font-bold text-amber-950 block leading-none">
                   {t('nav.brandTitle')}
                 </span>
                 <span className="text-[9px] text-amber-800 uppercase tracking-widest mt-0.5 block font-semibold">
-                  by Hamelmal Creatives
+                  Engineered by Hamelmal Creatives
                 </span>
               </div>
             </div>
@@ -1279,11 +1305,11 @@ export default function HomePage() {
               href="https://hamelmal.com"
               target="_blank"
               rel="noreferrer"
-              className="mt-3 px-5 py-2.5 rounded-full bg-gradient-to-r from-metallic via-amber-400 to-metallic-dark hover:from-amber-300 hover:to-metallic text-sage-dark font-extrabold text-xs shadow-accent transition-all inline-flex items-center gap-2 border border-amber-300/40 group"
+              className="mt-3 px-5 py-2.5 rounded-full bg-white hover:bg-[#F7E5A1] text-amber-950 font-bold text-xs shadow-sm transition-all inline-flex items-center gap-2 border border-amber-300/50 group"
             >
-              <Sparkles className="w-3.5 h-3.5 text-sage-dark group-hover:rotate-12 transition-transform" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-800 group-hover:rotate-12 transition-transform" />
               <span>{t('landing.footer.visitParent')}</span>
-              <ExternalLink className="w-3.5 h-3.5 text-sage-dark group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              <ExternalLink className="w-3.5 h-3.5 text-amber-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </motion.a>
           </div>
 
