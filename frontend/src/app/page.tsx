@@ -241,7 +241,7 @@ export default function HomePage() {
       </header>
 
       {/* 2. Hero Section */}
-      <section id="hero" className="relative px-4 sm:px-6 pt-20 pb-28 w-full max-w-full text-center z-10 overflow-hidden flex flex-col items-center justify-center min-h-[92vh]">
+      <section id="hero" className="relative px-4 sm:px-6 py-6 sm:pt-20 sm:pb-28 w-full max-w-full text-center z-10 overflow-hidden flex flex-col items-center justify-center min-h-[calc(100dvh-60px)] sm:min-h-[92vh]">
         {/* Realistic Background Image with Layered Radial Golden Aura */}
         <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
           <img
@@ -270,7 +270,7 @@ export default function HomePage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.8, ease: "easeOut" }}
-              className="relative w-40 h-40 md:w-52 md:h-52 mb-3 drop-shadow-[0_15px_30px_rgba(212,175,55,0.35)]"
+              className="relative w-32 h-32 sm:w-44 sm:h-44 md:w-52 md:h-52 mb-2 sm:mb-3 drop-shadow-[0_15px_30px_rgba(212,175,55,0.35)]"
             >
               <img
                 src="/branding/agafari-logo-transparent.png"
@@ -282,7 +282,7 @@ export default function HomePage() {
 
             {/* Headline */}
             {cmsData?.hero?.headline ? (
-              <h1 className="font-serif text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight text-sage-dark leading-tight drop-shadow-sm text-center">
+              <h1 className="font-serif text-2xl sm:text-5xl md:text-6xl font-bold tracking-tight text-sage-dark leading-tight drop-shadow-sm text-center">
                 {cmsData.hero.headline}
               </h1>
             ) : (
@@ -304,7 +304,7 @@ export default function HomePage() {
             </p>
 
             {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
+            <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
               <motion.a
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
@@ -335,7 +335,7 @@ export default function HomePage() {
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6, duration: 0.8 }}
-            className="mt-14 grid grid-cols-2 md:grid-cols-4 gap-4 w-full max-w-4xl mx-auto pt-8 border-t border-gold-500/20"
+            className="hidden sm:grid sm:grid-cols-4 gap-4 w-full max-w-4xl mx-auto pt-8 border-t border-gold-500/20 sm:mt-14"
           >
             <div className="flex items-center justify-center gap-2 text-xs font-semibold text-sage-dark drop-shadow-sm bg-white/60 px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/80 shadow-sm">
               <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
@@ -562,19 +562,19 @@ export default function HomePage() {
           {/* PREMIUM Card */}
           <motion.div
             whileHover={{ y: -6 }}
-            className="p-7 sm:p-8 rounded-3xl border-2 border-amber-500 hover:shadow-2xl transition-all duration-300 relative flex flex-col justify-between bg-gradient-to-b from-amber-50/40 via-white to-white shadow-xl scale-[1.02] z-10"
+            className="p-7 sm:p-8 rounded-3xl border-2 border-[#F7E5A1] hover:shadow-2xl transition-all duration-300 relative flex flex-col justify-between bg-gradient-to-b from-[#F7E5A1]/15 via-white to-white shadow-xl scale-[1.02] z-10"
           >
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-black text-[10px] font-extrabold uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-amber-300">
-              <Crown className="w-3.5 h-3.5 text-black" />
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#F7E5A1] text-amber-950 text-[10px] font-extrabold uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-amber-300/80">
+              <Crown className="w-3.5 h-3.5 text-amber-950" />
               {t('landing.packagesSection.premiumBadge')}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-3 mt-2">
-                <span className="text-[10px] font-extrabold text-amber-900 uppercase tracking-widest px-2.5 py-1 rounded-md bg-amber-100 border border-amber-300">
+                <span className="text-[10px] font-extrabold text-amber-950 uppercase tracking-widest px-2.5 py-1 rounded-md bg-[#F7E5A1]/60 border border-[#F7E5A1]">
                   {t('landing.packagesSection.premiumTag')}
                 </span>
-                <span className="text-xs text-amber-900 font-extrabold bg-amber-200/80 px-2.5 py-1 rounded-full border border-amber-400">
+                <span className="text-xs text-amber-950 font-extrabold bg-[#F7E5A1] px-2.5 py-1 rounded-full border border-amber-300/70">
                   {cmsData?.packages?.premiumPrice || '35k ETB'}
                 </span>
               </div>
@@ -621,7 +621,7 @@ export default function HomePage() {
 
             <a
               href={`tel:${cmsData?.contact_info?.phone || '+251911000000'}`}
-              className="mt-8 w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 text-center font-extrabold text-xs shadow-lg shadow-amber-500/25 transition-all block"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-[#F7E5A1] hover:bg-[#ebd78f] text-amber-950 text-center font-extrabold text-xs shadow-lg shadow-amber-300/30 border border-amber-300/80 transition-all block"
             >
               {t('landing.packagesSection.premiumBtn')}
             </a>
