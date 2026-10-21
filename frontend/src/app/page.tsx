@@ -222,7 +222,7 @@ export default function HomePage() {
 
             <Link
               href="/event/sara-and-dawit-2026"
-              className="hidden sm:flex px-4 py-2 rounded-full bg-sage-dark text-neutral hover:bg-sage text-xs font-semibold shadow-sage transition-all items-center gap-1"
+              className="hidden sm:flex px-4 py-2 rounded-full bg-[#FAF2D4] text-amber-950 hover:bg-[#F3E7BE] border border-gold-500/50 text-xs font-bold shadow-sm transition-all items-center gap-1"
             >
               <span>{t('landing.nav.exploreCelebration')}</span>
             </Link>
@@ -309,10 +309,10 @@ export default function HomePage() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 href="#packages"
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-slate-950/90 backdrop-blur-md text-gold-300 font-bold text-xs sm:text-sm hover:bg-black transition-all shadow-xl flex items-center justify-center gap-2 border border-gold-500/40"
+                className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#FAF2D4] text-amber-950 font-extrabold text-xs sm:text-sm hover:bg-[#F3E7BE] transition-all shadow-xl flex items-center justify-center gap-2 border-2 border-gold-500/50"
               >
                 {cmsData?.hero?.ctaPrimary || t('landing.hero.ctaPackages')}
-                <ArrowRight className="w-4 h-4 text-gold-400" />
+                <ArrowRight className="w-4 h-4 text-amber-950" />
               </motion.a>
               {cmsData?.hero?.ctaSecondary && (
                 <motion.a
@@ -406,8 +406,8 @@ export default function HomePage() {
                           alt={feat.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-95"
                         />
-                        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 text-gold-400 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
-                          <IconComp className="w-3.5 h-3.5 text-gold-400" />
+                        <div className="absolute top-4 left-4 px-3.5 py-1.5 rounded-full bg-[#FAF2D4] backdrop-blur-md border border-gold-500/50 text-amber-950 text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1.5 shadow-md">
+                          <IconComp className="w-3.5 h-3.5 text-amber-900" />
                           {feat.badge}
                         </div>
                       </div>
@@ -425,7 +425,7 @@ export default function HomePage() {
                     <div className="px-6 pb-6 bg-white">
                       <Link
                         href={feat.link}
-                        className="w-full py-3 rounded-full bg-black text-gold-400 font-bold text-xs hover:bg-gold-500 hover:text-black transition-all flex items-center justify-center gap-2 shadow-sm border border-gold-500/30"
+                        className="w-full py-3 rounded-full bg-[#FAF2D4] text-amber-950 font-extrabold text-xs hover:bg-[#F3E7BE] transition-all flex items-center justify-center gap-2 shadow-sm border border-gold-500/40"
                       >
                         <span>{feat.btnText}</span>
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -553,7 +553,7 @@ export default function HomePage() {
 
             <a
               href={`tel:${cmsData?.contact_info?.phone || '+251911000000'}`}
-              className="mt-8 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-center font-bold text-xs transition-colors block shadow-md"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-[#FAF2D4] hover:bg-[#F3E7BE] text-amber-950 text-center font-extrabold text-xs transition-colors block shadow-md border border-gold-500/40"
             >
               {t('landing.packagesSection.essentialBtn')}
             </a>
@@ -684,7 +684,7 @@ export default function HomePage() {
 
             <a
               href="tel:+251911000000"
-              className="mt-8 w-full py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white text-center font-bold text-xs transition-colors block shadow-md"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-[#FAF2D4] hover:bg-[#F3E7BE] text-amber-950 text-center font-extrabold text-xs transition-colors block shadow-md border border-gold-500/40"
             >
               {t('landing.packagesSection.goldenBtn')}
             </a>
@@ -1258,8 +1258,8 @@ export default function HomePage() {
       </section>
 
       {/* 9. PROFESSIONAL WEDDING PLATFORM FOOTER */}
-      <footer className="bg-charcoal text-neutral/80 pt-16 pb-28 sm:pb-16 px-6 border-t border-metallic/20 text-xs relative z-10">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-neutral/10">
+      <footer className="bg-[#FAF2D4] text-amber-950 pt-16 pb-28 sm:pb-16 px-6 border-t-2 border-gold-500/30 text-xs relative z-10">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-amber-900/15">
 
           {/* Brand Info Column */}
           <div className="space-y-4 md:col-span-1">
@@ -1268,15 +1268,15 @@ export default function HomePage() {
                 H
               </div>
               <div>
-                <span className="font-serif text-xl font-bold text-neutral block leading-none">
+                <span className="font-serif text-xl font-bold text-amber-950 block leading-none">
                   {t('nav.brandTitle')}
                 </span>
-                <span className="text-[9px] text-metallic uppercase tracking-widest mt-0.5 block">
+                <span className="text-[9px] text-amber-800 uppercase tracking-widest mt-0.5 block font-semibold">
                   by Hamelmal Creatives
                 </span>
               </div>
             </div>
-            <p className="text-[11px] text-neutral/60 font-light leading-relaxed">
+            <p className="text-[11px] text-amber-950/80 font-normal leading-relaxed">
               {t('landing.footer.brandDesc')}
             </p>
 
@@ -1296,65 +1296,65 @@ export default function HomePage() {
 
           {/* Platform Features Links */}
           <div>
-            <h4 className="font-serif font-bold text-neutral text-sm mb-4">
+            <h4 className="font-serif font-bold text-amber-950 text-sm mb-4">
               {t('landing.footer.colFeatures')}
             </h4>
-            <ul className="space-y-2.5 text-[11px] text-neutral/60">
-              <li><a href="#features" className="hover:text-metallic transition-colors">{t('landing.footer.f1')}</a></li>
-              <li><a href="#features" className="hover:text-metallic transition-colors">{t('landing.footer.f2')}</a></li>
-              <li><a href="#features" className="hover:text-metallic transition-colors">{t('landing.footer.f3')}</a></li>
-              <li><a href="#features" className="hover:text-metallic transition-colors">{t('landing.footer.f4')}</a></li>
+            <ul className="space-y-2.5 text-[11px] text-amber-950/80 font-medium">
+              <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f1')}</a></li>
+              <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f2')}</a></li>
+              <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f3')}</a></li>
+              <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f4')}</a></li>
             </ul>
           </div>
 
           {/* Resources & Support Links */}
           <div>
-            <h4 className="font-serif font-bold text-neutral text-sm mb-4">
+            <h4 className="font-serif font-bold text-amber-950 text-sm mb-4">
               {t('landing.footer.colResources')}
             </h4>
-            <ul className="space-y-2.5 text-[11px] text-neutral/60">
+            <ul className="space-y-2.5 text-[11px] text-amber-950/80 font-medium">
               <li>
-                <button onClick={() => setFaqModalOpen(true)} className="hover:text-metallic transition-colors flex items-center gap-1">
-                  <HelpCircle className="w-3 h-3 text-metallic" /> {t('landing.footer.faq')}
+                <button onClick={() => setFaqModalOpen(true)} className="hover:text-amber-700 transition-colors flex items-center gap-1 cursor-pointer">
+                  <HelpCircle className="w-3 h-3 text-amber-700" /> {t('landing.footer.faq')}
                 </button>
               </li>
               <li>
-                <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-metallic transition-colors flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-metallic" /> {t('landing.footer.privacy')}
+                <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-amber-700 transition-colors flex items-center gap-1 cursor-pointer">
+                  <Shield className="w-3 h-3 text-amber-700" /> {t('landing.footer.privacy')}
                 </button>
               </li>
-              <li><a href="#packages" className="hover:text-metallic transition-colors">{t('landing.footer.packages')}</a></li>
-              <li><a href="#trusted" className="hover:text-metallic transition-colors">{t('landing.footer.partners')}</a></li>
-              <li><a href="#demo" className="hover:text-metallic transition-colors">{t('landing.footer.demo')}</a></li>
+              <li><a href="#packages" className="hover:text-amber-700 transition-colors">{t('landing.footer.packages')}</a></li>
+              <li><a href="#trusted" className="hover:text-amber-700 transition-colors">{t('landing.footer.partners')}</a></li>
+              <li><a href="#demo" className="hover:text-amber-700 transition-colors">{t('landing.footer.demo')}</a></li>
             </ul>
           </div>
 
           {/* Contact Details Column */}
           <div className="space-y-3">
-            <h4 className="font-serif font-bold text-neutral text-sm mb-4">
+            <h4 className="font-serif font-bold text-amber-950 text-sm mb-4">
               {t('landing.footer.colContact')}
             </h4>
-            <div className="flex items-center gap-2 text-[11px]">
-              <Phone className="w-3.5 h-3.5 text-metallic shrink-0" />
+            <div className="flex items-center gap-2 text-[11px] text-amber-950/90 font-medium">
+              <Phone className="w-3.5 h-3.5 text-amber-700 shrink-0" />
               <span>{cmsData?.contact_info?.phone || '+251 911 000 000 / +251 922 000 000'}</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px]">
-              <Mail className="w-3.5 h-3.5 text-metallic shrink-0" />
+            <div className="flex items-center gap-2 text-[11px] text-amber-950/90 font-medium">
+              <Mail className="w-3.5 h-3.5 text-amber-700 shrink-0" />
               <span>{cmsData?.contact_info?.email || 'contact@agafari.com'}</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px]">
-              <Building2 className="w-3.5 h-3.5 text-metallic shrink-0" />
+            <div className="flex items-center gap-2 text-[11px] text-amber-950/90 font-medium">
+              <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
               <span>{cmsData?.contact_info?.location || t('landing.footer.address')}</span>
             </div>
 
             <div className="pt-2 flex items-center gap-3">
-              <a href="#" className="p-2 rounded-full bg-white/5 border border-metallic/20 text-metallic hover:bg-metallic hover:text-sage-dark transition-all">
+              <a href="#" className="p-2 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 rounded-full bg-white/5 border border-metallic/20 text-metallic hover:bg-metallic hover:text-sage-dark transition-all">
+              <a href="#" className="p-2 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
                 <Facebook className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 rounded-full bg-white/5 border border-metallic/20 text-metallic hover:bg-metallic hover:text-sage-dark transition-all">
+              <a href="#" className="p-2 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
                 <Send className="w-4 h-4" />
               </a>
             </div>
@@ -1362,22 +1362,22 @@ export default function HomePage() {
         </div>
 
         {/* Bottom Copyright & Security Disclaimer */}
-        <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between text-[10px] text-neutral/50 gap-3">
+        <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between text-[10px] text-amber-950/70 gap-3 font-medium">
           <div>
             {t('landing.footer.copyright')}
           </div>
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-              <Lock className="w-3 h-3 text-emerald-400" /> {t('landing.footer.ssl')}
+            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+              <Lock className="w-3 h-3 text-emerald-700" /> {t('landing.footer.ssl')}
             </span>
-            <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-neutral">{t('landing.footer.privacy')}</button>
-            <button onClick={() => setFaqModalOpen(true)} className="hover:text-neutral">{t('landing.footer.faq')}</button>
+            <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-amber-950 transition-colors cursor-pointer">{t('landing.footer.privacy')}</button>
+            <button onClick={() => setFaqModalOpen(true)} className="hover:text-amber-950 transition-colors cursor-pointer">{t('landing.footer.faq')}</button>
           </div>
         </div>
       </footer>
 
       {/* 10. LUXURY MOBILE FLOATING BOTTOM BAR NAVIGATION WITH ACTIVE SCROLL SPY & LIVE INDICATOR */}
-      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 glass-panel-sage p-1.5 rounded-2xl border-2 border-metallic/40 shadow-[0_10px_35px_rgba(0,0,0,0.4)] flex items-center justify-between text-[10px] font-bold text-neutral bg-sage-dark/95 backdrop-blur-xl">
+      <div className="md:hidden fixed bottom-3 left-3 right-3 z-50 p-1.5 rounded-2xl border-2 border-gold-500/50 shadow-[0_10px_35px_rgba(212,175,55,0.3)] flex items-center justify-between text-[10px] font-bold text-amber-950 bg-[#FAF2D4]/95 backdrop-blur-xl">
 
         {/* 1) Features Tab */}
         <motion.a
@@ -1580,35 +1580,35 @@ export default function HomePage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 15 }}
               transition={{ type: "spring", stiffness: 300, damping: 25 }}
-              className="mb-3 w-72 sm:w-80 rounded-3xl bg-slate-950/95 border-2 border-gold-500/60 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl p-5 text-left text-white relative overflow-hidden"
+              className="mb-3 w-72 sm:w-80 rounded-3xl bg-[#FAF2D4] border-2 border-gold-500/60 shadow-[0_20px_50px_rgba(212,175,55,0.35)] backdrop-blur-2xl p-5 text-left text-amber-950 relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-28 h-28 bg-gold-500/10 rounded-full blur-2xl pointer-events-none" />
 
               {/* Header */}
-              <div className="flex items-center justify-between border-b border-gold-500/20 pb-3 mb-3">
+              <div className="flex items-center justify-between border-b border-gold-500/30 pb-3 mb-3">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-xl bg-gold-500 text-black flex items-center justify-center font-bold text-xs shadow-md">
                     👑
                   </div>
                   <div>
-                    <h4 className="font-serif font-bold text-xs text-gold-300 leading-none">
+                    <h4 className="font-serif font-bold text-xs text-amber-950 leading-none">
                       {t('landing.consultation.title', 'Agafari Concierge')}
                     </h4>
-                    <span className="text-[9px] text-emerald-400 font-semibold flex items-center gap-1 mt-0.5">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[9px] text-emerald-700 font-semibold flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-ping" />
                       {t('landing.consultation.onlineStatus', 'Live Now (9am - 8pm)')}
                     </span>
                   </div>
                 </div>
                 <button
                   onClick={() => setConsultationOpen(false)}
-                  className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-slate-300 flex items-center justify-center transition-all cursor-pointer"
+                  className="w-6 h-6 rounded-full bg-amber-900/10 hover:bg-amber-900/20 text-amber-950 flex items-center justify-center transition-all cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              <p className="text-[11px] text-slate-300 font-light mb-4 leading-relaxed">
+              <p className="text-[11px] text-amber-900/80 font-normal mb-4 leading-relaxed">
                 {t('landing.consultation.subtitle', 'Planning a wedding? Speak directly with our wedding technology specialists.')}
               </p>
 
@@ -1631,26 +1631,26 @@ export default function HomePage() {
                   href="https://t.me/AgafariSupport"
                   target="_blank"
                   rel="noreferrer"
-                  className="p-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-gold-500/30 text-white font-semibold text-xs flex items-center justify-between transition-all group cursor-pointer"
+                  className="p-3 rounded-2xl bg-white hover:bg-amber-50/80 border border-gold-500/30 text-amber-950 font-semibold text-xs flex items-center justify-between transition-all group cursor-pointer shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Send className="w-4 h-4 text-sky-400 shrink-0" />
+                    <Send className="w-4 h-4 text-sky-600 shrink-0" />
                     <span>{t('landing.consultation.telegramBtn', 'Chat on Telegram')}</span>
                   </div>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-colors" />
+                  <ExternalLink className="w-3.5 h-3.5 text-amber-800 group-hover:text-amber-950 transition-colors" />
                 </a>
 
                 {/* Book 15-Min Demo */}
                 <a
                   href="#packages"
                   onClick={() => setConsultationOpen(false)}
-                  className="p-3 rounded-2xl bg-slate-900/80 hover:bg-slate-800 border border-slate-800 text-amber-300 font-semibold text-xs flex items-center justify-between transition-all group cursor-pointer"
+                  className="p-3 rounded-2xl bg-white/90 hover:bg-amber-50 border border-gold-500/30 text-amber-950 font-semibold text-xs flex items-center justify-between transition-all group cursor-pointer shadow-sm"
                 >
                   <div className="flex items-center gap-2.5">
-                    <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+                    <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                     <span>{t('landing.consultation.bookDemoBtn', 'Book 15-Min VIP Demo')}</span>
                   </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-amber-400 group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="w-3.5 h-3.5 text-amber-800 group-hover:translate-x-1 transition-transform" />
                 </a>
               </div>
             </motion.div>
@@ -1662,13 +1662,13 @@ export default function HomePage() {
           whileHover={{ scale: 1.06 }}
           whileTap={{ scale: 0.94 }}
           onClick={() => setConsultationOpen(!consultationOpen)}
-          className="px-4 py-3 rounded-full bg-slate-950 border-2 border-gold-500 shadow-[0_10px_35px_rgba(212,175,55,0.45)] text-gold-400 flex items-center gap-2.5 backdrop-blur-md cursor-pointer group"
+          className="px-4 py-3 rounded-full bg-[#FAF2D4] border-2 border-gold-500 shadow-[0_10px_35px_rgba(212,175,55,0.45)] text-amber-950 flex items-center gap-2.5 backdrop-blur-md cursor-pointer group"
         >
           <div className="relative flex items-center justify-center">
-            <MessageCircle className="w-5 h-5 text-gold-400 group-hover:rotate-12 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-950 animate-pulse" />
+            <MessageCircle className="w-5 h-5 text-amber-950 group-hover:rotate-12 transition-transform" />
+            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-[#FAF2D4] animate-pulse" />
           </div>
-          <span className="text-xs font-bold text-white hidden sm:inline-block">
+          <span className="text-xs font-bold text-amber-950 hidden sm:inline-block">
             {t('landing.consultation.triggerBtn', 'Quick Consultation')}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-gold-500 text-black font-extrabold uppercase">

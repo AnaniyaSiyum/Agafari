@@ -132,15 +132,15 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="h-9 px-3.5 rounded-full bg-black/90 backdrop-blur-md border border-gold-500/40 hover:border-gold-400 text-gold-400 text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer active:scale-95"
+        className="h-9 px-3.5 rounded-full bg-[#FAF2D4] backdrop-blur-md border border-gold-500/50 hover:bg-[#F3E7BE] text-amber-950 text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer active:scale-95"
       >
-        <Globe className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+        <Globe className="w-3.5 h-3.5 text-amber-900 shrink-0" />
         <span>{active.label}</span>
-        <ChevronDown className={`w-3.5 h-3.5 text-gold-400/80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-amber-900/80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-40 rounded-2xl bg-black border-2 border-gold-500/50 shadow-2xl p-1.5 z-50 space-y-1 animate-in fade-in zoom-in-95">
+        <div className="absolute right-0 mt-2 w-40 rounded-2xl bg-[#FAF2D4] border-2 border-gold-500/50 shadow-2xl p-1.5 z-50 space-y-1 animate-in fade-in zoom-in-95">
           {(Object.keys(localeNames) as Locale[]).map((key) => {
             const item = localeNames[key];
             const isSelected = locale === key;
@@ -155,7 +155,7 @@ export function LanguageSwitcher({ className = '' }: { className?: string }) {
                 className={`w-full px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-between cursor-pointer ${
                   isSelected
                     ? 'bg-gold-500 text-black font-extrabold shadow-md'
-                    : 'text-gold-300 hover:bg-gold-500/10 hover:text-white'
+                    : 'text-amber-950 hover:bg-gold-500/20'
                 }`}
               >
                 <span>{item.label}</span>
