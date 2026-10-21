@@ -302,7 +302,7 @@ export default function HomePage() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.98 }}
                 href="#packages"
-                className="w-full sm:w-auto px-8 py-4 rounded-full bg-[#FAF2D4] text-amber-950 font-extrabold text-xs sm:text-sm hover:bg-[#F3E7BE] transition-all shadow-xl flex items-center justify-center gap-2 border-2 border-gold-500/50"
+                className="w-[60%] sm:w-auto px-5 py-3.5 sm:px-8 sm:py-4 rounded-full bg-[#FAF2D4] text-amber-950 font-extrabold text-xs sm:text-sm hover:bg-[#F3E7BE] transition-all shadow-xl flex items-center justify-center gap-2 border-2 border-gold-500/50 text-center"
               >
                 {cmsData?.hero?.ctaPrimary || t('landing.hero.ctaPackages')}
                 <ArrowRight className="w-4 h-4 text-amber-950" />
@@ -555,19 +555,19 @@ export default function HomePage() {
           {/* PREMIUM Card */}
           <motion.div
             whileHover={{ y: -6 }}
-            className="p-7 sm:p-8 rounded-3xl border-2 border-[#F7E5A1] hover:shadow-2xl transition-all duration-300 relative flex flex-col justify-between bg-gradient-to-b from-[#F7E5A1]/15 via-white to-white shadow-xl scale-[1.02] z-10"
+            className="p-7 sm:p-8 rounded-3xl border-2 border-[#EEC83F] hover:shadow-2xl transition-all duration-300 relative flex flex-col justify-between bg-gradient-to-b from-[#EEC83F]/20 via-white to-white shadow-xl scale-[1.02] z-10"
           >
-            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#F7E5A1] text-amber-950 text-[10px] font-extrabold uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-amber-300/80">
+            <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full bg-[#EEC83F] text-amber-950 text-[10px] font-extrabold uppercase tracking-wider shadow-md flex items-center gap-1.5 border border-amber-300/80">
               <Crown className="w-3.5 h-3.5 text-amber-950" />
               {t('landing.packagesSection.premiumBadge')}
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-3 mt-2">
-                <span className="text-[10px] font-extrabold text-amber-950 uppercase tracking-widest px-2.5 py-1 rounded-md bg-[#F7E5A1]/60 border border-[#F7E5A1]">
+                <span className="text-[10px] font-extrabold text-amber-950 uppercase tracking-widest px-2.5 py-1 rounded-md bg-[#EEC83F]/60 border border-[#EEC83F]">
                   {t('landing.packagesSection.premiumTag')}
                 </span>
-                <span className="text-xs text-amber-950 font-extrabold bg-[#F7E5A1] px-2.5 py-1 rounded-full border border-amber-300/70">
+                <span className="text-xs text-amber-950 font-extrabold bg-[#EEC83F] px-2.5 py-1 rounded-full border border-amber-300/70">
                   {cmsData?.packages?.premiumPrice || '35k ETB'}
                 </span>
               </div>
@@ -614,7 +614,7 @@ export default function HomePage() {
 
             <a
               href={`tel:${cmsData?.contact_info?.phone || '+251911000000'}`}
-              className="mt-8 w-full py-3.5 rounded-2xl bg-[#F7E5A1] hover:bg-[#ebd78f] text-amber-950 text-center font-extrabold text-xs shadow-lg shadow-amber-300/30 border border-amber-300/80 transition-all block"
+              className="mt-8 w-full py-3.5 rounded-2xl bg-[#EEC83F] hover:bg-[#dec236] text-amber-950 text-center font-extrabold text-xs shadow-lg shadow-amber-300/30 border border-amber-300/80 transition-all block"
             >
               {t('landing.packagesSection.premiumBtn')}
             </a>
@@ -714,8 +714,8 @@ export default function HomePage() {
                 key={tab.id}
                 onClick={() => setActiveDemoTab(tab.id as any)}
                 className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeDemoTab === tab.id
-                  ? 'bg-sage-dark text-metallic shadow-sage scale-105'
-                  : 'glass-panel text-sage-dark hover:bg-white'
+                  ? 'bg-[#FAF2D4] text-amber-950 shadow-md scale-105 border-2 border-gold-500/60'
+                  : 'bg-white/80 border border-gold-500/30 text-amber-950/80 hover:bg-[#FAF2D4]/50 hover:text-amber-950'
                   }`}
               >
                 {tab.label}
