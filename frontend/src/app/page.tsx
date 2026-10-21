@@ -279,15 +279,6 @@ export default function HomePage() {
               />
             </motion.div>
 
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/90 backdrop-blur-md text-gold-400 text-[11px] font-extrabold uppercase tracking-wider mb-5 border border-gold-500/40 shadow-md"
-            >
-              <Crown className="w-3.5 h-3.5 text-gold-400" />
-              {cmsData?.hero?.badge || t('landing.hero.badge')}
-            </motion.div>
 
             {/* Headline */}
             {cmsData?.hero?.headline ? (
@@ -378,10 +369,6 @@ export default function HomePage() {
               viewport={{ once: true }}
               transition={{ duration: 0.6 }}
             >
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black text-gold-400 text-[11px] font-bold uppercase tracking-widest mb-4 shadow-md border border-gold-500/30">
-                <Crown className="w-3.5 h-3.5 text-gold-400" />
-                {t('landing.featuresSection.badge')}
-              </div>
 
               <h2 className={`font-serif text-3xl sm:text-5xl lg:text-6xl font-bold text-gray-900 tracking-tight leading-tight ${locale === 'am' ? 'font-amharic-royal' : ''}`}>
                 {t('landing.featuresSection.title')}{' '}
@@ -709,26 +696,6 @@ export default function HomePage() {
       <section id="demo" className="py-24 bg-gray-50/60 w-full max-w-full px-4 sm:px-6 border-t border-b border-gray-200/60 relative">
         <div className="max-w-6xl mx-auto">
 
-          {/* Active Section & Live Page Indicator Badge */}
-          <div className="flex items-center justify-center mb-6">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black border border-gold-500/40 shadow-md text-white text-xs backdrop-blur-md">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500" />
-              </span>
-              <span className="text-gold-400 font-bold uppercase text-[10px] tracking-wider">
-                {t('landing.demoHub.badge')}
-              </span>
-              <span className="text-gold-500/40">•</span>
-              <span className="text-[11px] text-gray-200 font-medium">
-                {activeDemoTab === 'COMING_SOON' && t('landing.demoHub.tab1')}
-                {activeDemoTab === 'INVITATION' && t('landing.demoHub.tab2')}
-                {activeDemoTab === 'FEED' && t('landing.demoHub.tab3')}
-                {activeDemoTab === 'LIVE' && t('landing.demoHub.tab4')}
-                {activeDemoTab === 'SCANNER' && t('landing.demoHub.tab5')}
-              </span>
-            </div>
-          </div>
 
           <div className="text-center mb-12">
             <span className="text-[10px] text-metallic-dark font-semibold uppercase tracking-widest block mb-1">
