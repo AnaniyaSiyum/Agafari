@@ -71,7 +71,7 @@ function resolveDestination(userRole?: string, redirectParam?: string | null, se
   return serverRedirectUrl || '/login';
 }
 
-export default function UniversalLoginPage() {
+function UniversalLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -492,5 +492,19 @@ export default function UniversalLoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function UniversalLoginPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center text-amber-400">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <UniversalLoginForm />
+    </React.Suspense>
   );
 }
