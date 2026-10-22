@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
+import TransparentVideoLogo from '@/components/TransparentVideoLogo';
 
 export default function HomePage() {
   const { t, locale } = useTranslation();
@@ -182,7 +183,7 @@ export default function HomePage() {
       </div>
 
       {/* 1. Header Navigation */}
-      <header className="sticky top-0 z-40 bg-[#D8D3C5] border-b border-amber-950/10 px-4 sm:px-6 py-2.5 sm:py-3.5 transition-colors">
+      <header className="sticky top-0 z-40 bg-gradient-to-b from-white/95 via-[#FAF6EC]/85 to-[#FAF6EC]/50 sm:bg-white/95 backdrop-blur-md border-b border-gold-500/20 px-4 sm:px-6 py-2.5 sm:py-3.5 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
             <div className="flex items-center justify-center">
@@ -234,9 +235,21 @@ export default function HomePage() {
       </header>
 
       {/* 2. Hero Section */}
-      <section id="hero" className="relative px-4 sm:px-6 py-6 sm:pt-20 sm:pb-28 w-full max-w-full text-center z-10 overflow-hidden flex flex-col items-center justify-center min-h-[calc(100dvh-60px)] sm:min-h-[92vh] bg-[#D8D3C5]">
-        {/* Solid matching video background (#D8D3C5) */}
-        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden bg-[#D8D3C5]" />
+      <section id="hero" className="relative px-4 sm:px-6 py-6 sm:pt-20 sm:pb-28 w-full max-w-full text-center z-10 overflow-hidden flex flex-col items-center justify-center min-h-[calc(100dvh-60px)] sm:min-h-[92vh]">
+        {/* Subtle Ethiopian Wedding Photography Background with Golden Ambient Halos */}
+        <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+          <img
+            src="/images/hero_couple_bg.png"
+            alt="Beautiful Ethiopian Wedding"
+            className="w-full h-full object-cover object-center opacity-25 mix-blend-luminosity filter brightness-95"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/80 to-white z-10" />
+
+          {/* Glowing Ambient Radial Halos */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] bg-gradient-to-r from-amber-300/20 via-gold-500/25 to-amber-500/20 rounded-full blur-[120px] z-0" />
+          <div className="absolute top-1/2 left-10 w-72 h-72 bg-gold-400/15 rounded-full blur-[90px] z-0" />
+          <div className="absolute top-1/3 right-10 w-72 h-72 bg-amber-500/15 rounded-full blur-[90px] z-0" />
+        </div>
 
         <div className="relative z-20 w-full max-w-5xl mx-auto flex flex-col items-center">
           <motion.div
@@ -245,22 +258,14 @@ export default function HomePage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex flex-col items-center w-full"
           >
-            {/* Agafari Hero Animated Center Video */}
+            {/* Agafari Hero Animated Video with Background Removed & Golden Amharic Emblem */}
             <motion.div
               initial={{ scale: 0.85, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.1, duration: 0.8, ease: "easeOut" }}
-              className="relative w-64 sm:w-80 md:w-96 max-w-full aspect-video mb-2 sm:mb-4 flex items-center justify-center overflow-hidden"
+              className="relative w-64 sm:w-80 md:w-96 max-w-full mb-1 sm:mb-2 flex flex-col items-center justify-center"
             >
-              <video
-                src="/gemini_generated_video_6eafce35.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                preload="auto"
-                className="w-full h-full object-cover"
-              />
+              <TransparentVideoLogo />
             </motion.div>
 
 
