@@ -111,7 +111,15 @@ function UniversalLoginForm() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        setError(`Server returned status ${res.status}. Please try again.`);
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok) {
         setError(data.error || 'Invalid 6-digit code. Please try again.');
@@ -170,7 +178,22 @@ function UniversalLoginForm() {
         }),
       });
 
-      const data = await res.json();
+      let data: any = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        const text = await res.text().catch(() => '');
+        console.error('Non-JSON response from /api/auth/login:', res.status, text.slice(0, 200));
+        if (res.status === 404) {
+          setError('Backend API not found (404). If deployed on static hosting (like cPanel public_html without Node.js), API routes require the backend service running.');
+          setLoading(false);
+          return;
+        }
+        setError(`Server returned HTTP ${res.status}. Please check backend API.`);
+        setLoading(false);
+        return;
+      }
 
       if (!res.ok) {
         if (res.status === 429) {

@@ -7,6 +7,7 @@ const nextDir = path.join(frontendRoot, '.next');
 const publicDir = path.join(frontendRoot, 'public');
 const outDir = path.join(frontendRoot, 'out');
 const rootOutDir = path.join(projectRoot, 'out');
+const phpBackendDir = path.join(frontendRoot, 'php-backend');
 
 console.log('📦 Preparing static "out" distribution for landing page & static routes...');
 
@@ -78,7 +79,51 @@ if (fs.existsSync(serverAppDir)) {
   console.log('✓ Copied prerendered static pages to out/');
 }
 
-// 5. Mirror to project root out/ as well
+// 5. Package PHP backend & API endpoints for cPanel / LiteSpeed web servers
+if (fs.existsSync(phpBackendDir)) {
+  const destPhpDir = path.join(outDir, 'php-backend');
+  copyDirSync(phpBackendDir, destPhpDir);
+
+  // Copy login.php as index.php in out/api/auth/login/
+  const outApiLoginDir = path.join(outDir, 'api', 'auth', 'login');
+  fs.mkdirSync(outApiLoginDir, { recursive: true });
+  const loginPhpSrc = path.join(phpBackendDir, 'api', 'auth', 'login.php');
+  if (fs.existsSync(loginPhpSrc)) {
+    fs.copyFileSync(loginPhpSrc, path.join(outApiLoginDir, 'index.php'));
+  }
+
+  console.log('✓ Bundled PHP API endpoints for cPanel / LiteSpeed hosting');
+}
+
+// 6. Generate .htaccess for clean URL routing and API proxy on Apache / LiteSpeed
+const htaccessContent = `<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Direct API requests to PHP backend if present
+  RewriteRule ^api/auth/login/?$ api/auth/login/index.php [L,QSA]
+
+  # Serve existing physical files directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Clean URLs fallback for exported HTML routes
+  RewriteCond %{REQUEST_FILENAME}.html -f
+  RewriteRule ^(.*)$ $1.html [L]
+
+  # Directory fallback
+  RewriteCond %{REQUEST_FILENAME}/index.html -f
+  RewriteRule ^(.*)$ $1/index.html [L]
+
+  # Fallback to root index.html
+  RewriteRule ^ index.html [L]
+</IfModule>
+`;
+fs.writeFileSync(path.join(outDir, '.htaccess'), htaccessContent);
+console.log('✓ Generated .htaccess for Apache / LiteSpeed server routing');
+
+// 7. Mirror to project root out/ as well
 try {
   cleanAndCreateDir(rootOutDir);
   copyDirSync(outDir, rootOutDir);

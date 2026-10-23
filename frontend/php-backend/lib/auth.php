@@ -12,11 +12,22 @@ function hash_password_php(string $password): string {
 }
 
 function verify_password_php(string $password, string $storedHash): bool {
-    $parts = explode(':', $storedHash);
-    if (count($parts) !== 2) {
+    if (empty($password) || empty($storedHash)) {
         return false;
     }
-    list($salt, $originalHash) = $parts;
-    $computedHash = hash_pbkdf2('sha512', $password, $salt, 100000, 128);
-    return hash_equals($originalHash, $computedHash);
+
+    // 1. Standard Bcrypt check ($2y$, $2a$, $2b$)
+    if (str_starts_with($storedHash, '$2y$') || str_starts_with($storedHash, '$2a$') || str_starts_with($storedHash, '$2b$')) {
+        return password_verify($password, $storedHash);
+    }
+
+    // 2. Legacy PBKDF2 check (salt:hash)
+    $parts = explode(':', $storedHash);
+    if (count($parts) === 2) {
+        list($salt, $originalHash) = $parts;
+        $computedHash = hash_pbkdf2('sha512', $password, $salt, 100000, 128);
+        return hash_equals($originalHash, $computedHash);
+    }
+
+    return false;
 }
