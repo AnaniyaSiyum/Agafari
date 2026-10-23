@@ -81,9 +81,8 @@ export async function middleware(req: NextRequest) {
   const isAdminRoute = (path === '/admin' || path.startsWith('/admin/')) && !path.startsWith('/admin/login');
   const isOrganizerDashboard = path === '/organizer' || path.startsWith('/organizer/');
   const isCoupleDashboard =
-    path === '/couple' ||
     path.startsWith('/couple/') ||
-    path.endsWith('/couple') ||
+    (path.endsWith('/couple') && path !== '/couple') ||
     path.endsWith('/couple-portal');
   const isScannerRoute = path === '/scanner' || path.startsWith('/scanner/') || path.endsWith('/scanner');
   const isLiveStreamerRoute = path === '/live-streamer' || path.startsWith('/live-streamer/') || path.endsWith('/live-streamer');
@@ -98,7 +97,8 @@ export async function middleware(req: NextRequest) {
   // Helper for authenticated role redirects to prevent login loop
   const redirectAuthenticatedUser = (u: JwtPayload) => {
     if (u.role === 'COUPLE' || u.role === 'BRIDE_GROOM') {
-      return NextResponse.redirect(new URL('/couple', req.url));
+      const coupleSlug = u.eventSlug || u.slug || u.scopeId;
+      return NextResponse.redirect(new URL(coupleSlug ? `/couple/${encodeURIComponent(coupleSlug)}` : '/', req.url));
     }
     if (u.role === 'EVENT_ORGANIZER' || u.role === 'ORGANIZER_OWNER') {
       return NextResponse.redirect(new URL('/organizer', req.url));
