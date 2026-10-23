@@ -933,28 +933,34 @@ function PublicWeddingCelebrationContent({
             </div>
           </div>
 
-          {/* DYNAMIC MAP NAVIGATION BUTTON */}
-          <div className="pt-4 border-t border-gold-500/30 flex flex-col sm:flex-row items-center justify-between gap-5 px-2">
-            <div className="text-left flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-gold-400 shrink-0" />
-              <span className="text-xs sm:text-sm text-gray-100 font-medium drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
-                {venueTitle}
-              </span>
-            </div>
-
-            <a
-              href={event.venueMapUrl || `https://maps.google.com/?q=${encodeURIComponent(venueTitle)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="relative group overflow-hidden w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-400 via-gold-400 to-amber-500 hover:from-gold-300 hover:to-amber-400 text-black font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-[0_0_30px_rgba(234,179,8,0.6)] transition-all duration-300 flex items-center justify-center gap-3 shrink-0 border-2 border-amber-200 cursor-pointer hover:scale-105 active:scale-95"
-            >
-              <span className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/40 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out" />
-              <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center shrink-0">
-                <MapPin className="w-5 h-5 text-black animate-bounce" />
+          {/* DYNAMIC MAP NAVIGATION CARD */}
+          <div className="pt-6 border-t border-gold-500/30">
+            <div className="rounded-2xl bg-black/60 backdrop-blur-md border border-gold-500/40 p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
+              <div className="flex items-center gap-3.5 text-left w-full md:w-auto">
+                <div className="w-12 h-12 rounded-xl bg-gold-500/10 border border-gold-500/40 flex items-center justify-center shrink-0">
+                  <MapPin className="w-6 h-6 text-gold-400" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-gold-400/90 font-bold uppercase tracking-widest block">
+                    {t('publicEvent.venueLabel', 'Wedding Ceremony & Venue')}
+                  </span>
+                  <h4 className="text-sm sm:text-base font-serif font-bold text-white truncate drop-shadow">
+                    {venueTitle}
+                  </h4>
+                </div>
               </div>
-              <span className="drop-shadow-sm font-black">{t('publicEvent.openVenueMap', '📍 TAP TO OPEN VENUE MAP & DIRECTIONS')}</span>
-              <ExternalLink className="w-4 h-4 text-black group-hover:translate-x-1 transition-transform" />
-            </a>
+
+              <a
+                href={event.venueMapUrl || `https://maps.google.com/?q=${encodeURIComponent(venueTitle)}`}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full md:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-gold transition-all duration-300 flex items-center justify-center gap-2.5 shrink-0 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
+              >
+                <MapPin className="w-4 h-4 text-black shrink-0" />
+                <span>{t('publicEvent.openVenueMap', 'Open Venue Map & Directions')}</span>
+                <ExternalLink className="w-4 h-4 text-black shrink-0" />
+              </a>
+            </div>
           </div>
         </motion.div>
 
@@ -1074,7 +1080,7 @@ function PublicWeddingCelebrationContent({
       {/* ========================================================================= */}
       {/* 3. QR GATE PASS SECTION */}
       {/* ========================================================================= */}
-      <section className="px-4 sm:px-6 py-8 max-w-4xl mx-auto">
+      <section className="px-4 sm:px-6 pt-10 pb-8 max-w-4xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -1100,7 +1106,7 @@ function PublicWeddingCelebrationContent({
           </div>
 
           {/* VIP Gate Invitation Card Pass Section */}
-          <div className="p-6 sm:p-8 rounded-3xl bg-black/40 border border-gold-500/40 my-4 text-left space-y-6 relative overflow-hidden">
+          <div className="p-6 sm:p-8 rounded-3xl bg-black/60 backdrop-blur-md border border-gold-500/40 my-4 text-left space-y-6 relative overflow-hidden shadow-2xl">
             <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               {/* Left Column: QR Code Box */}
               <div className="p-4 bg-white rounded-3xl border-2 border-gold-500 shadow-2xl text-center shrink-0">
@@ -1116,14 +1122,14 @@ function PublicWeddingCelebrationContent({
               </div>
 
               {/* Right Column (Beside QR Code): Card Pass Info & Download Button */}
-              <div className="flex-1 space-y-4 text-center md:text-left">
+              <div className="flex-1 w-full space-y-4 text-center md:text-left">
                 <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-extrabold uppercase tracking-wider border border-gold-500/40">
                   <Crown className="w-3.5 h-3.5 text-gold-400" />
                   <span>{t('publicEvent.officialRoyalPass', 'Official Royal Gate Entrance Pass')}</span>
                 </div>
 
                 <div>
-                  <h4 className="font-serif font-bold text-xl sm:text-2xl text-white drop-shadow">
+                  <h4 className="font-serif font-bold text-xl sm:text-3xl text-white capitalize drop-shadow">
                     {rsvpGuestName || t('publicEvent.honoredGuestFamily', 'Honored Guest & Family')}
                   </h4>
                   <p className="text-xs text-gold-300 font-serif italic mt-0.5 drop-shadow">
@@ -1138,19 +1144,19 @@ function PublicWeddingCelebrationContent({
                   </div>
                   <div className="flex items-center gap-2 justify-center md:justify-start">
                     <MapPin className="w-4 h-4 text-gold-400 shrink-0" />
-                    <span className="font-medium text-stone-200">{venueTitle}</span>
+                    <span className="font-medium text-stone-200 truncate">{venueTitle}</span>
                   </div>
                 </div>
 
-                {/* Prominent Download Button Right Beside QR Code */}
-                <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+                {/* Responsive Action Buttons - Non-Clipping Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
                   <button
                     type="button"
                     onClick={() => setCardModalOpen(true)}
-                    className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
+                    className="w-full px-4 py-3.5 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
                   >
-                    <Download className="w-4 h-4 text-black animate-bounce" />
-                    <span>{t('publicEvent.downloadCardPassPng', 'Download Designed Card Pass (.PNG)')}</span>
+                    <Download className="w-4 h-4 text-black shrink-0" />
+                    <span className="truncate">{t('publicEvent.downloadCardPassPng', 'Download Card (.PNG)')}</span>
                   </button>
 
                   <button
@@ -1161,10 +1167,10 @@ function PublicWeddingCelebrationContent({
                       setCopiedPass(true);
                       setTimeout(() => setCopiedPass(false), 3000);
                     }}
-                    className="w-full sm:w-auto px-5 py-3.5 rounded-2xl bg-black/80 text-stone-200 hover:text-white font-bold text-xs border border-gold-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:scale-105"
+                    className="w-full px-4 py-3.5 rounded-xl bg-black/80 hover:bg-black text-stone-200 hover:text-white font-bold text-xs border border-gold-500/40 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 hover:scale-105"
                   >
-                    {copiedPass ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-gold-400" />}
-                    <span>{copiedPass ? t('publicEvent.linkCopied', 'Link Copied!') : t('publicEvent.copyLink', 'Copy Link')}</span>
+                    {copiedPass ? <Check className="w-4 h-4 text-emerald-400 shrink-0" /> : <Copy className="w-4 h-4 text-gold-400 shrink-0" />}
+                    <span className="truncate">{copiedPass ? t('publicEvent.linkCopied', 'Link Copied!') : t('publicEvent.copyLink', 'Copy Pass Link')}</span>
                   </button>
                 </div>
               </div>
@@ -1302,10 +1308,10 @@ function PublicWeddingCelebrationContent({
           <form onSubmit={handleWishSubmit} className="space-y-4 text-xs relative z-10">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-bold text-gray-900 uppercase tracking-wider">
+                <label className="text-[11px] font-bold text-gold-300 uppercase tracking-wider">
                   {t('publicEvent.wishes.senderName')}
                 </label>
-                <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200 flex items-center gap-1 shadow-2xs">
+                <span className="text-[10px] font-bold text-gold-300 bg-gold-500/10 border border-gold-500/30 px-3 py-1 rounded-full flex items-center gap-1.5 shadow-sm">
                   {t('publicEvent.autoFilledPass', '🔒 Auto-filled from RSVP Guest Pass')}
                 </span>
               </div>
@@ -1316,13 +1322,13 @@ function PublicWeddingCelebrationContent({
                 disabled
                 value={senderName || rsvpGuestName || invitation?.guestName || (typeof window !== 'undefined' ? localStorage.getItem(`agafari_guest_name_${slug}`) : '') || t('publicEvent.honoredGuestFamily', 'Honored Guest')}
                 placeholder={t('publicEvent.wishes.senderPlaceholder')}
-                className="w-full px-4 py-3 rounded-xl border-2 border-gold-500/40 bg-gray-100 text-gray-900 font-bold text-xs focus:outline-none cursor-not-allowed shadow-inner"
+                className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-gold-200 font-bold text-xs focus:outline-none cursor-not-allowed shadow-inner"
               />
             </div>
 
             {wishType === 'VIDEO' ? (
               <div className="space-y-3">
-                <label className="block text-[10px] font-bold text-gray-900 uppercase tracking-wider">
+                <label className="block text-[11px] font-bold text-gold-300 uppercase tracking-wider">
                   {t('publicEvent.uploadVideoBlessing', 'Upload Video Blessing')}
                 </label>
 
@@ -1341,19 +1347,19 @@ function PublicWeddingCelebrationContent({
                           setVideoFile(null);
                           setVideoPreviewUrl(null);
                         }}
-                        className="text-rose-400 hover:text-rose-300 font-bold"
+                        className="text-rose-400 hover:text-rose-300 font-bold cursor-pointer"
                       >
                         {t('common.cancel', 'Remove')}
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <label className="border-2 border-dashed border-gold-500/50 rounded-2xl p-8 text-center cursor-pointer hover:border-gold-500 transition-all block bg-gray-50 group shadow-sm">
-                    <div className="w-14 h-14 rounded-full bg-gold-500/20 text-gray-900 mx-auto flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform">
-                      <Upload className="w-6 h-6 text-gold-600" />
+                  <label className="border-2 border-dashed border-gold-500/40 hover:border-gold-400 rounded-2xl p-8 text-center cursor-pointer transition-all block bg-black/40 hover:bg-black/60 group shadow-lg backdrop-blur-md">
+                    <div className="w-14 h-14 rounded-full bg-gold-500/20 text-gold-400 mx-auto flex items-center justify-center mb-2.5 group-hover:scale-110 transition-transform border border-gold-500/30">
+                      <Upload className="w-6 h-6 text-gold-400" />
                     </div>
-                    <p className="font-serif font-bold text-sm text-gray-900">{t('publicEvent.recordOrSelectVideo', 'Record or Select Video Blessing')}</p>
-                    <p className="text-[11px] text-gray-500 mt-1 font-light">{t('publicEvent.supportsVideoLimits', 'Supports phone video recording up to 60 seconds (Max 50MB)')}</p>
+                    <p className="font-serif font-bold text-sm text-white group-hover:text-gold-300 transition-colors">{t('publicEvent.recordOrSelectVideo', 'Record or Select Video Blessing')}</p>
+                    <p className="text-[11px] text-stone-300 mt-1 font-light">{t('publicEvent.supportsVideoLimits', 'Supports phone video recording up to 60 seconds (Max 50MB)')}</p>
                     <input
                       type="file"
                       accept="video/*"
@@ -1364,7 +1370,7 @@ function PublicWeddingCelebrationContent({
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-gray-900 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-bold text-gold-300 uppercase tracking-wider mb-1">
                     {t('publicEvent.captionLabel', 'Caption / Personal Message')}
                   </label>
                   <input
@@ -1372,13 +1378,13 @@ function PublicWeddingCelebrationContent({
                     value={wishMessage}
                     onChange={(e) => setWishMessage(e.target.value)}
                     placeholder={t('publicEvent.captionPlaceholder', 'e.g. Wishing you endless joy and blessings!')}
-                    className="w-full px-4 py-2.5 rounded-xl border-2 border-gold-500/30 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gold-500 text-xs font-medium"
+                    className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 text-xs font-medium"
                   />
                 </div>
               </div>
             ) : (
               <div>
-                <label className="block text-[10px] font-bold text-gray-900 uppercase tracking-wider mb-1.5">
+                <label className="block text-[11px] font-bold text-gold-300 uppercase tracking-wider mb-1.5">
                   {t('publicEvent.wishes.messageLabel')}
                 </label>
                 <textarea
@@ -1387,7 +1393,7 @@ function PublicWeddingCelebrationContent({
                   value={wishMessage}
                   onChange={(e) => setWishMessage(e.target.value)}
                   placeholder={t('publicEvent.wishes.messagePlaceholder')}
-                  className="w-full px-4 py-3 rounded-xl border-2 border-gold-500/30 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-gold-500 text-xs leading-relaxed font-medium"
+                  className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 text-xs leading-relaxed font-medium"
                 />
               </div>
             )}
@@ -1395,7 +1401,7 @@ function PublicWeddingCelebrationContent({
             <button
               type="submit"
               disabled={submittingWish}
-              className="w-full py-4 rounded-full bg-gold-500 hover:bg-gold-600 text-black font-extrabold text-xs sm:text-sm shadow-gold transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer border border-gold-400/40"
+              className="w-full py-4 rounded-2xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs sm:text-sm shadow-gold transition-all flex items-center justify-center gap-2 disabled:opacity-50 mt-4 cursor-pointer border border-gold-300 active:scale-98 hover:scale-[1.01]"
             >
               <Sparkles className="w-4 h-4 text-black" />
               <span>{submittingWish ? t('publicEvent.wishes.sendingButton') : t('publicEvent.wishes.submitButton')}</span>
@@ -1422,7 +1428,7 @@ function PublicWeddingCelebrationContent({
       {/* ========================================================================= */}
       {/* VERY BOTTOM SECTION: ATTENDANCE RSVP CONFIRMATION BAR */}
       {/* ========================================================================= */}
-      <section className="px-4 sm:px-6 pt-6 pb-12 max-w-4xl mx-auto w-full">
+      <section className="px-4 sm:px-6 pt-6 pb-28 max-w-4xl mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -1468,42 +1474,6 @@ function PublicWeddingCelebrationContent({
           </button>
         </motion.div>
       </section>
-
-      {/* FLOATING BOTTOM NAVIGATION DOCK */}
-      <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 bg-black/90 backdrop-blur-xl border-2 border-gold-500/60 rounded-full px-3 py-2 shadow-2xl flex items-center gap-2 sm:gap-3 text-xs font-bold animate-in slide-in-from-bottom-5">
-        <Link
-          href={`/event/${slug}${queryString}`}
-          className="px-4 py-2 rounded-full bg-gold-500 text-black shadow-gold scale-105 transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Home className="w-4 h-4 shrink-0 fill-black" />
-          <span className="hidden sm:inline">Home</span>
-        </Link>
-
-        <Link
-          href={`/event/${slug}/history${queryString}`}
-          className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Heart className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Couple History</span>
-          <span className="sm:hidden">History</span>
-        </Link>
-
-        <Link
-          href={`/event/${slug}/program${queryString}`}
-          className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Calendar className="w-4 h-4 shrink-0" />
-          <span className="hidden sm:inline">Programs</span>
-        </Link>
-
-        <Link
-          href={`/event/${slug}/gallery${queryString}`}
-          className="px-3.5 py-2 rounded-full text-gold-300 hover:bg-gold-500/20 hover:text-white transition-all flex items-center gap-1.5 cursor-pointer"
-        >
-          <Camera className="w-4 h-4 shrink-0" />
-          <span>Gallery</span>
-        </Link>
-      </div>
 
       {/* FOOTER PROMOTION */}
       <section className="mt-12 py-10 bg-white border-t border-gray-100 px-6">
