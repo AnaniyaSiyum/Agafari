@@ -935,14 +935,14 @@ function PublicWeddingCelebrationContent({
 
           {/* DYNAMIC MAP NAVIGATION CARD */}
           <div className="pt-6 border-t border-gold-500/30">
-            <div className="rounded-2xl bg-black/60 backdrop-blur-md border border-gold-500/40 p-4 sm:p-5 flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl">
-              <div className="flex items-center gap-3.5 text-left w-full md:w-auto">
-                <div className="w-12 h-12 rounded-xl bg-gold-500/10 border border-gold-500/40 flex items-center justify-center shrink-0">
-                  <MapPin className="w-6 h-6 text-gold-400" />
+            <div className="rounded-2xl bg-black/80 backdrop-blur-md border border-gold-500/40 p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-3.5 shadow-xl">
+              <div className="flex items-center gap-3 text-left w-full sm:w-auto min-w-0 flex-1">
+                <div className="w-10 h-10 rounded-xl bg-gold-500/15 border border-gold-500/40 flex items-center justify-center shrink-0">
+                  <MapPin className="w-5 h-5 text-gold-400" />
                 </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] text-gold-400/90 font-bold uppercase tracking-widest block">
-                    {t('publicEvent.venueLabel', 'Wedding Ceremony & Venue')}
+                <div className="min-w-0 flex-1">
+                  <span className="text-[10px] text-gold-400 font-bold uppercase tracking-widest block">
+                    {t('publicEvent.venueLabel', 'Venue:')}
                   </span>
                   <h4 className="text-sm sm:text-base font-serif font-bold text-white truncate drop-shadow">
                     {venueTitle}
@@ -954,11 +954,11 @@ function PublicWeddingCelebrationContent({
                 href={event.venueMapUrl || `https://maps.google.com/?q=${encodeURIComponent(venueTitle)}`}
                 target="_blank"
                 rel="noreferrer"
-                className="w-full md:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs sm:text-sm tracking-wider uppercase shadow-gold transition-all duration-300 flex items-center justify-center gap-2.5 shrink-0 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs tracking-wider uppercase shadow-gold transition-all duration-300 flex items-center justify-center gap-2 shrink-0 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
               >
-                <MapPin className="w-4 h-4 text-black shrink-0" />
-                <span>{t('publicEvent.openVenueMap', 'Open Venue Map & Directions')}</span>
-                <ExternalLink className="w-4 h-4 text-black shrink-0" />
+                <MapPin className="w-3.5 h-3.5 text-black shrink-0" />
+                <span className="whitespace-nowrap">{t('publicEvent.openVenueMap', 'Venue Map & Directions')}</span>
+                <ExternalLink className="w-3.5 h-3.5 text-black shrink-0" />
               </a>
             </div>
           </div>
