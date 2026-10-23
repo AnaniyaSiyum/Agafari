@@ -1180,75 +1180,233 @@ function PublicWeddingCelebrationContent({
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. SONG RECOMMENDATION SECTION */}
+      {/* 4. SONG RECOMMENDATION & ROYAL MUSIC CELEBRATION SECTION */}
       {/* ========================================================================= */}
-      <section className="px-4 sm:px-6 py-8 max-w-4xl mx-auto border-t border-gold-500/20">
-        <div className="space-y-6 text-center">
-          <div className="flex items-center justify-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-gold-500/20 text-gold-400 flex items-center justify-center border border-gold-500/40">
-              <Music className="w-5 h-5 text-gold-400" />
+      <section className="px-4 sm:px-6 py-12 max-w-4xl mx-auto border-t border-gold-500/30">
+        <div className="space-y-8 text-center">
+          {/* SECTION HEADER & AUDIO VIBE CONTROLLER */}
+          <div className="space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-gold-500/20 text-gold-400 text-[10px] font-bold uppercase tracking-widest border border-gold-500/40">
+              <Sparkles className="w-3.5 h-3.5 text-gold-400 animate-pulse" />
+              <span>{t('publicEvent.royalSoundscapeBadge', '✨ Royal Celebration Soundscape')}</span>
             </div>
-            <div className="text-left">
-              <h3 className="font-serif text-xl sm:text-2xl font-bold text-white drop-shadow">
-                {t('publicEvent.honoredPerformers', 'Honored Performers & Music Playlist')}
-              </h3>
-              <p className="text-xs text-gray-200 font-light drop-shadow">
-                {t('publicEvent.musicalGuestsDesc', 'Distinguished musical guests & spiritual choirs performing for {couple}.').replace('{couple}', coupleTitle)}
-              </p>
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {[
-              { name: t('publicEvent.choirName', 'Ethiopian Orthodox Wedding Choir'), role: t('publicEvent.choirRole', 'Spiritual Entrance Mezmurs'), type: 'CHOIR' },
-              { name: t('publicEvent.bandName', 'Addis Cultural Habesha Band'), role: t('publicEvent.bandRole', 'Traditional Eskista & Merekba Dance'), type: 'BAND' },
-              { name: t('publicEvent.acousticName', 'Acoustic Habesha Ensemble'), role: t('publicEvent.acousticRole', 'Dinner & Royal Vows Serenade'), type: 'ACOUSTIC' },
-            ].map((artist, idx) => (
-              <div key={idx} className="p-5 rounded-2xl bg-black/40 border border-gold-500/30 text-left space-y-1">
-                <span className="px-2.5 py-0.5 rounded-full bg-gold-500/20 text-gold-300 font-bold text-[9px] border border-gold-500/30">
-                  {artist.type}
-                </span>
-                <div className="font-serif font-bold text-white text-sm mt-1 drop-shadow">{artist.name}</div>
-                <div className="text-[11px] text-gray-200 drop-shadow">{artist.role}</div>
-              </div>
-            ))}
-          </div>
+            <h3 className="font-serif text-2xl sm:text-4xl font-bold text-white tracking-wide drop-shadow-[0_2px_10px_rgba(0,0,0,0.9)]">
+              {t('publicEvent.honoredPerformers', 'Honored Performers & Music Playlist')}
+            </h3>
 
-          <div className="p-6 rounded-2xl border border-gold-500/30 bg-black/40 text-left">
-            <h4 className="font-serif font-bold text-white text-sm mb-1 drop-shadow">
-              {t('publicEvent.recommendMezmur', 'Recommend a Mezmur or Song to {couple}').replace('{couple}', coupleTitle)}
-            </h4>
-            <p className="text-xs text-gray-200 font-light mb-4 drop-shadow">
-              {t('publicEvent.songSuggestDesc', 'Have a favorite spiritual Mezmur or upbeat Eskista song you\'d love to hear at the wedding? Suggest it below!')}
+            <p className="text-xs sm:text-sm text-gray-200 font-light max-w-xl mx-auto leading-relaxed drop-shadow">
+              {t('publicEvent.musicalGuestsDesc', 'Distinguished musical guests & spiritual choirs performing for {couple}.').replace('{couple}', coupleTitle)}
             </p>
 
+            {/* INTERACTIVE BACKGROUND AUDIO TOGGLE PILL */}
+            <div className="pt-2 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={toggleAudio}
+                className={`px-5 py-2.5 rounded-full flex items-center gap-2.5 text-xs font-extrabold transition-all duration-300 border shadow-lg cursor-pointer active:scale-95 hover:scale-105 ${
+                  isPlayingAudio
+                    ? 'bg-gradient-to-r from-amber-400 via-gold-400 to-amber-500 text-black border-amber-200 shadow-[0_0_20px_rgba(234,179,8,0.5)]'
+                    : 'bg-black/70 hover:bg-black/90 text-gold-300 border-gold-500/40 hover:text-white'
+                }`}
+              >
+                {isPlayingAudio ? (
+                  <>
+                    <div className="flex items-end gap-1 h-3.5">
+                      <span className="w-1 bg-black rounded-full animate-bounce h-full" />
+                      <span className="w-1 bg-black rounded-full animate-pulse h-2/3" />
+                      <span className="w-1 bg-black rounded-full animate-bounce h-4/5" />
+                      <span className="w-1 bg-black rounded-full animate-pulse h-1/2" />
+                    </div>
+                    <span>{t('publicEvent.nowPlayingAnthem', 'Now Playing: Royal Wedding Mezmur • Tap to Mute')}</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-3.5 h-3.5 text-gold-400 fill-gold-400" />
+                    <span>{t('publicEvent.playAnthemPrompt', 'Play Official Wedding Anthem (Leykunu)')}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* 3 HIGH-END PERFORMER SHOWCASE CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {[
+              {
+                name: t('publicEvent.choirName', 'Ethiopian Orthodox Wedding Choir'),
+                amharicName: 'የኦርቶዶክስ ተዋሕዶ ዝማሬ',
+                role: t('publicEvent.choirRole', 'Spiritual Entrance Mezmurs'),
+                type: 'CHOIR',
+                tag: 'SACRED ENTRANCE',
+                timing: '2:00 PM Entrance',
+                instruments: 'ከበሮና በገና • Kebero & Begena',
+                icon: Crown,
+                color: 'from-amber-500/20 to-gold-600/10',
+                border: 'border-gold-500/40',
+                signatures: '“Leykunu” • “Mariam Fiqresh”',
+              },
+              {
+                name: t('publicEvent.bandName', 'Addis Cultural Habesha Band'),
+                amharicName: 'ባህላዊ የሙዚቃ ባንድ',
+                role: t('publicEvent.bandRole', 'Traditional Eskista & Merekba Dance'),
+                type: 'BAND',
+                tag: 'TRADITIONAL ESKISTA',
+                timing: '6:30 PM Grand Reception',
+                instruments: 'ክራርና ዋሽንት • Kirar & Washint',
+                icon: Radio,
+                color: 'from-amber-600/20 to-orange-600/10',
+                border: 'border-amber-500/40',
+                signatures: '“Gonder Eskista” • “Wollo Ambassel”',
+              },
+              {
+                name: t('publicEvent.acousticName', 'Acoustic Habesha Ensemble'),
+                amharicName: 'የፍቅር ዜማ አኮስቲክ',
+                role: t('publicEvent.acousticRole', 'Dinner & Royal Vows Serenade'),
+                type: 'ACOUSTIC',
+                tag: 'ROYAL VOWS & DINNER',
+                timing: '8:30 PM Candlelight Banquet',
+                instruments: 'ቫዮሊንና ፒያኖ • Strings & Piano',
+                icon: Heart,
+                color: 'from-rose-500/20 to-gold-600/10',
+                border: 'border-rose-400/40',
+                signatures: '“Romantic Tizita” • “Royal Vows”',
+              },
+            ].map((artist, idx) => {
+              const IconComponent = artist.icon;
+              return (
+                <div
+                  key={idx}
+                  className={`relative rounded-3xl bg-gradient-to-b ${artist.color} bg-black/80 backdrop-blur-xl border ${artist.border} p-6 text-left flex flex-col justify-between shadow-2xl hover:shadow-[0_10px_30px_rgba(212,175,55,0.25)] hover:border-gold-400 transition-all duration-300 group overflow-hidden`}
+                >
+                  <div className="space-y-3.5">
+                    {/* TOP BADGES */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="px-3 py-1 rounded-full bg-gold-500/20 text-gold-300 font-extrabold text-[9px] uppercase tracking-wider border border-gold-500/30 flex items-center gap-1.5 shadow-xs">
+                        <IconComponent className="w-3 h-3 text-gold-400" />
+                        <span>{artist.tag}</span>
+                      </span>
+
+                      <span className="text-[10px] text-stone-300 font-medium px-2.5 py-0.5 rounded-full bg-black/60 border border-white/10">
+                        {artist.timing}
+                      </span>
+                    </div>
+
+                    {/* PERFORMER TITLE & AMHARIC SUBTITLE */}
+                    <div>
+                      <h4 className="font-serif font-bold text-white text-base sm:text-lg group-hover:text-gold-300 transition-colors drop-shadow">
+                        {artist.name}
+                      </h4>
+                      <p className="text-[11px] text-gold-300/80 font-serif italic mt-0.5">
+                        {artist.amharicName}
+                      </p>
+                    </div>
+
+                    {/* ROLE DESCRIPTION */}
+                    <p className="text-xs text-stone-200 font-light leading-relaxed drop-shadow">
+                      {artist.role}
+                    </p>
+
+                    {/* HABESHA INSTRUMENTS */}
+                    <div className="pt-2 border-t border-gold-500/20 flex items-center gap-2 text-[11px] text-gold-200">
+                      <Music className="w-3.5 h-3.5 text-gold-400 shrink-0" />
+                      <span className="font-medium truncate">{artist.instruments}</span>
+                    </div>
+                  </div>
+
+                  {/* BOTTOM SIGNATURE TRACKS & EQUALIZER */}
+                  <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[10px] text-stone-300">
+                    <span className="truncate pr-2">
+                      <strong className="text-gold-400">Tracks:</strong> {artist.signatures}
+                    </span>
+
+                    {/* Decorative mini equalizer */}
+                    <div className="flex items-end gap-0.5 h-2.5 shrink-0 opacity-70 group-hover:opacity-100 transition-opacity">
+                      <span className="w-0.5 bg-gold-400 rounded-full h-full animate-pulse" />
+                      <span className="w-0.5 bg-gold-400 rounded-full h-1/2 animate-bounce" />
+                      <span className="w-0.5 bg-gold-400 rounded-full h-3/4 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* INTERACTIVE SONG & MEZMUR RECOMMENDATION BOOTH */}
+          <div className="p-6 sm:p-8 rounded-3xl border border-gold-500/40 bg-gradient-to-b from-black/85 via-black/75 to-black/90 backdrop-blur-xl text-left shadow-2xl relative overflow-hidden">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-2xl bg-gold-500/20 border border-gold-500/40 text-gold-400 flex items-center justify-center shrink-0">
+                <Music className="w-5 h-5 text-gold-400" />
+              </div>
+              <div>
+                <h4 className="font-serif font-bold text-white text-base sm:text-lg drop-shadow">
+                  {t('publicEvent.recommendMezmur', 'Recommend a Mezmur or Song to {couple}').replace('{couple}', coupleTitle)}
+                </h4>
+                <p className="text-xs text-stone-300 font-light drop-shadow">
+                  {t('publicEvent.songSuggestDesc', 'Have a favorite spiritual Mezmur or upbeat Eskista song you\'d love to hear at the wedding? Suggest it below!')}
+                </p>
+              </div>
+            </div>
+
+            {/* QUICK PRESET CHIPS FOR EASY 1-TAP SUGGESTION */}
+            <div className="py-3 flex flex-wrap items-center gap-2 border-b border-gold-500/20 mb-4">
+              <span className="text-[11px] text-gold-300 font-bold mr-1">
+                {t('publicEvent.quickPickLabel', 'Quick Picks:')}
+              </span>
+              {[
+                { label: '✨ Leykunu (ይሁንላቸው)', title: 'Leykunu (ይሁንላቸው)', artist: 'Orthodox Wedding Choir' },
+                { label: '💃 Gonder Eskista', title: 'YeGonder Eskista Rhythms', artist: 'Cultural Band' },
+                { label: '🎷 Romantic Tizita', title: 'Tizita Acoustic Serenade', artist: 'Strings Ensemble' },
+                { label: '🙏 Tewahido Hymn', title: 'Mariam Fiqresh Hymn', artist: 'Orthodox Choir' },
+              ].map((preset, pIdx) => (
+                <button
+                  key={pIdx}
+                  type="button"
+                  onClick={() => {
+                    setGuestSongTitle(preset.title);
+                    setGuestSongArtist(preset.artist);
+                  }}
+                  className="px-3 py-1 rounded-full bg-gold-500/10 hover:bg-gold-500/25 text-gold-300 hover:text-white border border-gold-500/30 text-[11px] font-semibold transition-all cursor-pointer active:scale-95"
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+
             {songSubmittedSuccess ? (
-              <div className="p-3 rounded-xl bg-emerald-950 border border-emerald-500 text-emerald-200 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                {t('publicEvent.songSuccessMsg', 'Thank you! Your song recommendation has been sent to {couple}!').replace('{couple}', coupleTitle)}
+              <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500 text-emerald-200 text-xs flex items-center gap-3 shadow-lg">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span className="font-medium">
+                  {t('publicEvent.songSuccessMsg', 'Thank you! Your song recommendation has been queued for {couple}\'s royal celebration!').replace('{couple}', coupleTitle)}
+                </span>
               </div>
             ) : (
-              <form onSubmit={handleSongRecommendation} className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
-                <input
-                  type="text"
-                  required
-                  value={guestSongTitle}
-                  onChange={(e) => setGuestSongTitle(e.target.value)}
-                  placeholder={t('publicEvent.songTitlePlaceholder', 'Song or Mezmur Title')}
-                  className="px-3.5 py-2.5 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
-                />
-                <input
-                  type="text"
-                  value={guestSongArtist}
-                  onChange={(e) => setGuestSongArtist(e.target.value)}
-                  placeholder={t('publicEvent.songArtistPlaceholder', 'Choir / Singer (Optional)')}
-                  className="px-3.5 py-2.5 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white focus:outline-none focus:ring-2 focus:ring-gold-500"
-                />
+              <form onSubmit={handleSongRecommendation} className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div>
+                  <input
+                    type="text"
+                    required
+                    value={guestSongTitle}
+                    onChange={(e) => setGuestSongTitle(e.target.value)}
+                    placeholder={t('publicEvent.songTitlePlaceholder', 'Song or Mezmur Title (e.g. Leykunu)')}
+                    className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 shadow-inner"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={guestSongArtist}
+                    onChange={(e) => setGuestSongArtist(e.target.value)}
+                    placeholder={t('publicEvent.songArtistPlaceholder', 'Choir / Singer / Genre (Optional)')}
+                    className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 shadow-inner"
+                  />
+                </div>
                 <button
                   type="submit"
-                  className="py-2.5 rounded-xl bg-gold-500 text-black font-extrabold text-xs hover:bg-gold-400 shadow-gold flex items-center justify-center gap-1.5 border border-gold-300 cursor-pointer"
+                  className="py-3 px-6 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all duration-300 flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
                 >
-                  <Send className="w-3.5 h-3.5 text-black" /> {t('publicEvent.sendRecommendation', 'Send Recommendation')}
+                  <Send className="w-3.5 h-3.5 text-black" />
+                  <span>{t('publicEvent.sendRecommendation', 'Send Recommendation')}</span>
                 </button>
               </form>
             )}
