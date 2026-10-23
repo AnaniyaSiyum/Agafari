@@ -287,11 +287,6 @@ export default function HomePage() {
                 </motion.span>
               </h1>
             )}
-
-            <p className={`max-w-2xl mx-auto text-sm sm:text-base text-charcoal-light mt-5 mb-8 font-light leading-relaxed drop-shadow-sm ${locale === 'am' ? 'font-amharic-body' : ''}`}>
-              {cmsData?.hero?.subheadline || t('landing.hero.description')}
-            </p>
-
             {/* CTA Buttons */}
             <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 w-full sm:w-auto">
               <motion.a
