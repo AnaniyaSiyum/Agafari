@@ -1,6 +1,8 @@
 # Dependencies
 node_modules/
 **/node_modules/
+vendor/
+**/vendor/
 
 # Next.js build output & cache
 .next/
@@ -17,19 +19,50 @@ dist/
 cf.exe
 cloudflared.exe
 
-# Environment variables & secrets
+# Environment variables & secrets (allow .env.example templates)
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 **/.env
-**/.env.local
+**/.env.*
+!**/.env.example
+
+# Credentials, Certificates & Private Keys
+*.pem
+*.key
+*.pub
+*.cert
+*.crt
+*.pfx
+*.p12
+*.pkcs12
+*id_rsa*
+*id_ed25519*
+*credentials*.json
+*service-account*.json
+credentials/
+**/credentials/
+secrets/
+**/secrets/
+
+# Test Artifacts & Code Coverage
+test-results/
+**/test-results/
+playwright-report/
+**/playwright-report/
+blob-report/
+**/blob-report/
+coverage/
+**/coverage/
+.nyc_output/
+*.lcov
+junit.xml
 
 # Temp and Scratch files
 scratch/
 **/scratch/
 tmp/
+**/tmp/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -41,7 +74,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+*.swo
 
+# Project Archive Zips
 *.zip
 Agafari_Project_Clean_Shareable.zip
 Agafari_Project_Clean_Latest_Source.zip
@@ -49,5 +84,4 @@ Agafari_Project_Clean_Latest_Source.zip
 # Database Backups
 db/backups/
 **/db/backups/
-
-
+*.sql.gz

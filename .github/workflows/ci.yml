@@ -26,6 +26,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Run Dependency Vulnerability Audit
+        working-directory: frontend
+        run: npm run audit:ci
+
       - name: Run TypeScript Type Check
         working-directory: frontend
         run: npx tsc --noEmit

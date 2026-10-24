@@ -1,5 +1,5 @@
 # Dependencies
-/node_modules
+node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
@@ -7,14 +7,30 @@
 # Next.js build and development cache
 /.next/
 /out/
-
-# Production build artifacts
 /build
 /dist
 
-# Environment variables
-.env*.local
+# Environment variables & secrets (preserve .env.example)
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+*.cert
+*.pfx
+*.p12
+*credentials*.json
+*service-account*.json
+
+# Test Artifacts & Coverage
+test-results/
+playwright-report/
+blob-report/
+coverage/
+.nyc_output/
+*.lcov
+junit.xml
 
 # Debug & OS logs
 npm-debug.log*
@@ -22,7 +38,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 .DS_Store
-*.pem
 Thumbs.db
 
 # IDE and editor files
