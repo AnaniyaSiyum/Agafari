@@ -1253,7 +1253,7 @@ export default function HomePage() {
       </section>
 
       {/* 9. PROFESSIONAL WEDDING PLATFORM FOOTER */}
-      <footer className="bg-[#FAF2D4] text-amber-950 pt-16 pb-28 sm:pb-16 px-6 border-t-2 border-gold-500/30 text-xs relative z-10">
+      <footer className="bg-[#FAF2D4] text-amber-950 pt-16 pb-28 sm:pb-16 px-6 border-t-2 border-gold-500/30 text-xs sm:text-sm relative z-10">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10 pb-12 border-b border-amber-900/15">
 
           {/* Brand Info Column */}
@@ -1262,18 +1262,18 @@ export default function HomePage() {
               <img
                 src="/branding/hamelmal-creatives-logo.png"
                 alt="Hamelmal Creatives"
-                className="h-10 w-auto object-contain"
+                className="h-11 w-auto object-contain"
               />
               <div>
-                <span className="font-serif text-xl font-bold text-amber-950 block leading-none">
+                <span className="font-serif text-2xl font-bold text-amber-950 block leading-none">
                   {t('nav.brandTitle')}
                 </span>
-                <span className="text-[9px] text-amber-800 uppercase tracking-widest mt-0.5 block font-semibold">
+                <span className="text-[11px] sm:text-xs text-amber-800 uppercase tracking-wider mt-1 block font-semibold">
                   Engineered by Hamelmal Creatives
                 </span>
               </div>
             </div>
-            <p className="text-[11px] text-amber-950/80 font-normal leading-relaxed">
+            <p className="text-xs sm:text-sm text-amber-950/85 font-normal leading-relaxed">
               {t('landing.footer.brandDesc')}
             </p>
 
@@ -1283,20 +1283,20 @@ export default function HomePage() {
               href="https://hamelmal.com"
               target="_blank"
               rel="noreferrer"
-              className="mt-3 px-5 py-2.5 rounded-full bg-white hover:bg-[#F7E5A1] text-amber-950 font-bold text-xs shadow-sm transition-all inline-flex items-center gap-2 border border-amber-300/50 group"
+              className="mt-3 px-5 py-2.5 sm:px-6 sm:py-3 rounded-full bg-white hover:bg-[#F7E5A1] text-amber-950 font-bold text-xs sm:text-sm shadow-sm transition-all inline-flex items-center gap-2 border border-amber-300/50 group"
             >
-              <Sparkles className="w-3.5 h-3.5 text-amber-800 group-hover:rotate-12 transition-transform" />
+              <Sparkles className="w-4 h-4 text-amber-800 group-hover:rotate-12 transition-transform" />
               <span>{t('landing.footer.visitParent')}</span>
-              <ExternalLink className="w-3.5 h-3.5 text-amber-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              <ExternalLink className="w-4 h-4 text-amber-900 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </motion.a>
           </div>
 
           {/* Platform Features Links */}
           <div>
-            <h4 className="font-serif font-bold text-amber-950 text-sm mb-4">
+            <h4 className="font-serif font-bold text-amber-950 text-base sm:text-lg mb-4">
               {t('landing.footer.colFeatures')}
             </h4>
-            <ul className="space-y-2.5 text-[11px] text-amber-950/80 font-medium">
+            <ul className="space-y-3 text-xs sm:text-sm text-amber-950/85 font-medium">
               <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f1')}</a></li>
               <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f2')}</a></li>
               <li><a href="#features" className="hover:text-amber-700 transition-colors">{t('landing.footer.f3')}</a></li>
@@ -1306,18 +1306,18 @@ export default function HomePage() {
 
           {/* Resources & Support Links */}
           <div>
-            <h4 className="font-serif font-bold text-amber-950 text-sm mb-4">
+            <h4 className="font-serif font-bold text-amber-950 text-base sm:text-lg mb-4">
               {t('landing.footer.colResources')}
             </h4>
-            <ul className="space-y-2.5 text-[11px] text-amber-950/80 font-medium">
+            <ul className="space-y-3 text-xs sm:text-sm text-amber-950/85 font-medium">
               <li>
-                <button onClick={() => setFaqModalOpen(true)} className="hover:text-amber-700 transition-colors flex items-center gap-1 cursor-pointer">
-                  <HelpCircle className="w-3 h-3 text-amber-700" /> {t('landing.footer.faq')}
+                <button onClick={() => setFaqModalOpen(true)} className="hover:text-amber-700 transition-colors flex items-center gap-1.5 cursor-pointer">
+                  <HelpCircle className="w-3.5 h-3.5 text-amber-700" /> {t('landing.footer.faq')}
                 </button>
               </li>
               <li>
-                <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-amber-700 transition-colors flex items-center gap-1 cursor-pointer">
-                  <Shield className="w-3 h-3 text-amber-700" /> {t('landing.footer.privacy')}
+                <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-amber-700 transition-colors flex items-center gap-1.5 cursor-pointer">
+                  <Shield className="w-3.5 h-3.5 text-amber-700" /> {t('landing.footer.privacy')}
                 </button>
               </li>
               <li><a href="#packages" className="hover:text-amber-700 transition-colors">{t('landing.footer.packages')}</a></li>
@@ -1328,30 +1328,30 @@ export default function HomePage() {
 
           {/* Contact Details Column */}
           <div className="space-y-3">
-            <h4 className="font-serif font-bold text-amber-950 text-sm mb-4">
+            <h4 className="font-serif font-bold text-amber-950 text-base sm:text-lg mb-4">
               {t('landing.footer.colContact')}
             </h4>
-            <div className="flex items-center gap-2 text-[11px] text-amber-950/90 font-medium">
-              <Phone className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-amber-950/90 font-medium">
+              <Phone className="w-4 h-4 text-amber-700 shrink-0" />
               <span>{cmsData?.contact_info?.phone || '+251 911 000 000 / +251 922 000 000'}</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-amber-950/90 font-medium">
-              <Mail className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-amber-950/90 font-medium">
+              <Mail className="w-4 h-4 text-amber-700 shrink-0" />
               <span>{cmsData?.contact_info?.email || 'contact@agafari.com'}</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-amber-950/90 font-medium">
-              <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <div className="flex items-center gap-2.5 text-xs sm:text-sm text-amber-950/90 font-medium">
+              <Building2 className="w-4 h-4 text-amber-700 shrink-0" />
               <span>{cmsData?.contact_info?.location || t('landing.footer.address')}</span>
             </div>
 
             <div className="pt-2 flex items-center gap-3">
-              <a href="#" className="p-2 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
+              <a href="#" className="p-2.5 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
                 <Instagram className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
+              <a href="#" className="p-2.5 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
                 <Facebook className="w-4 h-4" />
               </a>
-              <a href="#" className="p-2 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
+              <a href="#" className="p-2.5 rounded-full bg-amber-900/10 border border-gold-500/30 text-amber-900 hover:bg-gold-500 hover:text-black transition-all">
                 <Send className="w-4 h-4" />
               </a>
             </div>
@@ -1359,13 +1359,13 @@ export default function HomePage() {
         </div>
 
         {/* Bottom Copyright & Security Disclaimer */}
-        <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between text-[10px] text-amber-950/70 gap-3 font-medium">
+        <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-amber-950/80 gap-3 font-medium">
           <div>
             {t('landing.footer.copyright')}
           </div>
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-              <Lock className="w-3 h-3 text-emerald-700" /> {t('landing.footer.ssl')}
+          <div className="flex items-center gap-5">
+            <span className="flex items-center gap-1.5 text-emerald-700 font-semibold">
+              <Lock className="w-3.5 h-3.5 text-emerald-700" /> {t('landing.footer.ssl')}
             </span>
             <button onClick={() => setPrivacyModalOpen(true)} className="hover:text-amber-950 transition-colors cursor-pointer">{t('landing.footer.privacy')}</button>
             <button onClick={() => setFaqModalOpen(true)} className="hover:text-amber-950 transition-colors cursor-pointer">{t('landing.footer.faq')}</button>
