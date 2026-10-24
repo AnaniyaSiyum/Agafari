@@ -1180,9 +1180,10 @@ function PublicWeddingCelebrationContent({
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. HONORED PERFORMERS & SONG SUGGESTION SECTION (CLEAN & SIMPLE) */}
+      {/* 4. HONORED PERFORMERS & SONG SUGGESTION SECTION (SEPARATE & SPACIOUS) */}
       {/* ========================================================================= */}
-      <section className="px-4 sm:px-6 py-10 max-w-4xl mx-auto border-t border-gold-500/30">
+      <section className="px-4 sm:px-6 py-16 sm:py-20 max-w-4xl mx-auto border-t border-gold-500/30 space-y-12 sm:space-y-16">
+        {/* CARD 1: HONORED PERFORMERS */}
         <div className="rounded-3xl bg-black/70 backdrop-blur-md border border-gold-500/40 p-6 sm:p-8 space-y-6 text-left shadow-2xl">
           {/* HEADER */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gold-500/20">
@@ -1272,59 +1273,64 @@ function PublicWeddingCelebrationContent({
               );
             })}
           </div>
+        </div>
 
-          {/* SIMPLE & CLEAN SONG RECOMMENDATION FORM */}
-          <div className="pt-5 border-t border-gold-500/20 space-y-3">
+        {/* CARD 2: SONG RECOMMENDATION BOX (SEPARATE & SPACIOUS) */}
+        <div className="rounded-3xl bg-black/70 backdrop-blur-md border border-gold-500/40 p-6 sm:p-8 space-y-4 text-left shadow-2xl">
+          <div className="flex items-center gap-3 mb-1">
+            <div className="w-10 h-10 rounded-xl bg-gold-500/15 border border-gold-500/30 text-gold-400 flex items-center justify-center shrink-0">
+              <Music className="w-5 h-5 text-gold-400" />
+            </div>
             <div>
-              <h4 className="font-serif font-bold text-white text-sm sm:text-base drop-shadow">
+              <h4 className="font-serif font-bold text-white text-base sm:text-lg drop-shadow">
                 {t('publicEvent.recommendMezmur', 'Recommend a Mezmur or Song to {couple}').replace('{couple}', coupleTitle)}
               </h4>
               <p className="text-xs text-stone-300 font-light mt-0.5">
                 {t('publicEvent.songSuggestDesc', 'Have a favorite spiritual Mezmur or upbeat Eskista song you\'d love to hear at the wedding? Suggest it below!')}
               </p>
             </div>
-
-            {songSubmittedSuccess ? (
-              <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500 text-emerald-200 text-xs flex items-center gap-2.5 shadow-md">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span>
-                  {t('publicEvent.songSuccessMsg', 'Thank you! Your song recommendation has been sent to {couple}!').replace('{couple}', coupleTitle)}
-                </span>
-              </div>
-            ) : (
-              <form onSubmit={handleSongRecommendation} className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <input
-                      type="text"
-                      required
-                      value={guestSongTitle}
-                      onChange={(e) => setGuestSongTitle(e.target.value)}
-                      placeholder={t('publicEvent.songTitlePlaceholder', 'Song or Mezmur Title')}
-                      className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 shadow-inner"
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="text"
-                      value={guestSongArtist}
-                      onChange={(e) => setGuestSongArtist(e.target.value)}
-                      placeholder={t('publicEvent.songArtistPlaceholder', 'Choir / Singer (Optional)')}
-                      className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 shadow-inner"
-                    />
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
-                >
-                  <Send className="w-3.5 h-3.5 text-black" />
-                  <span>{t('publicEvent.sendRecommendation', 'Send Recommendation')}</span>
-                </button>
-              </form>
-            )}
           </div>
+
+          {songSubmittedSuccess ? (
+            <div className="p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500 text-emerald-200 text-xs flex items-center gap-2.5 shadow-md">
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+              <span>
+                {t('publicEvent.songSuccessMsg', 'Thank you! Your song recommendation has been sent to {couple}!').replace('{couple}', coupleTitle)}
+              </span>
+            </div>
+          ) : (
+            <form onSubmit={handleSongRecommendation} className="space-y-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="text"
+                    required
+                    value={guestSongTitle}
+                    onChange={(e) => setGuestSongTitle(e.target.value)}
+                    placeholder={t('publicEvent.songTitlePlaceholder', 'Song or Mezmur Title')}
+                    className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 shadow-inner"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="text"
+                    value={guestSongArtist}
+                    onChange={(e) => setGuestSongArtist(e.target.value)}
+                    placeholder={t('publicEvent.songArtistPlaceholder', 'Choir / Singer (Optional)')}
+                    className="w-full px-4 py-3 rounded-xl border border-gold-500/40 bg-black/60 text-xs text-white placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-gold-500 shadow-inner"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-7 py-3 rounded-xl bg-gradient-to-r from-gold-500 via-amber-400 to-gold-600 hover:from-gold-400 hover:to-amber-300 text-black font-extrabold text-xs shadow-gold transition-all flex items-center justify-center gap-2 border border-gold-300 cursor-pointer active:scale-95 hover:scale-105"
+              >
+                <Send className="w-3.5 h-3.5 text-black" />
+                <span>{t('publicEvent.sendRecommendation', 'Send Recommendation')}</span>
+              </button>
+            </form>
+          )}
         </div>
       </section>
 
