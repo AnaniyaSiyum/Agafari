@@ -77,7 +77,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   const clientIp = getClientIp(req);
   const rateLimitRes = await verifyRateLimit(`wishes:${params.slug}:${clientIp}`, { max: 3, windowSeconds: 300 });
   if (!rateLimitRes.success) {
-    return buildRateLimitResponse(rateLimitRes);
+    return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many wishes submitted. Please wait before submitting another blessing.', 3, 0);
   }
 
   try {

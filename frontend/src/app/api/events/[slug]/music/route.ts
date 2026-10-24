@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth';
 import { checkEventAccess } from '@/lib/eventScope';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 // GET: Fetch all Mezmur & Music recommendations for this event
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
@@ -65,6 +66,12 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
 // POST: Guest submits a Mezmur or Music recommendation
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+  const clientIp = getClientIp(req);
+  const rateLimitRes = checkRateLimit(`music:${params.slug}:${clientIp}`, { max: 5, windowSeconds: 300 });
+  if (!rateLimitRes.success) {
+    return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many music recommendations submitted. Please wait before submitting another song.', 5, 0);
+  }
+
   try {
     const { guestName, songTitle, artistName, title, artist } = await req.json();
     const finalTitle = (songTitle || title || '').trim();

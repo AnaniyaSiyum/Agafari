@@ -2,20 +2,18 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
-import { verifyPassword } from '@/lib/passwords';
+import { verifyPassword, timingSafeVerifyPassword } from '@/lib/passwords';
 import { verifyTotpCode, generateTotpSecret, generateTotpUri } from '@/lib/totp';
 import { signSessionToken } from '@/lib/requireMembership';
 import { generateToken, setAuthCookie, UserRole } from '@/lib/auth';
-import { isRateLimited, recordFailedLogin, resetFailedLogins, getRateLimitKey } from '@/lib/rateLimit';
+import {
+  checkAuthBruteForce,
+  recordAuthFailure,
+  recordAuthSuccess,
+  buildRateLimitResponse,
+  getClientIp,
+} from '@/lib/rateLimit';
 import { logAudit } from '@/lib/audit';
-
-function getClientIp(req: NextRequest): string {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ||
-    req.headers.get('x-real-ip') ||
-    '127.0.0.1'
-  );
-}
 
 function clearAuthCookies(res: NextResponse): void {
   const cookieOptions = {
@@ -46,24 +44,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 2. Rate Limiting Protection (5 attempts / 60 seconds)
-    const rateLimitKey = getRateLimitKey(ip, email);
-    const rateCheck = isRateLimited(rateLimitKey);
-
-    if (rateCheck.limited) {
+    // 2. Strict Brute-Force Rate Limiting (Max 5 failed attempts per IP/identifier per 15 min)
+    const bruteForceCheck = checkAuthBruteForce(ip, email);
+    if (!bruteForceCheck.allowed) {
       await logAudit({
         actorId: null,
         action: 'LOGIN_RATE_LIMITED',
         ip,
-        metaJson: { email, attempts: rateCheck.attempts },
+        metaJson: { email, attempts: bruteForceCheck.attempts, retryAfterSeconds: bruteForceCheck.retryAfterSeconds },
       });
-      return NextResponse.json(
-        {
-          error: 'Too many failed login attempts. Please wait before retrying.',
-          rateLimited: true,
-          retryAfterSeconds: rateCheck.retryAfterSeconds,
-        },
-        { status: 429 }
+      return buildRateLimitResponse(
+        bruteForceCheck.retryAfterSeconds,
+        `Too many failed login attempts. Account temporarily locked for security. Please try again in ${bruteForceCheck.retryAfterSeconds} seconds.`,
+        5,
+        0
       );
     }
 
@@ -76,34 +70,18 @@ export async function POST(req: NextRequest) {
       [email]
     );
 
-    // Uniform Failure Defense: user not found or missing password_hash
-    if (!user || !user.password_hash) {
-      recordFailedLogin(rateLimitKey);
+    // 4. Timing-Safe Credential Verification to prevent user enumeration
+    // Ensures constant execution duration regardless of whether account exists in DB
+    const isPasswordValid = await timingSafeVerifyPassword(password, user?.password_hash);
+    if (!user || !user.password_hash || !isPasswordValid) {
+      recordAuthFailure(ip, email);
       await logAudit({
-        actorId: null,
-        action: 'LOGIN_FAILED',
-        ip,
-        metaJson: { email, reason: 'USER_NOT_FOUND' },
-      });
-      const response = NextResponse.json(
-        { error: 'Invalid email or password.' },
-        { status: 401 }
-      );
-      clearAuthCookies(response);
-      return response;
-    }
-
-    // 4. Verify Credentials (PBKDF2-SHA512 + Bcrypt fallback)
-    const isPasswordValid = await verifyPassword(password, user.password_hash);
-    if (!isPasswordValid) {
-      recordFailedLogin(rateLimitKey);
-      await logAudit({
-        actorId: user.id,
+        actorId: user?.id || null,
         action: 'LOGIN_FAILED',
         targetType: 'USER',
-        targetId: user.id,
+        targetId: user?.id || null,
         ip,
-        metaJson: { email, reason: 'BAD_PASSWORD' },
+        metaJson: { email, reason: 'INVALID_CREDENTIALS' },
       });
       const response = NextResponse.json(
         { error: 'Invalid email or password.' },
@@ -124,7 +102,7 @@ export async function POST(req: NextRequest) {
     const isSuspended = user.status === 'DISABLED' || user.status === 'disabled';
 
     if (!isActive || isSuspended) {
-      recordFailedLogin(rateLimitKey);
+      recordAuthFailure(ip, email);
       await logAudit({
         actorId: user.id,
         action: 'LOGIN_FAILED',
@@ -141,8 +119,8 @@ export async function POST(req: NextRequest) {
       return response;
     }
 
-    // Password verified: Reset failed attempts
-    resetFailedLogins(rateLimitKey);
+    // Password verified: Reset failed attempts for this IP and identifier
+    recordAuthSuccess(ip, email);
 
     // 6. Two-Factor Authentication (TOTP) for SYSTEM_ADMIN
     if (user.role === 'SYSTEM_ADMIN') {

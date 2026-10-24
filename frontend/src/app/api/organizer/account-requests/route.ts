@@ -4,6 +4,7 @@ import { requireMembership } from '@/lib/requireMembership';
 import { logAudit } from '@/lib/audit';
 import { query, queryOne } from '@/lib/db';
 import { AppRole } from '@/types/auth';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 export async function GET(req: NextRequest) {
   const auth = await requireMembership(req, ['ORGANIZER_OWNER', 'SYSTEM_ADMIN']);
@@ -24,6 +25,12 @@ export async function POST(req: NextRequest) {
   const auth = await requireMembership(req, ['ORGANIZER_OWNER', 'SYSTEM_ADMIN']);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const clientIp = getClientIp(req);
+  const rateLimitRes = checkRateLimit(`acct_req:${auth.user.id}:${clientIp}`, { max: 15, windowSeconds: 600 });
+  if (!rateLimitRes.allowed) {
+    return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many account creation requests. Please wait before submitting more.', 15, rateLimitRes.remaining);
   }
 
   try {

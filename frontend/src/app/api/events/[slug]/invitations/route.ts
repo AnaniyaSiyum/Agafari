@@ -11,6 +11,7 @@ import { MySqlEventRepository } from '@/infrastructure/persistence/MySqlEventRep
 import { MySqlInvitationRepository } from '@/infrastructure/persistence/MySqlInvitationRepository';
 import { DomainError } from '@/domain/errors/DomainError';
 import { mockStore } from '@/lib/mockData';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 const SIGNING_SECRET = config.ticketSigningSecret;
 
@@ -49,6 +50,12 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   // Public lookup for guest invitation links & QR passes (no auth token required)
   if (codeParam) {
+    const clientIp = getClientIp(req);
+    const rateLimitRes = checkRateLimit(`invite_lookup:${clientIp}`, { max: 60, windowSeconds: 60 });
+    if (!rateLimitRes.allowed) {
+      return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many invitation lookups. Please slow down.', 60, rateLimitRes.remaining);
+    }
+
     let raw: any = null;
     try {
       raw = await queryOne<any>(
@@ -174,6 +181,12 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
   }
 
   try {
+    const clientIp = getClientIp(req);
+    const rateLimitRes = checkRateLimit(`invite_create:${resolved.event.id}:${clientIp}`, { max: 30, windowSeconds: 60 });
+    if (!rateLimitRes.allowed) {
+      return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many invitations created. Please wait.', 30, rateLimitRes.remaining);
+    }
+
     const { guestName, guestPhone, maxGuests, tableNumber, inviteType } = await req.json();
     if (!guestName) return NextResponse.json({ error: 'guestName is required.' }, { status: 400 });
 

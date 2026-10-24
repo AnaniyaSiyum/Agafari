@@ -3,6 +3,9 @@ import { query } from '@/lib/db';
 import { hashPasswordSync } from '@/lib/passwords';
 import { logAudit } from '@/lib/audit';
 
+import { requireMembership } from '@/lib/requireMembership';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
+
 export const dynamic = 'force-dynamic';
 
 async function performCleanSlate() {
@@ -80,6 +83,17 @@ async function performCleanSlate() {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireMembership(req, ['SYSTEM_ADMIN']);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const clientIp = getClientIp(req);
+  const rateLimitRes = checkRateLimit(`clean_slate:${clientIp}`, { max: 2, windowSeconds: 3600 });
+  if (!rateLimitRes.allowed) {
+    return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many reset requests. Please wait.', 2, rateLimitRes.remaining);
+  }
+
   try {
     const ops = await performCleanSlate();
     return NextResponse.json({
@@ -94,6 +108,17 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const auth = await requireMembership(req, ['SYSTEM_ADMIN']);
+  if (!auth.authorized) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const clientIp = getClientIp(req);
+  const rateLimitRes = checkRateLimit(`clean_slate:${clientIp}`, { max: 2, windowSeconds: 3600 });
+  if (!rateLimitRes.allowed) {
+    return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many reset requests. Please wait.', 2, rateLimitRes.remaining);
+  }
+
   try {
     const ops = await performCleanSlate();
     return NextResponse.json({

@@ -20,6 +20,26 @@ export function hashPasswordSync(plainText: string): string {
   return bcrypt.hashSync(plainText, salt);
 }
 
+// Pre-computed bcrypt hash (cost 12) used to equalize execution times for non-existent accounts
+export const DUMMY_BCRYPT_HASH = '$2a$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy';
+
+/**
+ * Timing-safe password verification.
+ * If storedHash is null, undefined, or empty, executes a full bcrypt verification against
+ * DUMMY_BCRYPT_HASH to ensure invariant response latency across existing and non-existent users.
+ */
+export async function timingSafeVerifyPassword(
+  plainText: string,
+  storedHash?: string | null
+): Promise<boolean> {
+  if (storedHash) {
+    return verifyPassword(plainText, storedHash);
+  }
+  // Execute identical computational workload to prevent user enumeration
+  await verifyPassword(plainText, DUMMY_BCRYPT_HASH);
+  return false;
+}
+
 /**
  * Verifies a plaintext password against a stored bcrypt hash
  * (with fallback for legacy PBKDF2 hashes during transition).

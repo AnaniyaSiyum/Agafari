@@ -22,7 +22,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     const rateLimitKey = `rsvp:${params.slug}:${inviteCode || clientIp}`;
     const rateLimitRes = await verifyRateLimit(rateLimitKey, { max: 5, windowSeconds: 600 });
     if (!rateLimitRes.success) {
-      return buildRateLimitResponse(rateLimitRes);
+      return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many RSVP submission attempts. Please wait before retrying.', 5, 0);
     }
 
     if (!attendanceStatus) {

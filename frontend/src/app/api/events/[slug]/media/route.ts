@@ -5,6 +5,7 @@ import { getAuthUser } from '@/lib/auth';
 import { checkEventAccess } from '@/lib/eventScope';
 import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/infrastructure/dev/mockData';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
   const { searchParams } = new URL(req.url);
@@ -98,6 +99,12 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 // POST: guest or media moderator uploads a wish/BTS clip
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   try {
+    const clientIp = getClientIp(req);
+    const rateLimitRes = checkRateLimit(`media_upload:${params.slug}:${clientIp}`, { max: 10, windowSeconds: 60 });
+    if (!rateLimitRes.allowed) {
+      return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many uploads. Please wait before uploading more media.', 10, rateLimitRes.remaining);
+    }
+
     const { uploaderName, mediaType, category, cdnUrl, thumbnailUrl, caption, status } = await req.json();
     if (!uploaderName || !mediaType || !cdnUrl) {
       return NextResponse.json({ error: 'uploaderName, mediaType, and cdnUrl are required.' }, { status: 400 });
@@ -127,6 +134,12 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 // PATCH: like/unlike a post
 export async function PATCH(req: NextRequest) {
   try {
+    const clientIp = getClientIp(req);
+    const rateLimitRes = checkRateLimit(`media_like:${clientIp}`, { max: 40, windowSeconds: 60 });
+    if (!rateLimitRes.allowed) {
+      return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many requests. Please slow down.', 40, rateLimitRes.remaining);
+    }
+
     const { mediaId, guestIdentifier, action } = await req.json(); // action: 'like' | 'unlike'
     if (!mediaId || !guestIdentifier || !action) {
       return NextResponse.json({ error: 'mediaId, guestIdentifier, and action are required.' }, { status: 400 });

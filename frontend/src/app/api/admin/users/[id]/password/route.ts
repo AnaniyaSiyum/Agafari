@@ -3,6 +3,7 @@ import { requireMembership } from '@/lib/requireMembership';
 import { hashPassword, generateStrongPassword } from '@/lib/passwords';
 import { logAudit } from '@/lib/audit';
 import { query, queryOne } from '@/lib/db';
+import { checkRateLimit, buildRateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(
   req: NextRequest,
@@ -11,6 +12,12 @@ export async function POST(
   const auth = await requireMembership(req, ['SYSTEM_ADMIN']);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  // Rate Limiting: Max 10 password resets per minute
+  const rateCheck = checkRateLimit(`pwd_reset:${auth.user.id}`, { max: 10, windowSeconds: 60 });
+  if (!rateCheck.success) {
+    return buildRateLimitResponse(rateCheck.retryAfterSeconds, 'Too many password reset requests. Please slow down.', 10, 0);
   }
 
   const userId = params.id;

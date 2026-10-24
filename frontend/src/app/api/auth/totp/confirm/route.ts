@@ -2,8 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query, queryOne } from '@/lib/db';
 import { verifyTotpCode } from '@/lib/totp';
 import { signSessionToken, verifySessionToken } from '@/lib/requireMembership';
-import { verifyPassword } from '@/lib/passwords';
-import { getClientIp } from '@/lib/rateLimit';
+import { verifyPassword, timingSafeVerifyPassword } from '@/lib/passwords';
+import {
+  getClientIp,
+  checkAuthBruteForce,
+  recordAuthFailure,
+  recordAuthSuccess,
+  buildRateLimitResponse,
+} from '@/lib/rateLimit';
 import { logAudit } from '@/lib/audit';
 import { setAuthCookie } from '@/lib/auth';
 
@@ -16,6 +22,17 @@ export async function POST(req: NextRequest) {
     const setupToken = body.setupToken || req.cookies.get('agafari_setup_session')?.value;
     const email = (body.email || '').trim().toLowerCase();
     const password = body.password ? String(body.password).trim() : null;
+
+    // Strict Brute-Force Rate Limiting on TOTP verification (5 failed attempts / 15 min)
+    const bruteCheck = checkAuthBruteForce(ip, `totp:${email || 'global'}`);
+    if (!bruteCheck.allowed) {
+      return buildRateLimitResponse(
+        bruteCheck.retryAfterSeconds,
+        `Too many failed 2FA verification attempts. Please wait ${bruteCheck.retryAfterSeconds} seconds before retrying.`,
+        5,
+        0
+      );
+    }
 
     if (!code || code.length !== 6) {
       return NextResponse.json({ error: 'Please enter a valid 6-digit verification code.' }, { status: 400 });
@@ -69,6 +86,8 @@ export async function POST(req: NextRequest) {
 
     const isValidCode = verifyTotpCode(user.totp_secret, code);
     if (!isValidCode) {
+      recordAuthFailure(ip, `totp:${user.id}`);
+      recordAuthFailure(ip, `totp:${user.email}`);
       await logAudit({
         actorId: user.id,
         action: 'TOTP_SETUP_FAILED',
@@ -79,6 +98,9 @@ export async function POST(req: NextRequest) {
       });
       return NextResponse.json({ error: 'Invalid 6-digit code. Please check your authenticator app and try again.' }, { status: 401 });
     }
+
+    recordAuthSuccess(ip, `totp:${user.id}`);
+    recordAuthSuccess(ip, `totp:${user.email}`);
 
     // 4. Mark TOTP as permanently enabled in the database
     await query('UPDATE users SET totp_enabled = 1 WHERE id = $1', [user.id]);

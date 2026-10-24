@@ -12,6 +12,7 @@ import {
 import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 import { updateStoredUserCredentials } from '@/lib/userStore';
+import { checkRateLimit, buildRateLimitResponse } from '@/lib/rateLimit';
 
 const VALID_ROLES: UserRole[] = [
   'SYSTEM_ADMIN',
@@ -33,6 +34,11 @@ export async function PATCH(
 
   const actor = auth.user;
   const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+
+  const rateLimitRes = checkRateLimit(`admin_cred:${actor.userId}`, { max: 30, windowSeconds: 60 });
+  if (!rateLimitRes.allowed) {
+    return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many credential updates requested.', 30, rateLimitRes.remaining);
+  }
 
   try {
     const { id: userId } = await params;

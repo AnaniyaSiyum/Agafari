@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, query } from '@/lib/db';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 // GET: comments on one feed post. No auth — same guest model as likes/wishes.
 // Only returns comments for posts that are actually APPROVED and visible, so
@@ -28,6 +29,12 @@ export async function GET(_req: NextRequest, { params }: { params: { mediaId: st
 // not just hidden in the UI, so the button being hidden isn't the only guard).
 export async function POST(req: NextRequest, { params }: { params: { mediaId: string } }) {
   try {
+    const clientIp = getClientIp(req);
+    const rateLimitRes = checkRateLimit(`comment:${clientIp}`, { max: 10, windowSeconds: 300 });
+    if (!rateLimitRes.allowed) {
+      return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many comments submitted. Please wait before posting again.', 10, rateLimitRes.remaining);
+    }
+
     const { senderName, comment } = await req.json();
     if (!senderName?.trim() || !comment?.trim()) {
       return NextResponse.json({ error: 'senderName and comment are required.' }, { status: 400 });

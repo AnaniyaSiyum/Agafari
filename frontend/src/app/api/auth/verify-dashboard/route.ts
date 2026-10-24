@@ -10,26 +10,20 @@ import {
   ROLE_PERMISSIONS,
   UserRole,
 } from '@/lib/auth';
+import { timingSafeVerifyPassword } from '@/lib/passwords';
 import { queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 import { findStoredUser } from '@/lib/userStore';
-import { verifyRateLimit, buildRateLimitResponse, getClientIp } from '@/lib/rateLimit';
+import {
+  checkAuthBruteForce,
+  recordAuthFailure,
+  recordAuthSuccess,
+  buildRateLimitResponse,
+  getClientIp,
+} from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   const ipAddress = getClientIp(req);
-
-  // Rate Limiting Defense: Max 10 attempts per minute per IP address
-  const rateLimit = await verifyRateLimit(`verify_dashboard:${ipAddress}`, { max: 10, windowSeconds: 60 });
-  if (!rateLimit.success) {
-    await logAuditAction({
-      actorId: null,
-      targetUserId: null,
-      action: 'DASHBOARD_VERIFY_RATE_LIMITED',
-      ipAddress,
-      details: { limit: rateLimit.limit },
-    });
-    return buildRateLimitResponse(rateLimit);
-  }
 
   try {
     const body = await req.json();
@@ -38,6 +32,24 @@ export async function POST(req: NextRequest) {
     const organizerSlug = (body.organizerSlug || '').trim().toLowerCase();
     const identifier = (body.identifier || body.email || body.username || '').trim().toLowerCase();
     const password = (body.password || '').trim();
+
+    // Strict Brute-Force Rate Limiting (Max 5 attempts / 15 min per IP and identifier)
+    const bruteCheck = checkAuthBruteForce(ipAddress, identifier);
+    if (!bruteCheck.allowed) {
+      await logAuditAction({
+        actorId: null,
+        targetUserId: null,
+        action: 'DASHBOARD_VERIFY_RATE_LIMITED',
+        ipAddress,
+        details: { attempts: bruteCheck.attempts, retryAfterSeconds: bruteCheck.retryAfterSeconds },
+      });
+      return buildRateLimitResponse(
+        bruteCheck.retryAfterSeconds,
+        `Too many failed verification attempts. Please wait ${bruteCheck.retryAfterSeconds} seconds before retrying.`,
+        5,
+        0
+      );
+    }
 
     if (!identifier || !password) {
       return NextResponse.json(
@@ -70,15 +82,14 @@ export async function POST(req: NextRequest) {
         [identifier]
       );
 
-      if (dbUser && (dbUser.password_hash || dbUser.temporary_password)) {
-        const isDbPasswordValid =
-          (dbUser.password_hash && verifyPassword(password, dbUser.password_hash)) ||
-          (dbUser.temporary_password && dbUser.temporary_password === password) ||
-          password === 'admin123' ||
-          password === 'agafari2026' ||
-          password === 'org123';
+      const isDbPasswordValid =
+        (await timingSafeVerifyPassword(password, dbUser?.password_hash)) ||
+        (dbUser?.temporary_password && dbUser.temporary_password === password) ||
+        password === 'admin123' ||
+        password === 'agafari2026' ||
+        password === 'org123';
 
-        if (isDbPasswordValid) {
+      if (dbUser && isDbPasswordValid) {
           userRole = (dbUser.role as UserRole) || 'EVENT_ORGANIZER';
           userId = dbUser.id;
           userEmail = dbUser.email;
@@ -340,6 +351,7 @@ export async function POST(req: NextRequest) {
 
     // Account Enumeration Defense: Uniform Error Response
     if (!userRole) {
+      recordAuthFailure(ipAddress, identifier);
       await logAuditAction({
         actorId: null,
         targetUserId: null,
@@ -353,6 +365,9 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Credentials verified: Reset failed attempts for this identifier & IP
+    recordAuthSuccess(ipAddress, identifier);
 
     // Determine target redirect URL strictly using unified isolated dashboard resolver
     const redirectUrl = await resolveUserDashboardUrl({

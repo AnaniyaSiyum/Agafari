@@ -4,6 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAuthUser, verifyPassword, hashPassword, logAuditAction } from '@/lib/auth';
 import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
+import {
+  checkAuthBruteForce,
+  recordAuthFailure,
+  recordAuthSuccess,
+  buildRateLimitResponse,
+  getClientIp,
+} from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
   const authUser = getAuthUser(req);
@@ -11,7 +18,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized — no active session.' }, { status: 401 });
   }
 
-  const ipAddress = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
+  const ipAddress = getClientIp(req);
+
+  // Strict Brute-Force Rate Limiting on Password Verification (5 failed attempts / 15 min)
+  const bruteCheck = checkAuthBruteForce(ipAddress, `self_pwd:${authUser.userId}`);
+  if (!bruteCheck.allowed) {
+    return buildRateLimitResponse(
+      bruteCheck.retryAfterSeconds,
+      `Too many failed password attempts. Account temporarily locked for security. Please try again in ${bruteCheck.retryAfterSeconds} seconds.`,
+      5,
+      0
+    );
+  }
 
   try {
     const { currentPassword, newPassword } = await req.json();
@@ -59,6 +77,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!passwordVerified) {
+      recordAuthFailure(ipAddress, `self_pwd:${authUser.userId}`);
       await logAuditAction({
         actorId: authUser.userId,
         targetUserId: authUser.userId,
@@ -72,6 +91,8 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    recordAuthSuccess(ipAddress, `self_pwd:${authUser.userId}`);
 
     // Hash new password server-side before storing
     const newHash = hashPassword(newPassword.trim());

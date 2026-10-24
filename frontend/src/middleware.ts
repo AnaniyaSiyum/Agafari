@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 interface JwtPayload {
   userId: string;
@@ -48,6 +49,17 @@ async function verifyJwtInMiddleware(token: string): Promise<JwtPayload | null> 
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+
+  // Standard API rate limiter across all /api/* routes (120 req/min per IP)
+  if (path.startsWith('/api/')) {
+    const ip = getClientIp(req);
+    const rateCheck = checkRateLimit(`general_api:${ip}`, { max: 120, windowSeconds: 60 });
+    if (!rateCheck.success) {
+      return buildRateLimitResponse(rateCheck.retryAfterSeconds, undefined, 120, 0);
+    }
+    return NextResponse.next();
+  }
+
   const tokenCookie = req.cookies.get('agafari_session')?.value || req.cookies.get('agafari_token')?.value;
 
   // Verify JWT session cookie
@@ -195,6 +207,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    '/api/:path*',
     '/admin',
     '/admin/:path*',
     '/system-admin',
