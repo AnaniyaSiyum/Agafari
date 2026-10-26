@@ -1,0 +1,63 @@
+# =============================================================================
+# AGAFARI PHP BACKEND — Apache / LiteSpeed .htaccess
+# Server-level security rules for cPanel deployment.
+# =============================================================================
+
+# --- Redirect all traffic to HTTPS -------------------------------------------
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# --- Block direct access to sensitive files ----------------------------------
+# Prevent direct access to config, library, and ini files
+<FilesMatch "\.(ini|env|sql|log|sh|bak|cfg|conf)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+<FilesMatch "^(db\.php|auth\.php|uuid\.php|middleware\.php)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# --- Security Response Headers -----------------------------------------------
+<IfModule mod_headers.c>
+    # Prevent MIME-type sniffing attacks
+    Header always set X-Content-Type-Options "nosniff"
+    # Deny framing (clickjacking protection)
+    Header always set X-Frame-Options "DENY"
+    # Enable XSS protection in older browsers
+    Header always set X-XSS-Protection "1; mode=block"
+    # Control referrer information
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    # Content Security Policy for API responses
+    Header always set Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+    # Prevent caching of sensitive API responses
+    Header always set Cache-Control "no-store, no-cache, must-revalidate, private"
+    Header always set Pragma "no-cache"
+</IfModule>
+
+# --- Rate limit helpers via LiteSpeed (if LiteSpeed Web ADC is available) ---
+# These rules are no-ops on standard Apache but are respected by LiteSpeed.
+<IfModule LiteSpeed>
+    RewriteRule ^api/auth/login\.php$ - [E=cache-control:no-cache]
+</IfModule>
+
+# --- Disable server signature -------------------------------------------------
+ServerSignature Off
+
+# --- PHP2Shell CVE-2026-109618 mitigation: restrict file upload size ----------
+# Limits the upload request body size to reduce the OOM corruption attack surface.
+<IfModule mod_php.c>
+    php_value post_max_size 8M
+    php_value upload_max_filesize 8M
+    php_flag session.upload_progress.enabled off
+    php_flag expose_php off
+    php_flag display_errors off
+</IfModule>
+
+# --- Block common attack patterns in query strings ---------------------------
+RewriteCond %{QUERY_STRING} (<|%3C).*script.*(>|%3E) [NC,OR]
+RewriteCond %{QUERY_STRING} GLOBALS(=|\[|\%[0-9A-Z]{0,2}) [OR]
+RewriteCond %{QUERY_STRING} _REQUEST(=|\[|\%[0-9A-Z]{0,2})
+RewriteRule ^(.*)$ - [F,L]
