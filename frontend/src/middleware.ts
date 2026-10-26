@@ -7,7 +7,11 @@ interface JwtPayload {
   role: string;
   tenantId?: string;
   permissions?: string[];
+  eventSlug?: string;
+  slug?: string;
+  scopeId?: string;
   exp?: number;
+  [key: string]: any;
 }
 
 // Edge-compatible Web Crypto JWT verification

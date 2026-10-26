@@ -112,7 +112,6 @@ export async function POST(req: NextRequest) {
             }
           } catch (e) {}
         }
-      }
     } catch (e) {
       console.warn('DB verify lookup fallback:', e);
     }
