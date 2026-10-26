@@ -38,6 +38,14 @@ jobs:
         working-directory: frontend
         run: npm run test:unit
 
+      - name: Run Security & Brute-Force Tests
+        working-directory: frontend
+        run: npm run test:security
+
+      - name: Run Audit Logging & Sanitization Tests
+        working-directory: frontend
+        run: npm run test:audit
+
       - name: Run Integration Tests
         working-directory: frontend
         run: npm run test:integration

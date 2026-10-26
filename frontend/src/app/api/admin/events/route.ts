@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireRole, hashPassword } from '@/lib/auth';
 import { query, queryOne, withTransaction } from '@/lib/db';
+import { logAuditEvent } from '@/lib/audit';
 
 function formatEvent(e: any) {
   if (!e) return e;
@@ -471,9 +472,32 @@ export async function DELETE(req: NextRequest) {
       mockStore.events.splice(idx, 1);
     }
 
+    await logAuditEvent({
+      actorId: auth.user.userId,
+      actorRole: auth.user.role,
+      targetResource: 'TENANT',
+      targetId: eventId,
+      operation: 'DELETE',
+      action: 'TENANT_EVENT_DELETED',
+      req,
+      outcome: 'SUCCESS',
+      details: { eventId, slug: (existing as any)?.slug },
+    });
+
     return NextResponse.json({ success: true, message: 'Event deleted successfully.' });
-  } catch (err) {
+  } catch (err: any) {
     console.error('Failed to delete event:', err);
+    await logAuditEvent({
+      actorId: auth.user.userId,
+      actorRole: auth.user.role,
+      targetResource: 'TENANT',
+      targetId: eventId,
+      operation: 'DELETE',
+      action: 'TENANT_EVENT_DELETE_FAILED',
+      req,
+      outcome: 'FAILURE',
+      details: { eventId, error: err?.message },
+    });
     return NextResponse.json({ error: 'Failed to delete event.' }, { status: 500 });
   }
 }

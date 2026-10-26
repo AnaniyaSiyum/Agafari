@@ -11,6 +11,8 @@
     "test:unit": "npx tsx tests/unit/domain.test.ts",
     "test:integration": "npx tsx tests/integration/services.test.ts",
     "test:concurrent-scan": "npx tsx tests/scripts/test_concurrent_scan.ts",
+    "test:security": "npx tsx tests/unit/rate_limit_and_security.test.ts",
+    "test:audit": "npx tsx tests/unit/audit_logging.test.ts",
     "audit:ci": "npm audit --audit-level=high"
   },
   "dependencies": {

@@ -12,6 +12,7 @@ import { MySqlInvitationRepository } from '@/infrastructure/persistence/MySqlInv
 import { DomainError } from '@/domain/errors/DomainError';
 import { mockStore } from '@/lib/mockData';
 import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
+import { logAuditEvent } from '@/lib/audit';
 
 const SIGNING_SECRET = config.ticketSigningSecret;
 
@@ -114,6 +115,18 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
       console.warn(`User ${user.userId} access not explicit, proceeding in preview scope.`);
     }
+
+    await logAuditEvent({
+      actorId: user.userId,
+      actorRole: user.role,
+      targetResource: 'INVITATION_EXPORT',
+      targetId: resolved.event.id,
+      operation: 'READ_SENSITIVE',
+      action: 'BULK_GUEST_LIST_ACCESSED',
+      req,
+      outcome: 'SUCCESS',
+      details: { eventSlug: params.slug, eventId: resolved.event.id },
+    });
   }
 
   let rawRows: any[] = [];

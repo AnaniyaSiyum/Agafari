@@ -13,6 +13,7 @@ import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/lib/mockData';
 import { updateStoredUserCredentials } from '@/lib/userStore';
 import { checkRateLimit, buildRateLimitResponse } from '@/lib/rateLimit';
+import { logAuditEvent } from '@/lib/audit';
 
 const VALID_ROLES: UserRole[] = [
   'SYSTEM_ADMIN',
@@ -62,11 +63,16 @@ export async function PATCH(
     // 3. Downwards-Only Rule Check
     const canManage = canManageUser(actor, targetUserRole, userId, role as UserRole);
     if (!canManage.allowed) {
-      await logAuditAction({
+      await logAuditEvent({
         actorId: actor.userId,
-        targetUserId: userId,
-        action: 'CREDENTIALS_UPDATE_BLOCKED_DOWNWARDS_ONLY',
-        ipAddress,
+        actorRole: actor.role,
+        targetResource: 'ROLE_ASSIGNMENT',
+        targetId: userId,
+        operation: 'UPDATE',
+        action: 'ROLE_ASSIGNMENT_DENIED_DOWNWARDS_ONLY',
+        clientIp: ipAddress,
+        req,
+        outcome: 'DENIED',
         details: { targetUserRole, attemptedRole: role, reason: canManage.reason },
       });
 
@@ -196,12 +202,17 @@ export async function PATCH(
       return NextResponse.json({ error: 'User account not found.' }, { status: 404 });
     }
 
-    await logAuditAction({
+    await logAuditEvent({
       actorId: actor.userId,
-      targetUserId: userId,
-      action: 'SYSTEM_ADMIN_CREDENTIALS_UPDATE',
-      ipAddress,
-      details: { emailUpdated: !!email, nameUpdated: !!fullName, roleUpdated: !!role, passwordUpdated: !!newPassword },
+      actorRole: actor.role,
+      targetResource: role ? 'ROLE_ASSIGNMENT' : 'CREDENTIALS',
+      targetId: userId,
+      operation: 'UPDATE',
+      action: role ? 'ROLE_ASSIGNMENT_UPDATED' : 'CREDENTIALS_UPDATED',
+      clientIp: ipAddress,
+      req,
+      outcome: 'SUCCESS',
+      details: { emailUpdated: !!email, nameUpdated: !!fullName, roleUpdated: !!role, newRole: role, passwordUpdated: !!newPassword },
     });
 
     return NextResponse.json({

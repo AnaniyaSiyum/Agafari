@@ -155,64 +155,32 @@ export interface AuditLogOptions {
 
 /**
  * Records a security audit log entry.
- * Filters out raw passwords, secrets, and auth tokens to prevent credential leaks.
+ * Uses the centralized, structured logAuditEvent engine with full sanitization.
  */
 export async function logAuditAction(options: AuditLogOptions): Promise<void> {
   const { actorId, targetUserId, action, ipAddress, details } = options;
+  const { logAuditEvent } = await import('@/lib/audit');
 
-  // Filter sensitive fields from details payload
-  const safeDetails: Record<string, any> = {};
-  if (details && typeof details === 'object') {
-    for (const [key, val] of Object.entries(details)) {
-      const lowerKey = key.toLowerCase();
-      if (
-        lowerKey.includes('password') ||
-        lowerKey.includes('secret') ||
-        lowerKey.includes('token') ||
-        lowerKey.includes('hash') ||
-        lowerKey.includes('credential')
-      ) {
-        safeDetails[key] = '[REDACTED]';
-      } else {
-        safeDetails[key] = val;
-      }
-    }
-  }
+  const operation =
+    action.includes('CREATE') ? 'CREATE' :
+    action.includes('DELETE') ? 'DELETE' :
+    action.includes('READ') || action.includes('VIEW') ? 'READ_SENSITIVE' :
+    'UPDATE';
 
-  const logId = `audit-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-  const timestamp = new Date().toISOString();
+  const outcome =
+    action.includes('BLOCKED') || action.includes('DENIED') ? 'DENIED' :
+    action.includes('FAILED') ? 'FAILURE' :
+    'SUCCESS';
 
-  // 1. Persist to Database if available
-  try {
-    await query(
-      `INSERT INTO audit_logs (id, actor_id, target_user_id, action, ip_address, details, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [
-        logId,
-        actorId || null,
-        targetUserId || null,
-        action,
-        ipAddress || '127.0.0.1',
-        JSON.stringify(safeDetails),
-        timestamp,
-      ]
-    );
-  } catch (err) {
-    // Fallback silently if DB is not populated
-  }
-
-  // 2. Keep in-memory mock store in sync for dev runtime
-  if (!(mockStore as any).auditLogs) {
-    (mockStore as any).auditLogs = [];
-  }
-  (mockStore as any).auditLogs.unshift({
-    id: logId,
+  await logAuditEvent({
     actorId: actorId || null,
-    targetUserId: targetUserId || null,
+    targetResource: 'USER',
+    targetId: targetUserId || null,
+    operation,
     action,
-    ipAddress: ipAddress || '127.0.0.1',
-    details: safeDetails,
-    createdAt: timestamp,
+    clientIp: ipAddress || '127.0.0.1',
+    outcome,
+    details: details || null,
   });
 }
 
