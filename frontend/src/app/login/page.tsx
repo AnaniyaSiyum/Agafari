@@ -457,7 +457,7 @@ function UniversalLoginForm() {
                       required
                       value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
-                      placeholder="e.g. admin@agafari.com or kebkab@agafari.com"
+                      placeholder="e.g. admin@agafari.com"
                       className="w-full pl-10 pr-4 py-2.5 bg-neutral-950 border border-neutral-800 rounded-xl text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition"
                     />
                   </div>
