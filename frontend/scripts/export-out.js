@@ -132,4 +132,20 @@ try {
   // Ignore if root cannot be written
 }
 
+// 8. Generate Linux/cPanel/DirectAdmin compatible out.zip with forward-slash paths
+const { execSync } = require('child_process');
+try {
+  const rootZipPath = path.join(projectRoot, 'out.zip');
+  const frontendZipPath = path.join(frontendRoot, 'out.zip');
+  execSync(`tar.exe -a -c -f "${rootZipPath}" *`, { cwd: outDir, stdio: 'ignore' });
+  if (fs.existsSync(rootZipPath)) {
+    fs.copyFileSync(rootZipPath, frontendZipPath);
+    console.log('✓ Created Linux-compatible out.zip deployment archive at: ' + rootZipPath);
+  }
+} catch (zipErr) {
+  console.warn('Note: automatic out.zip creation skipped:', zipErr.message);
+}
+
 console.log('🎉 "out" folder successfully generated at: ' + outDir);
+
+
