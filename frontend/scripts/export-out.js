@@ -53,30 +53,44 @@ if (fs.existsSync(nextStaticSrc)) {
   console.log('✓ Copied Next.js static JS/CSS bundles to out/_next/static');
 }
 
-// 4. Copy landing page (index.html) and other prerendered pages
+// 4. Copy landing page (index.html) and all prerendered pages recursively
 const serverAppDir = path.join(nextDir, 'server', 'app');
 if (fs.existsSync(serverAppDir)) {
-  // Copy index.html
-  const indexPath = path.join(serverAppDir, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    fs.copyFileSync(indexPath, path.join(outDir, 'index.html'));
-    console.log('✓ Copied landing page index.html to out/index.html');
-  }
+  let copiedCount = 0;
 
-  // Copy other prerendered HTML pages
-  const files = fs.readdirSync(serverAppDir, { withFileTypes: true });
-  for (const file of files) {
-    if (!file.isDirectory() && file.name.endsWith('.html') && file.name !== 'index.html') {
-      fs.copyFileSync(path.join(serverAppDir, file.name), path.join(outDir, file.name));
-      const routeName = file.name.replace('.html', '');
-      const routeDir = path.join(outDir, routeName);
-      if (!fs.existsSync(routeDir)) {
-        fs.mkdirSync(routeDir, { recursive: true });
+  function copyPrerendered(dir, relPath = '') {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullSrc = path.join(dir, entry.name);
+      const currentRel = path.join(relPath, entry.name);
+
+      if (entry.isDirectory()) {
+        copyPrerendered(fullSrc, currentRel);
+      } else if (entry.name.endsWith('.html')) {
+        // Destination in outDir
+        const destFile = path.join(outDir, currentRel);
+        fs.mkdirSync(path.dirname(destFile), { recursive: true });
+        fs.copyFileSync(fullSrc, destFile);
+
+        // Also create directory/index.html fallback for clean URLs
+        if (entry.name !== 'index.html') {
+          const routeBase = currentRel.replace(/\.html$/, '');
+          const routeDirIndex = path.join(outDir, routeBase, 'index.html');
+          fs.mkdirSync(path.dirname(routeDirIndex), { recursive: true });
+          fs.copyFileSync(fullSrc, routeDirIndex);
+        }
+        copiedCount++;
       }
-      fs.copyFileSync(path.join(serverAppDir, file.name), path.join(routeDir, 'index.html'));
     }
   }
-  console.log('✓ Copied prerendered static pages to out/');
+
+  copyPrerendered(serverAppDir);
+  console.log(`✓ Copied ${copiedCount} prerendered static HTML pages to out/`);
+  if (copiedCount === 0) {
+    console.error('⚠️ WARNING: No HTML pages found in .next/server/app! Run "next build" first.');
+  }
+} else {
+  console.error('❌ ERROR: .next/server/app does not exist! Run "npm run build" before exporting.');
 }
 
 // 5. Package PHP backend & API endpoints for cPanel / LiteSpeed web servers
