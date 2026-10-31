@@ -84,12 +84,20 @@ if (fs.existsSync(phpBackendDir)) {
   const destPhpDir = path.join(outDir, 'php-backend');
   copyDirSync(phpBackendDir, destPhpDir);
 
-  // Copy login.php as index.php in out/api/auth/login/
-  const outApiLoginDir = path.join(outDir, 'api', 'auth', 'login');
-  fs.mkdirSync(outApiLoginDir, { recursive: true });
-  const loginPhpSrc = path.join(phpBackendDir, 'api', 'auth', 'login.php');
-  if (fs.existsSync(loginPhpSrc)) {
-    fs.copyFileSync(loginPhpSrc, path.join(outApiLoginDir, 'index.php'));
+  // Copy auth endpoints to out/api/auth/.../index.php for physical fallback
+  const endpoints = [
+    { src: 'api/auth/login.php', dest: 'api/auth/login/index.php' },
+    { src: 'api/auth/verify-dashboard.php', dest: 'api/auth/verify-dashboard/index.php' },
+    { src: 'api/auth/me.php', dest: 'api/auth/me/index.php' },
+  ];
+
+  for (const ep of endpoints) {
+    const fullSrc = path.join(phpBackendDir, ep.src);
+    const fullDest = path.join(outDir, ep.dest);
+    fs.mkdirSync(path.dirname(fullDest), { recursive: true });
+    if (fs.existsSync(fullSrc)) {
+      fs.copyFileSync(fullSrc, fullDest);
+    }
   }
 
   console.log('✓ Bundled PHP API endpoints for cPanel / LiteSpeed hosting');
@@ -100,8 +108,11 @@ const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Direct API requests to PHP backend if present
-  RewriteRule ^api/auth/login/?$ api/auth/login/index.php [L,QSA]
+  # Direct API requests to PHP backend
+  RewriteRule ^api/auth/login/?$ php-backend/api/auth/login.php [L,QSA]
+  RewriteRule ^api/auth/verify-dashboard/?$ php-backend/api/auth/verify-dashboard.php [L,QSA]
+  RewriteRule ^api/auth/me/?$ php-backend/api/auth/me.php [L,QSA]
+  RewriteRule ^api/events/([^/]+)/?$ php-backend/api/events/details.php?slug=$1 [L,QSA]
 
   # Serve existing physical files directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
