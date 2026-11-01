@@ -46,11 +46,19 @@ function getDbConfig(): array {
     if (file_exists($customConfig)) {
         $custom = include $customConfig;
         if (is_array($custom)) {
-            return $custom;
+            $defaults = [
+                'host' => 'localhost',
+                'port' => '3306',
+                'dbname' => 'agafari',
+                'user' => 'root',
+                'pass' => '',
+                'charset' => 'utf8mb4'
+            ];
+            return array_merge($defaults, $custom);
         }
     }
 
-    $host = getenv('MYSQL_HOST') ?: getenv('DB_HOST') ?: '127.0.0.1';
+    $host = getenv('MYSQL_HOST') ?: getenv('DB_HOST') ?: 'localhost';
     $port = getenv('MYSQL_PORT') ?: getenv('DB_PORT') ?: '3306';
     $dbname = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'agafari';
     $user = getenv('MYSQL_USER') ?: getenv('DB_USER') ?: getenv('DB_USERNAME') ?: 'root';
@@ -76,7 +84,6 @@ function getPdoConnection(): ?PDO {
 
     $attempted = true;
     $cfg = getDbConfig();
-    $dsn = "mysql:host={$cfg['host']};port={$cfg['port']};dbname={$cfg['dbname']};charset=utf8mb4";
     
     $options = [
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
@@ -85,13 +92,27 @@ function getPdoConnection(): ?PDO {
         PDO::ATTR_TIMEOUT            => 4,
     ];
 
-    try {
-        $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
-        return $pdo;
-    } catch (Throwable $e) {
-        error_log('[Agafari DB] MySQL connection failed (' . $cfg['host'] . '/' . $cfg['dbname'] . '): ' . $e->getMessage());
-        return null;
+    // Try primary host first, then fallback between localhost and 127.0.0.1
+    $hosts = [$cfg['host']];
+    if ($cfg['host'] === 'localhost') {
+        $hosts[] = '127.0.0.1';
+    } elseif ($cfg['host'] === '127.0.0.1') {
+        $hosts[] = 'localhost';
     }
+
+    $lastError = '';
+    foreach ($hosts as $h) {
+        try {
+            $dsn = "mysql:host={$h};port={$cfg['port']};dbname={$cfg['dbname']};charset=utf8mb4";
+            $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
+            return $pdo;
+        } catch (Throwable $e) {
+            $lastError = $e->getMessage();
+        }
+    }
+
+    error_log('[Agafari DB] MySQL connection failed (' . $cfg['host'] . '/' . $cfg['dbname'] . '): ' . $lastError);
+    return null;
 }
 
 /**
