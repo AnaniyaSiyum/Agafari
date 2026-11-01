@@ -98,11 +98,12 @@ if (fs.existsSync(phpBackendDir)) {
   const destPhpDir = path.join(outDir, 'php-backend');
   copyDirSync(phpBackendDir, destPhpDir);
 
-  // Copy auth endpoints to out/api/auth/.../index.php for physical fallback
+  // Copy auth and API endpoints for physical fallback
   const endpoints = [
     { src: 'api/auth/login.php', dest: 'api/auth/login/index.php' },
     { src: 'api/auth/verify-dashboard.php', dest: 'api/auth/verify-dashboard/index.php' },
     { src: 'api/auth/me.php', dest: 'api/auth/me/index.php' },
+    { src: 'api/organizer/events.php', dest: 'api/organizer/events/index.php' },
   ];
 
   for (const ep of endpoints) {
@@ -126,6 +127,8 @@ const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteRule ^api/auth/login/?$ php-backend/api/auth/login.php [L,QSA]
   RewriteRule ^api/auth/verify-dashboard/?$ php-backend/api/auth/verify-dashboard.php [L,QSA]
   RewriteRule ^api/auth/me/?$ php-backend/api/auth/me.php [L,QSA]
+  RewriteRule ^api/organizer/events/?$ php-backend/api/organizer/events.php [L,QSA]
+  RewriteRule ^api/events/([^/]+)/team/?$ php-backend/api/events/team.php?slug=$1 [L,QSA]
   RewriteRule ^api/events/([^/]+)/?$ php-backend/api/events/details.php?slug=$1 [L,QSA]
 
   # Serve existing physical files directly
