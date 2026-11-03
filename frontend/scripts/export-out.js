@@ -127,9 +127,14 @@ const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteRule ^api/auth/login/?$ php-backend/api/auth/login.php [L,QSA]
   RewriteRule ^api/auth/verify-dashboard/?$ php-backend/api/auth/verify-dashboard.php [L,QSA]
   RewriteRule ^api/auth/me/?$ php-backend/api/auth/me.php [L,QSA]
+  RewriteRule ^api/admin/events/?$ php-backend/api/admin/events.php [L,QSA]
+  RewriteRule ^api/admin/users/?$ php-backend/api/admin/users.php [L,QSA]
   RewriteRule ^api/organizer/events/?$ php-backend/api/organizer/events.php [L,QSA]
+  RewriteRule ^api/organizer/media/?$ php-backend/api/organizer/media.php [L,QSA]
   RewriteRule ^api/events/([^/]+)/team/?$ php-backend/api/events/team.php?slug=$1 [L,QSA]
+  RewriteRule ^api/events/([^/]+)/invitations/?$ php-backend/api/events/invitations.php?slug=$1 [L,QSA]
   RewriteRule ^api/events/([^/]+)/?$ php-backend/api/events/details.php?slug=$1 [L,QSA]
+  RewriteRule ^api/qr/([^/]+)/?$ php-backend/api/qr/scan.php?code=$1 [L,QSA]
 
   # Block direct web access to sensitive files
   <FilesMatch "(db_config\.php|\.env|\.sql|\.log|\.ini)$">
