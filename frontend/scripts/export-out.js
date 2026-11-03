@@ -131,6 +131,12 @@ const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteRule ^api/events/([^/]+)/team/?$ php-backend/api/events/team.php?slug=$1 [L,QSA]
   RewriteRule ^api/events/([^/]+)/?$ php-backend/api/events/details.php?slug=$1 [L,QSA]
 
+  # Block direct web access to sensitive files
+  <FilesMatch "(db_config\.php|\.env|\.sql|\.log|\.ini)$">
+    Order allow,deny
+    Deny from all
+  </FilesMatch>
+
   # Serve existing physical files directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d

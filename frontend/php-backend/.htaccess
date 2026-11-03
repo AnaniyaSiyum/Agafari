@@ -15,7 +15,7 @@ RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
     Deny from all
 </FilesMatch>
 
-<FilesMatch "^(db\.php|auth\.php|uuid\.php|middleware\.php)$">
+<FilesMatch "^(db\.php|db_config\.php|auth\.php|uuid\.php|middleware\.php)$">
     Order allow,deny
     Deny from all
 </FilesMatch>
