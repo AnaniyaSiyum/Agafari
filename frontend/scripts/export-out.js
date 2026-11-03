@@ -103,7 +103,10 @@ if (fs.existsSync(phpBackendDir)) {
     { src: 'api/auth/login.php', dest: 'api/auth/login/index.php' },
     { src: 'api/auth/verify-dashboard.php', dest: 'api/auth/verify-dashboard/index.php' },
     { src: 'api/auth/me.php', dest: 'api/auth/me/index.php' },
+    { src: 'api/admin/events.php', dest: 'api/admin/events/index.php' },
+    { src: 'api/admin/users.php', dest: 'api/admin/users/index.php' },
     { src: 'api/organizer/events.php', dest: 'api/organizer/events/index.php' },
+    { src: 'api/organizer/media.php', dest: 'api/organizer/media/index.php' },
   ];
 
   for (const ep of endpoints) {

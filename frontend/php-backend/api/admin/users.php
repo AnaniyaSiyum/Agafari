@@ -5,9 +5,26 @@
 // DirectAdmin / LiteSpeed endpoint for User & Role Management
 // =============================================================================
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../../lib/middleware.php';
-require_once __DIR__ . '/../../lib/uuid.php';
+$backendBase = null;
+$candidates = [
+    __DIR__ . '/../..',
+    __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+];
+foreach ($candidates as $cand) {
+    if ($cand && file_exists($cand . '/config/db.php')) {
+        $backendBase = realpath($cand);
+        break;
+    }
+}
+if (!$backendBase) {
+    $backendBase = __DIR__ . '/../..';
+}
+
+require_once $backendBase . '/config/db.php';
+require_once $backendBase . '/lib/middleware.php';
+require_once $backendBase . '/lib/uuid.php';
 
 header('Content-Type: application/json; charset=utf-8');
 send_cors_headers();
@@ -25,21 +42,26 @@ if ($method === 'OPTIONS') {
 if ($method === 'GET') {
     try {
         $rows = php_query("
-            SELECT id, email, full_name, role, is_active, created_at
-              FROM users
-          ORDER BY created_at DESC
+            SELECT u.id, u.email, u.full_name, u.role, u.is_active, u.created_at,
+                   o.id AS organizer_id, o.business_name
+              FROM users u
+         LEFT JOIN organizers o ON o.owner_user_id = u.id
+          ORDER BY u.created_at DESC
         ");
 
         $users = array_map(function ($u) {
+            $orgId = $u['organizer_id'] ?? ($u['role'] === 'EVENT_ORGANIZER' ? 'org-' . $u['id'] : null);
             return [
-                'id'        => $u['id'],
-                'email'     => $u['email'],
-                'fullName'  => $u['full_name'],
-                'full_name' => $u['full_name'],
-                'role'      => $u['role'],
-                'status'    => ($u['is_active'] ? 'ACTIVE' : 'INACTIVE'),
-                'isActive'  => (bool)$u['is_active'],
-                'createdAt' => $u['created_at'],
+                'id'          => $u['id'],
+                'email'       => $u['email'],
+                'fullName'    => $u['full_name'],
+                'full_name'   => $u['full_name'],
+                'companyName' => $u['business_name'] ?? $u['full_name'],
+                'role'        => $u['role'],
+                'status'      => ($u['is_active'] ? 'ACTIVE' : 'INACTIVE'),
+                'isActive'    => (bool)$u['is_active'],
+                'organizerId' => $orgId,
+                'createdAt'   => $u['created_at'],
             ];
         }, $rows);
 
@@ -60,9 +82,10 @@ if ($method === 'POST') {
     $body = json_decode($raw, true) ?: [];
 
     $email = strtolower(trim($body['email'] ?? ''));
-    $fullName = trim($body['fullName'] ?? $body['name'] ?? '');
+    $fullName = trim($body['fullName'] ?? $body['name'] ?? $body['companyName'] ?? '');
     $role = strtoupper(trim($body['role'] ?? 'EVENT_ORGANIZER'));
     $password = trim($body['password'] ?? 'agafari123');
+    $description = trim($body['description'] ?? '');
 
     if (empty($email) || empty($fullName)) {
         http_response_code(400);
@@ -79,6 +102,7 @@ if ($method === 'POST') {
 
     $userId = 'usr-' . generate_uuid();
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+    $orgId = null;
 
     try {
         php_execute(
@@ -100,11 +124,14 @@ if ($method === 'POST') {
             'success' => true,
             'message' => 'User created successfully.',
             'user'    => [
-                'id'       => $userId,
-                'email'    => $email,
-                'fullName' => $fullName,
-                'role'     => $role,
-                'status'   => 'ACTIVE',
+                'id'          => $userId,
+                'email'       => $email,
+                'fullName'    => $fullName,
+                'companyName' => $fullName,
+                'description' => $description ?: "Official certified event management partner ({$fullName}).",
+                'role'        => $role,
+                'status'      => 'ACTIVE',
+                'organizerId' => $orgId ?: "org-{$userId}",
             ],
             'temporaryPassword' => $password,
         ]);

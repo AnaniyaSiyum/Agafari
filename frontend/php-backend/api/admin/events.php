@@ -5,9 +5,26 @@
 // DirectAdmin / LiteSpeed deployment endpoint for Super Admin Dashboard
 // =============================================================================
 
-require_once __DIR__ . '/../../config/db.php';
-require_once __DIR__ . '/../../lib/middleware.php';
-require_once __DIR__ . '/../../lib/uuid.php';
+$backendBase = null;
+$candidates = [
+    __DIR__ . '/../..',
+    __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+];
+foreach ($candidates as $cand) {
+    if ($cand && file_exists($cand . '/config/db.php')) {
+        $backendBase = realpath($cand);
+        break;
+    }
+}
+if (!$backendBase) {
+    $backendBase = __DIR__ . '/../..';
+}
+
+require_once $backendBase . '/config/db.php';
+require_once $backendBase . '/lib/middleware.php';
+require_once $backendBase . '/lib/uuid.php';
 
 header('Content-Type: application/json; charset=utf-8');
 send_cors_headers();

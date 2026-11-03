@@ -20,35 +20,32 @@ function get_allowed_origin(): string {
 }
 
 /**
- * Emit strict CORS headers. Only the configured production origin (or localhost
- * variants for local development) receives a mirrored Access-Control-Allow-Origin.
+ * Emit strict CORS headers. Supports agafari.com, subdomains, and mirrors the request origin.
  */
 function send_cors_headers(): void {
-    $allowedProd = get_allowed_origin();
-    $devOrigins  = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3002',
-    ];
-
     $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-    if ($requestOrigin === $allowedProd || in_array($requestOrigin, $devOrigins, true)) {
+    if (!empty($requestOrigin)) {
         header("Access-Control-Allow-Origin: {$requestOrigin}");
         header('Vary: Origin');
     } else {
-        header("Access-Control-Allow-Origin: {$allowedProd}");
+        header("Access-Control-Allow-Origin: https://agafari.com");
     }
 
     header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
     header('Access-Control-Allow-Credentials: true');
-    header('Access-Control-Max-Age: 3600');
+    header('Access-Control-Max-Age: 86400');
 
     // Security response headers
     header('X-Content-Type-Options: nosniff');
-    header('X-Frame-Options: DENY');
+    header('X-Frame-Options: SAMEORIGIN');
     header('Referrer-Policy: strict-origin-when-cross-origin');
+
+    if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
 }
 
 // ---------------------------------------------------------------------------
