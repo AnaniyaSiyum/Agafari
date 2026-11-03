@@ -5,9 +5,10 @@
 // =============================================================================
 
 return [
-    'host'     => getenv('MYSQL_HOST') ?: 'localhost',
-    'port'     => getenv('MYSQL_PORT') ?: '3306',
-    'dbname'   => getenv('MYSQL_DATABASE') ?: 'agafari',
-    'user'     => getenv('MYSQL_USER') ?: 'root',
-    'pass'     => getenv('MYSQL_PASSWORD') ?: '',
+    'host'     => 'localhost',
+    'port'     => '3306',
+    'dbname'   => 'agafarwh_agafari',
+    'user'     => 'agafarwh_agafari',
+    'pass'     => 'y4VAHrGPFyppTrpVsbWX',
+    'charset'  => 'utf8mb4',
 ];
