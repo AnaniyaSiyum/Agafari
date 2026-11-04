@@ -93,73 +93,100 @@ if (fs.existsSync(serverAppDir)) {
   console.error('❌ ERROR: .next/server/app does not exist! Run "npm run build" before exporting.');
 }
 
-// 5. Package PHP backend & API endpoints for cPanel / LiteSpeed web servers
+// 5. Package PHP backend directly into out/api/ and out/php-backend/
 if (fs.existsSync(phpBackendDir)) {
   const destPhpDir = path.join(outDir, 'php-backend');
   copyDirSync(phpBackendDir, destPhpDir);
 
-  // Copy auth and API endpoints for physical fallback
-  const endpoints = [
-    { src: 'api/auth/login.php', dest: 'api/auth/login/index.php' },
-    { src: 'api/auth/verify-dashboard.php', dest: 'api/auth/verify-dashboard/index.php' },
-    { src: 'api/auth/me.php', dest: 'api/auth/me/index.php' },
-    { src: 'api/admin/events.php', dest: 'api/admin/events/index.php' },
-    { src: 'api/admin/users.php', dest: 'api/admin/users/index.php' },
-    { src: 'api/organizer/events.php', dest: 'api/organizer/events/index.php' },
-    { src: 'api/organizer/media.php', dest: 'api/organizer/media/index.php' },
+  // Copy all php-backend/api into out/api/
+  const phpApiSrc = path.join(phpBackendDir, 'api');
+  const destApiDir = path.join(outDir, 'api');
+  if (fs.existsSync(phpApiSrc)) {
+    copyDirSync(phpApiSrc, destApiDir);
+  }
+
+  // Copy config/ and lib/ into out/api/ as well for direct relative requires
+  const phpConfigSrc = path.join(phpBackendDir, 'config');
+  const destApiConfig = path.join(destApiDir, 'config');
+  if (fs.existsSync(phpConfigSrc)) {
+    copyDirSync(phpConfigSrc, destApiConfig);
+  }
+
+  const phpLibSrc = path.join(phpBackendDir, 'lib');
+  const destApiLib = path.join(destApiDir, 'lib');
+  if (fs.existsSync(phpLibSrc)) {
+    copyDirSync(phpLibSrc, destApiLib);
+  }
+
+  // Generate index.php physical fallbacks inside each subfolder
+  const physicalFallbacks = [
+    { dir: 'api/auth/login', target: 'login.php' },
+    { dir: 'api/auth/verify-dashboard', target: 'verify-dashboard.php' },
+    { dir: 'api/auth/me', target: 'me.php' },
+    { dir: 'api/admin/events', target: 'events.php' },
+    { dir: 'api/admin/users', target: 'users.php' },
+    { dir: 'api/organizer/events', target: 'events.php' },
+    { dir: 'api/organizer/media', target: 'media.php' },
+    { dir: 'api/events/team', target: 'team.php' },
+    { dir: 'api/events/invitations', target: 'invitations.php' },
+    { dir: 'api/qr/scan', target: 'scan.php' },
   ];
 
-  for (const ep of endpoints) {
-    const fullSrc = path.join(phpBackendDir, ep.src);
-    const fullDest = path.join(outDir, ep.dest);
-    fs.mkdirSync(path.dirname(fullDest), { recursive: true });
-    if (fs.existsSync(fullSrc)) {
-      fs.copyFileSync(fullSrc, fullDest);
+  for (const fb of physicalFallbacks) {
+    const fbDir = path.join(outDir, fb.dir);
+    fs.mkdirSync(fbDir, { recursive: true });
+    const targetFile = path.join(fbDir, '..', fb.target);
+    const destIndex = path.join(fbDir, 'index.php');
+    if (fs.existsSync(targetFile)) {
+      fs.copyFileSync(targetFile, destIndex);
     }
   }
 
-  console.log('✓ Bundled PHP API endpoints for cPanel / LiteSpeed hosting');
+  console.log('✓ Bundled PHP API microservices into out/api/ and out/php-backend/');
 }
 
-// 6. Generate .htaccess for clean URL routing and API proxy on Apache / LiteSpeed
+// 6. Generate .htaccess matching Next.js static export + PHP backend architecture
 const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # Direct API requests to PHP backend
-  RewriteRule ^api/auth/login/?$ php-backend/api/auth/login.php [L,QSA]
-  RewriteRule ^api/auth/verify-dashboard/?$ php-backend/api/auth/verify-dashboard.php [L,QSA]
-  RewriteRule ^api/auth/me/?$ php-backend/api/auth/me.php [L,QSA]
-  RewriteRule ^api/admin/events/?$ php-backend/api/admin/events.php [L,QSA]
-  RewriteRule ^api/admin/users/?$ php-backend/api/admin/users.php [L,QSA]
-  RewriteRule ^api/organizer/events/?$ php-backend/api/organizer/events.php [L,QSA]
-  RewriteRule ^api/organizer/media/?$ php-backend/api/organizer/media.php [L,QSA]
-  RewriteRule ^api/events/([^/]+)/team/?$ php-backend/api/events/team.php?slug=$1 [L,QSA]
-  RewriteRule ^api/events/([^/]+)/invitations/?$ php-backend/api/events/invitations.php?slug=$1 [L,QSA]
-  RewriteRule ^api/events/([^/]+)/?$ php-backend/api/events/details.php?slug=$1 [L,QSA]
-  RewriteRule ^api/qr/([^/]+)/?$ php-backend/api/qr/scan.php?code=$1 [L,QSA]
+  # 1. API clean URL rewrites (support both /api/path and /api/path.php)
+  RewriteRule ^api/auth/login/?$ api/auth/login.php [L,QSA]
+  RewriteRule ^api/auth/verify-dashboard/?$ api/auth/verify-dashboard.php [L,QSA]
+  RewriteRule ^api/auth/me/?$ api/auth/me.php [L,QSA]
+  RewriteRule ^api/admin/events/?$ api/admin/events.php [L,QSA]
+  RewriteRule ^api/admin/users/?$ api/admin/users.php [L,QSA]
+  RewriteRule ^api/organizer/events/?$ api/organizer/events.php [L,QSA]
+  RewriteRule ^api/organizer/media/?$ api/organizer/media.php [L,QSA]
+  RewriteRule ^api/events/([^/]+)/team/?$ api/events/team.php?slug=$1 [L,QSA]
+  RewriteRule ^api/events/([^/]+)/invitations/?$ api/events/invitations.php?slug=$1 [L,QSA]
+  RewriteRule ^api/events/([^/]+)/?$ api/events/details.php?slug=$1 [L,QSA]
+  RewriteRule ^api/qr/([^/]+)/?$ api/qr/scan.php?code=$1 [L,QSA]
 
-  # Block direct web access to sensitive files
+  # 2. Do NOT rewrite any /api/ requests to index.html (allow PHP to handle them directly)
+  RewriteCond %{REQUEST_URI} ^/api/ [NC]
+  RewriteRule ^ - [L]
+
+  # 3. Block direct web access to sensitive config files
   <FilesMatch "(db_config\.php|\.env|\.sql|\.log|\.ini)$">
     Order allow,deny
     Deny from all
   </FilesMatch>
 
-  # Serve existing physical files directly
+  # 4. Serve existing physical files directly
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
-  # Clean URLs fallback for exported HTML routes
+  # 5. Clean URLs fallback for exported HTML routes
   RewriteCond %{REQUEST_FILENAME}.html -f
   RewriteRule ^(.*)$ $1.html [L]
 
-  # Directory fallback
   RewriteCond %{REQUEST_FILENAME}/index.html -f
   RewriteRule ^(.*)$ $1/index.html [L]
 
-  # Fallback to root index.html
-  RewriteRule ^ index.html [L]
+  # 6. Fallback: rewrite all client routes to index.html
+  RewriteRule . /index.html [L]
 </IfModule>
 `;
 fs.writeFileSync(path.join(outDir, '.htaccess'), htaccessContent);
