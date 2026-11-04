@@ -7,10 +7,15 @@
 
 $backendBase = null;
 $candidates = [
+    __DIR__ . '/..',
     __DIR__ . '/../..',
+    __DIR__ . '/../../api',
     __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../api',
     __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api',
     ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
 ];
 foreach ($candidates as $cand) {
     if ($cand && file_exists($cand . '/config/db.php')) {
@@ -102,7 +107,7 @@ if ($method === 'POST') {
         exit;
     }
 
-    $id = 'med-' . generate_uuid();
+    $id = function_exists('generate_safe_id') ? generate_safe_id('med-') : 'med-' . substr(generate_uuid_v4(), 4);
 
     try {
         php_execute(

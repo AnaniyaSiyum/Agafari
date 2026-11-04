@@ -93,7 +93,7 @@ if (fs.existsSync(serverAppDir)) {
   console.error('❌ ERROR: .next/server/app does not exist! Run "npm run build" before exporting.');
 }
 
-// 5. Package PHP backend directly into out/api/ and out/php-backend/
+// 5. Package PHP backend directly into out/api/ and out/php-backend/ and out/
 if (fs.existsSync(phpBackendDir)) {
   const destPhpDir = path.join(outDir, 'php-backend');
   copyDirSync(phpBackendDir, destPhpDir);
@@ -110,39 +110,19 @@ if (fs.existsSync(phpBackendDir)) {
   const destApiConfig = path.join(destApiDir, 'config');
   if (fs.existsSync(phpConfigSrc)) {
     copyDirSync(phpConfigSrc, destApiConfig);
+    // Also copy config to root out/config for universal fallback
+    copyDirSync(phpConfigSrc, path.join(outDir, 'config'));
   }
 
   const phpLibSrc = path.join(phpBackendDir, 'lib');
   const destApiLib = path.join(destApiDir, 'lib');
   if (fs.existsSync(phpLibSrc)) {
     copyDirSync(phpLibSrc, destApiLib);
+    // Also copy lib to root out/lib for universal fallback
+    copyDirSync(phpLibSrc, path.join(outDir, 'lib'));
   }
 
-  // Generate index.php physical fallbacks inside each subfolder
-  const physicalFallbacks = [
-    { dir: 'api/auth/login', target: 'login.php' },
-    { dir: 'api/auth/verify-dashboard', target: 'verify-dashboard.php' },
-    { dir: 'api/auth/me', target: 'me.php' },
-    { dir: 'api/admin/events', target: 'events.php' },
-    { dir: 'api/admin/users', target: 'users.php' },
-    { dir: 'api/organizer/events', target: 'events.php' },
-    { dir: 'api/organizer/media', target: 'media.php' },
-    { dir: 'api/events/team', target: 'team.php' },
-    { dir: 'api/events/invitations', target: 'invitations.php' },
-    { dir: 'api/qr/scan', target: 'scan.php' },
-  ];
-
-  for (const fb of physicalFallbacks) {
-    const fbDir = path.join(outDir, fb.dir);
-    fs.mkdirSync(fbDir, { recursive: true });
-    const targetFile = path.join(fbDir, '..', fb.target);
-    const destIndex = path.join(fbDir, 'index.php');
-    if (fs.existsSync(targetFile)) {
-      fs.copyFileSync(targetFile, destIndex);
-    }
-  }
-
-  console.log('✓ Bundled PHP API microservices into out/api/ and out/php-backend/');
+  console.log('✓ Bundled PHP API microservices into out/api/, out/php-backend/, out/config, and out/lib/');
 }
 
 // 6. Generate .htaccess matching Next.js static export + PHP backend architecture
@@ -158,6 +138,7 @@ const htaccessContent = `<IfModule mod_rewrite.c>
   RewriteRule ^api/admin/users/?$ api/admin/users.php [L,QSA]
   RewriteRule ^api/organizer/events/?$ api/organizer/events.php [L,QSA]
   RewriteRule ^api/organizer/media/?$ api/organizer/media.php [L,QSA]
+  RewriteRule ^api/cms/?$ api/cms.php [L,QSA]
   RewriteRule ^api/events/([^/]+)/team/?$ api/events/team.php?slug=$1 [L,QSA]
   RewriteRule ^api/events/([^/]+)/invitations/?$ api/events/invitations.php?slug=$1 [L,QSA]
   RewriteRule ^api/events/([^/]+)/?$ api/events/details.php?slug=$1 [L,QSA]

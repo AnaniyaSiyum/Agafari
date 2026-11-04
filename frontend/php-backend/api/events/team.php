@@ -5,10 +5,15 @@
 
 $backendBase = null;
 $candidates = [
+    __DIR__ . '/..',
     __DIR__ . '/../..',
+    __DIR__ . '/../../api',
     __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../api',
     __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api',
     ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
 ];
 foreach ($candidates as $cand) {
     if ($cand && file_exists($cand . '/config/db.php')) {
@@ -23,6 +28,7 @@ if (!$backendBase) {
 require_once $backendBase . '/config/db.php';
 require_once $backendBase . '/lib/auth.php';
 require_once $backendBase . '/lib/middleware.php';
+require_once $backendBase . '/lib/uuid.php';
 
 header('Content-Type: application/json; charset=utf-8');
 send_cors_headers();
@@ -123,12 +129,20 @@ if ($method === 'POST') {
         // Check if user exists
         $user = php_query_one('SELECT id, email FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$email]);
         if (!$user) {
-            $newUserId = 'usr-staff-' . time() . '-' . rand(100, 999);
-            php_execute(
-                'INSERT INTO users (id, email, password_hash, full_name, role, status, temporary_password)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [$newUserId, $email, hash_password_php($tempPassword), $fullName, $role, 'ACTIVE', $tempPassword]
-            );
+            $newUserId = function_exists('generate_safe_id') ? generate_safe_id('usr-') : 'usr-' . substr(generate_uuid_v4(), 4);
+            try {
+                php_execute(
+                    'INSERT INTO users (id, email, password_hash, full_name, role, is_active, created_at)
+                     VALUES (?, ?, ?, ?, ?, 1, NOW())',
+                    [$newUserId, $email, hash_password_php($tempPassword), $fullName, $role]
+                );
+            } catch (Throwable $e) {
+                php_execute(
+                    'INSERT INTO users (id, email, password_hash, full_name, role)
+                     VALUES (?, ?, ?, ?, ?)',
+                    [$newUserId, $email, hash_password_php($tempPassword), $fullName, $role]
+                );
+            }
             $userId = $newUserId;
         } else {
             $userId = $user['id'];

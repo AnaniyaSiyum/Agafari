@@ -4,10 +4,15 @@
 
 $backendBase = null;
 $candidates = [
+    __DIR__ . '/..',
     __DIR__ . '/../..',
+    __DIR__ . '/../../api',
     __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../api',
     __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api',
     ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
 ];
 foreach ($candidates as $cand) {
     if ($cand && file_exists($cand . '/config/db.php')) {

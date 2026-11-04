@@ -726,7 +726,16 @@ function SystemAdminDashboardContent() {
         }),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = {};
+      try {
+        data = JSON.parse(text);
+      } catch (parseErr) {
+        console.error('Non-JSON response from server (HTTP ' + res.status + '):', text);
+        setOrgErrorMsg(`Server Error (HTTP ${res.status}): ${text.slice(0, 180) || 'Empty response'}`);
+        return;
+      }
+
       if (res.ok && data.user) {
         const createdUser: UserData = {
           id: data.user.id,
@@ -751,11 +760,11 @@ function SystemAdminDashboardContent() {
         // Refresh admin data fleet & RBAC
         fetchAdminData();
       } else {
-        setOrgErrorMsg(data.error || 'Failed to onboard agency partner.');
+        setOrgErrorMsg(data.error || `Failed to onboard agency partner (HTTP ${res.status}).`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to onboard organizer:', err);
-      setOrgErrorMsg('A network error occurred while connecting to the server.');
+      setOrgErrorMsg(err?.message ? `Connection Error: ${err.message}` : 'A network error occurred while connecting to the server.');
     } finally {
       setCreatingOrg(false);
     }

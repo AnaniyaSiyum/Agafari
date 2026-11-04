@@ -7,10 +7,15 @@
 
 $backendBase = null;
 $candidates = [
+    __DIR__ . '/..',
     __DIR__ . '/../..',
+    __DIR__ . '/../../api',
     __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../api',
     __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api',
     ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
 ];
 foreach ($candidates as $cand) {
     if ($cand && file_exists($cand . '/config/db.php')) {
@@ -111,7 +116,7 @@ if ($method === 'POST') {
         exit;
     }
 
-    $id = 'inv-' . generate_uuid();
+    $id = function_exists('generate_safe_id') ? generate_safe_id('inv-') : 'inv-' . substr(generate_uuid_v4(), 4);
     $inviteCode = strtoupper(substr(md5(uniqid((string)mt_rand(), true)), 0, 8));
     $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=" . urlencode($inviteCode);
 

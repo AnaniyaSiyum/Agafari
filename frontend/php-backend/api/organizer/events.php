@@ -5,10 +5,15 @@
 
 $backendBase = null;
 $candidates = [
+    __DIR__ . '/..',
     __DIR__ . '/../..',
+    __DIR__ . '/../../api',
     __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../api',
     __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api',
     ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
 ];
 foreach ($candidates as $cand) {
     if ($cand && file_exists($cand . '/config/db.php')) {
@@ -23,6 +28,7 @@ if (!$backendBase) {
 require_once $backendBase . '/config/db.php';
 require_once $backendBase . '/lib/auth.php';
 require_once $backendBase . '/lib/middleware.php';
+require_once $backendBase . '/lib/uuid.php';
 
 header('Content-Type: application/json; charset=utf-8');
 send_cors_headers();
@@ -135,25 +141,44 @@ if ($method === 'POST') {
         $targetCoupleEmail = !empty($coupleEmail) ? $coupleEmail : "couple@{$cleanSlug}.com";
         $tempPassword      = 'agafari' . rand(1000, 9999);
         $coupleFullName    = "{$brideName} & {$groomName}";
-        $newEventId        = 'evt-' . $cleanSlug;
+        $newEventId        = function_exists('generate_safe_id') ? generate_safe_id('evt-') : 'evt-' . substr(generate_uuid_v4(), 4);
+
+        // Check supported role enum
+        $targetRole = 'COUPLE';
+        try {
+            $colInfo = php_query_one("SHOW COLUMNS FROM users LIKE 'role'");
+            $enumStr = $colInfo['Type'] ?? '';
+            if (strpos($enumStr, 'BRIDE_GROOM') !== false && strpos($enumStr, 'COUPLE') === false) {
+                $targetRole = 'BRIDE_GROOM';
+            }
+        } catch (Throwable $ignored) {}
 
         // Check or create couple user in users table
         $existingUser = php_query_one('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$targetCoupleEmail]);
         if ($existingUser) {
             $coupleUserId = $existingUser['id'];
-            php_execute(
-                'UPDATE users 
-                    SET role = ?, full_name = ?, password_hash = ?, temporary_password = ?, status = ?
-                  WHERE id = ?',
-                ['BRIDE_GROOM', $coupleFullName, hash_password_php($tempPassword), $tempPassword, 'ACTIVE', $coupleUserId]
-            );
+            try {
+                php_execute(
+                    'UPDATE users SET role = ?, full_name = ?, password_hash = ? WHERE id = ?',
+                    [$targetRole, $coupleFullName, hash_password_php($tempPassword), $coupleUserId]
+                );
+            } catch (Throwable $e) {}
         } else {
-            $coupleUserId = 'usr-couple-' . time() . '-' . rand(100, 999);
-            php_execute(
-                'INSERT INTO users (id, email, password_hash, full_name, role, status, temporary_password)
-                 VALUES (?, ?, ?, ?, ?, ?, ?)',
-                [$coupleUserId, $targetCoupleEmail, hash_password_php($tempPassword), $coupleFullName, 'BRIDE_GROOM', 'ACTIVE', $tempPassword]
-            );
+            $coupleUserId = function_exists('generate_safe_id') ? generate_safe_id('usr-') : 'usr-' . substr(generate_uuid_v4(), 4);
+            try {
+                php_execute(
+                    'INSERT INTO users (id, email, password_hash, full_name, role, is_active, created_at)
+                     VALUES (?, ?, ?, ?, ?, 1, NOW())',
+                    [$coupleUserId, $targetCoupleEmail, hash_password_php($tempPassword), $coupleFullName, $targetRole]
+                );
+            } catch (Throwable $e) {
+                // Fallback for tables with status instead of is_active
+                php_execute(
+                    'INSERT INTO users (id, email, password_hash, full_name, role)
+                     VALUES (?, ?, ?, ?, ?)',
+                    [$coupleUserId, $targetCoupleEmail, hash_password_php($tempPassword), $coupleFullName, $targetRole]
+                );
+            }
         }
 
         // Format date string safely

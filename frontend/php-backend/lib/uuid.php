@@ -11,3 +11,19 @@ function generate_uuid_v4(): string {
 
     return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
 }
+
+function generate_uuid(): string {
+    return generate_uuid_v4();
+}
+
+/**
+ * Returns a 36-char prefixed or raw UUID that safely fits VARCHAR(36)
+ */
+function generate_safe_id(string $prefix = ''): string {
+    $uuid = generate_uuid_v4();
+    if (empty($prefix)) {
+        return $uuid;
+    }
+    $len = strlen($prefix);
+    return $prefix . substr($uuid, $len);
+}

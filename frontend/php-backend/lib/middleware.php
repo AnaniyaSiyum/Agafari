@@ -5,7 +5,26 @@
 // Shared CORS, authentication, and rate-limiting helpers.
 // =============================================================================
 
-require_once __DIR__ . '/../config/db.php';
+$cfgCand = [
+    __DIR__ . '/../config/db.php',
+    __DIR__ . '/../../config/db.php',
+    __DIR__ . '/../../api/config/db.php',
+    __DIR__ . '/../../php-backend/config/db.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/config/db.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api/config/db.php',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend/config/db.php',
+];
+$cfgLoaded = false;
+foreach ($cfgCand as $f) {
+    if ($f && file_exists($f)) {
+        require_once $f;
+        $cfgLoaded = true;
+        break;
+    }
+}
+if (!$cfgLoaded) {
+    require_once __DIR__ . '/../config/db.php';
+}
 
 // ---------------------------------------------------------------------------
 // CORS

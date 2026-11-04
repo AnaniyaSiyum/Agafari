@@ -42,33 +42,49 @@ function getDbConfig(): array {
     }
 
     // DirectAdmin / cPanel / LiteSpeed custom config file support
-    $customConfig = __DIR__ . '/db_config.php';
-    if (file_exists($customConfig)) {
-        $custom = include $customConfig;
-        if (is_array($custom)) {
-            $defaults = [
-                'host' => 'localhost',
-                'port' => '3306',
-                'dbname' => 'agafari',
-                'user' => 'root',
-                'pass' => '',
-                'charset' => 'utf8mb4'
-            ];
-            return array_merge($defaults, $custom);
+    $configCandidates = [
+        __DIR__ . '/db_config.php',
+        __DIR__ . '/../config/db_config.php',
+        __DIR__ . '/../../config/db_config.php',
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api/config/db_config.php',
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend/config/db_config.php',
+        ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/config/db_config.php',
+    ];
+
+    foreach ($configCandidates as $cfgPath) {
+        if ($cfgPath && file_exists($cfgPath)) {
+            $custom = include $cfgPath;
+            if (is_array($custom)) {
+                $defaults = [
+                    'host' => 'localhost',
+                    'port' => '3306',
+                    'dbname' => 'agafarwh_agafari',
+                    'user' => 'agafarwh_agafari',
+                    'pass' => 'y4VAHrGPFyppTrpVsbWX',
+                    'charset' => 'utf8mb4'
+                ];
+                return array_merge($defaults, $custom);
+            }
         }
     }
 
     $host = getenv('MYSQL_HOST') ?: getenv('DB_HOST') ?: 'localhost';
     $port = getenv('MYSQL_PORT') ?: getenv('DB_PORT') ?: '3306';
-    $dbname = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'agafari';
-    $user = getenv('MYSQL_USER') ?: getenv('DB_USER') ?: getenv('DB_USERNAME') ?: 'root';
-    $pass = getenv('MYSQL_PASSWORD') ?: getenv('DB_PASSWORD') ?: '';
+    $dbname = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'agafarwh_agafari';
+    $user = getenv('MYSQL_USER') ?: getenv('DB_USER') ?: getenv('DB_USERNAME') ?: 'agafarwh_agafari';
+    $pass = getenv('MYSQL_PASSWORD') ?: getenv('DB_PASSWORD') ?: 'y4VAHrGPFyppTrpVsbWX';
 
     return compact('host', 'port', 'dbname', 'user', 'pass');
 }
 
 function __SERVER_DOC_ROOT(): ?string {
     return $_SERVER['DOCUMENT_ROOT'] ?? null;
+}
+
+$GLOBALS['__agafari_db_error'] = '';
+
+function db_last_error(): string {
+    return $GLOBALS['__agafari_db_error'] ?? 'Unknown database error';
 }
 
 function getPdoConnection(): ?PDO {
@@ -92,18 +108,19 @@ function getPdoConnection(): ?PDO {
         PDO::ATTR_TIMEOUT            => 4,
     ];
 
-    // Try primary host first, then fallback between localhost and 127.0.0.1
-    $hosts = [$cfg['host']];
-    if ($cfg['host'] === 'localhost') {
-        $hosts[] = '127.0.0.1';
-    } elseif ($cfg['host'] === '127.0.0.1') {
-        $hosts[] = 'localhost';
-    }
+    // Try TCP connections and Linux UNIX sockets
+    $dsnList = [
+        "mysql:host={$cfg['host']};port={$cfg['port']};dbname={$cfg['dbname']};charset=utf8mb4",
+        "mysql:host=127.0.0.1;port={$cfg['port']};dbname={$cfg['dbname']};charset=utf8mb4",
+        "mysql:host=localhost;dbname={$cfg['dbname']};charset=utf8mb4",
+        "mysql:unix_socket=/var/lib/mysql/mysql.sock;dbname={$cfg['dbname']};charset=utf8mb4",
+        "mysql:unix_socket=/tmp/mysql.sock;dbname={$cfg['dbname']};charset=utf8mb4",
+        "mysql:unix_socket=/var/run/mysqld/mysqld.sock;dbname={$cfg['dbname']};charset=utf8mb4",
+    ];
 
     $lastError = '';
-    foreach ($hosts as $h) {
+    foreach ($dsnList as $dsn) {
         try {
-            $dsn = "mysql:host={$h};port={$cfg['port']};dbname={$cfg['dbname']};charset=utf8mb4";
             $pdo = new PDO($dsn, $cfg['user'], $cfg['pass'], $options);
             return $pdo;
         } catch (Throwable $e) {
@@ -111,6 +128,7 @@ function getPdoConnection(): ?PDO {
         }
     }
 
+    $GLOBALS['__agafari_db_error'] = $lastError;
     error_log('[Agafari DB] MySQL connection failed (' . $cfg['host'] . '/' . $cfg['dbname'] . '): ' . $lastError);
     return null;
 }

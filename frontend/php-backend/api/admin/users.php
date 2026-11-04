@@ -7,10 +7,15 @@
 
 $backendBase = null;
 $candidates = [
+    __DIR__ . '/..',
     __DIR__ . '/../..',
+    __DIR__ . '/../../api',
     __DIR__ . '/../../php-backend',
+    __DIR__ . '/../../../api',
     __DIR__ . '/../../../php-backend',
+    ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/api',
     ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/php-backend',
+    $_SERVER['DOCUMENT_ROOT'] ?? '',
 ];
 foreach ($candidates as $cand) {
     if ($cand && file_exists($cand . '/config/db.php')) {
@@ -100,7 +105,19 @@ if ($method === 'POST') {
         exit;
     }
 
-    $userId = 'usr-' . generate_uuid();
+    // Check supported ENUM values for role to prevent SQL truncation errors
+    $targetRole = $role;
+    try {
+        $colInfo = php_query_one("SHOW COLUMNS FROM users LIKE 'role'");
+        $enumStr = $colInfo['Type'] ?? '';
+        if ($targetRole === 'EVENT_ORGANIZER' && strpos($enumStr, 'EVENT_ORGANIZER') === false && strpos($enumStr, 'ORGANIZER_OWNER') !== false) {
+            $targetRole = 'ORGANIZER_OWNER';
+        } elseif ($targetRole === 'ORGANIZER_OWNER' && strpos($enumStr, 'ORGANIZER_OWNER') === false && strpos($enumStr, 'EVENT_ORGANIZER') !== false) {
+            $targetRole = 'EVENT_ORGANIZER';
+        }
+    } catch (Throwable $ignored) {}
+
+    $userId = function_exists('generate_safe_id') ? generate_safe_id('usr-') : 'usr-' . substr(generate_uuid_v4(), 4);
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
     $orgId = null;
 
@@ -108,11 +125,11 @@ if ($method === 'POST') {
         php_execute(
             "INSERT INTO users (id, email, password_hash, full_name, role, is_active, created_at)
              VALUES (?, ?, ?, ?, ?, 1, NOW())",
-            [$userId, $email, $passwordHash, $fullName, $role]
+            [$userId, $email, $passwordHash, $fullName, $targetRole]
         );
 
-        if ($role === 'EVENT_ORGANIZER') {
-            $orgId = 'org-' . generate_uuid();
+        if ($role === 'EVENT_ORGANIZER' || $role === 'ORGANIZER_OWNER' || $targetRole === 'EVENT_ORGANIZER' || $targetRole === 'ORGANIZER_OWNER') {
+            $orgId = function_exists('generate_safe_id') ? generate_safe_id('org-') : 'org-' . substr(generate_uuid_v4(), 4);
             php_execute(
                 "INSERT INTO organizers (id, owner_user_id, business_name, contact_phone, created_at)
                  VALUES (?, ?, ?, ?, NOW())",
