@@ -1788,142 +1788,115 @@ function SystemAdminDashboardContent() {
                   {t('adminDashboard.agencies.listTitle')} ({organizerUsers.length})
                 </h3>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {organizerUsers.length === 0 ? (
-                    <div className="md:col-span-2 p-8 text-center bg-gray-50 rounded-2xl border border-dashed border-gray-300 text-gray-500 text-xs">
-                      No Event Organizers created yet. Use the form above to onboard your first Event Organizer partner!
-                    </div>
-                  ) : (
-                    organizerUsers.map((org) => {
-                      const specificOrgId = org.id.startsWith('org-') ? org.id : `org-${org.id}`;
-                      const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
-                      const companyName = getOrganizerCompanyName(org);
-                      const companyDesc = getOrganizerDescription(org);
+                {/* User Credentials Table */}
+                <div className="overflow-x-auto rounded-2xl border border-gold-500/20 shadow-sm">
+                  <table className="w-full text-left text-xs bg-white">
+                    <thead>
+                      <tr className="border-b border-gray-100 text-[10px] text-gray-500 font-mono font-bold uppercase tracking-wider bg-gray-50/80">
+                        <th className="py-3.5 px-4">USER ACCOUNT</th>
+                        <th className="py-3.5 px-4">ROLE PERMISSION</th>
+                        <th className="py-3.5 px-4">ACTIVE PASSWORD</th>
+                        <th className="py-3.5 px-4">ACCOUNT ID</th>
+                        <th className="py-3.5 px-4 text-right">CREDENTIALS ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {organizerUsers.length === 0 ? (
+                        <tr>
+                          <td colSpan={5} className="py-12 text-center text-gray-500 text-xs font-sans">
+                            No Event Organizers created yet. Use the form above to onboard your first Event Organizer partner!
+                          </td>
+                        </tr>
+                      ) : (
+                        organizerUsers.map((org) => {
+                          const specificOrgId = org.id.startsWith('org-') ? org.id : `org-${org.id}`;
+                          const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
+                          const nameVal = org.fullName && !org.fullName.includes('@') ? org.fullName : (org.companyName || org.email.split('@')[0]);
+                          const activePass = org.temporaryPassword || 'org123';
 
-                      return (
-                        <div
-                          key={org.id}
-                          className="p-5 rounded-2xl border border-gold-500/30 bg-gray-50/50 flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition-all"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="flex items-start gap-3.5">
-                              <div className="w-12 h-12 rounded-2xl bg-black text-gold-400 flex items-center justify-center font-bold text-lg shadow-sm shrink-0 border border-gold-500/30 mt-0.5">
-                                <Briefcase className="w-6 h-6 text-gold-400" />
-                              </div>
-                              <div>
-                                <h4 className="font-serif font-bold text-gray-900 text-base leading-snug">
-                                  {companyName}
-                                </h4>
-                                <div className="text-xs text-gray-500 font-mono mt-0.5">{org.email}</div>
-                                <div className="text-[10px] text-gold-700 font-bold mt-1">
-                                  Organizer Name: <span className="bg-gold-500/20 px-2 py-0.5 rounded text-black font-semibold">{org.fullName && !org.fullName.includes('@') ? org.fullName : companyName}</span>
+                          return (
+                            <tr key={org.id} className="hover:bg-gray-50/80 transition-colors">
+                              {/* User Account */}
+                              <td className="py-4 px-4">
+                                <div className="font-serif font-bold text-sm text-gray-900">{nameVal}</div>
+                                <div className="text-xs text-gray-500 font-mono flex items-center gap-1.5 mt-0.5">
+                                  <Mail className="w-3.5 h-3.5 text-gold-500 shrink-0" />
+                                  <span>{org.email}</span>
                                 </div>
-                              </div>
-                            </div>
+                              </td>
 
-                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-bold shrink-0">
-                              ✓ Certified
-                            </span>
-                          </div>
+                              {/* Role Permission Badge */}
+                              <td className="py-4 px-4">
+                                <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-mono font-bold flex items-center gap-1 w-fit shadow-sm">
+                                  👔 EVENT_ORGANIZER
+                                </span>
+                              </td>
 
-                          {/* Company Description Box */}
-                          <div className="p-3.5 rounded-xl bg-white border border-gold-500/20 text-xs text-gray-700 space-y-1">
-                            <div className="font-bold text-[11px] text-gold-700 flex items-center gap-1.5 uppercase tracking-wider">
-                              <Building2 className="w-3.5 h-3.5 text-gold-600" />
-                              <span>Company Profile & Description</span>
-                            </div>
-                            <p className="text-[11px] text-gray-600 leading-relaxed font-light">
-                              {companyDesc}
-                            </p>
-                          </div>
-
-                          {/* Interactive Credentials Card */}
-                          <div className="p-3.5 rounded-xl bg-gold-50/50 border border-gold-500/30 space-y-2">
-                            <div className="flex items-center justify-between">
-                              <div className="text-[10px] font-bold uppercase tracking-wider text-gold-800 flex items-center gap-1.5 font-mono">
-                                <ShieldCheck className="w-3.5 h-3.5 text-gold-600" />
-                                <span>Active Agency Credentials</span>
-                              </div>
-                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-mono font-bold">
-                                👔 EVENT_ORGANIZER
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                              {/* Email */}
-                              <div className="p-2 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-1 font-mono">
-                                <div className="truncate text-gray-700 text-[11px]">{org.email}</div>
-                                <button
-                                  type="button"
-                                  onClick={() => handleCopy(org.email, `email-${org.id}`)}
-                                  className="px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 text-[10px] font-bold cursor-pointer shrink-0"
-                                >
-                                  {copiedKey === `email-${org.id}` ? '✓ Copied' : 'Copy'}
-                                </button>
-                              </div>
-
-                              {/* Active Password */}
-                              <div className="p-2 rounded-lg bg-white border border-gray-200 flex items-center justify-between gap-1 font-mono">
-                                <div className="text-gray-900 font-bold text-[11px] tracking-wider truncate">
-                                  {showPasswords[org.id] ? (org.temporaryPassword || 'org123') : '••••••••••••'}
-                                </div>
-                                <div className="flex items-center gap-1 shrink-0">
+                              {/* Active Password Column */}
+                              <td className="py-4 px-4 font-mono text-xs">
+                                <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-200 w-fit">
+                                  <span className="text-gray-900 font-bold tracking-wider text-[11px]">
+                                    {showPasswords[org.id] ? activePass : '••••••••'}
+                                  </span>
                                   <button
                                     type="button"
                                     onClick={() => toggleShowPassword(org.id)}
-                                    className="p-1 text-gray-500 hover:text-gray-800 cursor-pointer"
-                                    title={showPasswords[org.id] ? "Hide Password" : "Show Password"}
+                                    className="p-0.5 text-gray-500 hover:text-gray-800 cursor-pointer"
+                                    title={showPasswords[org.id] ? "Hide" : "Show"}
                                   >
                                     {showPasswords[org.id] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                                   </button>
                                   <button
                                     type="button"
-                                    onClick={() => handleCopy(org.temporaryPassword || 'org123', `pass-${org.id}`)}
-                                    className="px-2 py-0.5 rounded bg-black text-gold-400 hover:bg-gray-800 text-[10px] font-bold cursor-pointer"
+                                    onClick={() => handleCopy(activePass, `pass-org-${org.id}`)}
+                                    className="px-1.5 py-0.5 rounded bg-black text-gold-400 hover:bg-gray-800 text-[9px] font-bold cursor-pointer"
                                   >
-                                    {copiedKey === `pass-${org.id}` ? '✓ Copied' : 'Copy'}
+                                    {copiedKey === `pass-org-${org.id}` ? '✓' : 'Copy'}
                                   </button>
                                 </div>
-                              </div>
-                            </div>
-                          </div>
+                              </td>
 
-                          <div className="p-2.5 rounded-xl bg-white border border-gray-200 text-xs font-mono text-gray-600 flex items-center justify-between">
-                            <span className="truncate text-[11px]">{specificOrgUrl}</span>
-                            <button
-                              onClick={() => {
-                                navigator.clipboard.writeText(`${window.location.origin}${specificOrgUrl}`);
-                                setCopiedKey(`org-${org.id}`);
-                                setTimeout(() => setCopiedKey(''), 2500);
-                              }}
-                              className="px-2.5 py-1 rounded bg-black text-gold-400 text-[10px] font-bold hover:bg-gray-800 shrink-0 ml-2 cursor-pointer"
-                            >
-                              {copiedKey === `org-${org.id}` ? 'Copied ✓' : 'Copy Link'}
-                            </button>
-                          </div>
+                              {/* Account ID */}
+                              <td className="py-4 px-4 font-mono text-[11px] text-gray-500">
+                                {org.id}
+                              </td>
 
-                          <div className="pt-2 border-t border-gray-200 flex items-center justify-between gap-2">
-                            <button
-                              onClick={() => handleDeleteOrganizer(org)}
-                              className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-all flex items-center gap-1.5 border border-rose-200 cursor-pointer shadow-sm"
-                              title="Delete Organizer Agency (Asks twice)"
-                            >
-                              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
-                              <span>Delete Agency</span>
-                            </button>
+                              {/* Credentials Actions */}
+                              <td className="py-4 px-4 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <Link
+                                    href={specificOrgUrl}
+                                    className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-sm"
+                                  >
+                                    <Briefcase className="w-3 h-3 text-amber-700" />
+                                    <span>Open Org</span>
+                                  </Link>
 
-                            <Link
-                              href={specificOrgUrl}
-                              className="px-4 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/40 cursor-pointer"
-                            >
-                              <span>Open Organizer Dashboard</span>
-                              <ExternalLink className="w-3.5 h-3.5" />
-                            </Link>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditModal(org)}
+                                    className="px-3 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/30 text-[11px] font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <Edit className="w-3.5 h-3.5 text-gold-400" />
+                                    <span>Edit</span>
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteOrganizer(org)}
+                                    className="p-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-xs transition-colors cursor-pointer"
+                                    title="Delete Organizer Agency"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
