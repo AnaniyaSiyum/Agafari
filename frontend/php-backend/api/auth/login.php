@@ -178,21 +178,48 @@ try {
         case 'ORGANIZER_OWNER':
         case 'ORGANIZER':
         case 'EVENT_ORGANIZER':
-            $redirectUrl = '/organizer/dashboard';
+            $org = php_query_one('SELECT id, business_name, contact_phone FROM organizers WHERE owner_user_id = ? LIMIT 1', [$user['id']]);
+            if ($org) {
+                $user['organizerId'] = $org['id'];
+                $user['companyName'] = $org['business_name'];
+                $user['agencyName']  = $org['business_name'];
+                $redirectUrl = '/organizer/dashboard?id=' . urlencode($org['id']);
+            } else {
+                $orgIdVal = 'org-' . $user['id'];
+                $user['organizerId'] = $orgIdVal;
+                $user['companyName'] = $user['full_name'];
+                $user['agencyName']  = $user['full_name'];
+                $redirectUrl = '/organizer/dashboard?id=' . urlencode($orgIdVal);
+            }
             break;
         case 'COUPLE':
+        case 'BRIDE_GROOM':
             $redirectUrl = $eventSlug ? "/event/{$eventSlug}/couple" : '/couple/dashboard';
             break;
         case 'GATE_SCANNER':
         case 'SCANNER':
-            $redirectUrl = '/scanner';
-            break;
         case 'LIVE_STREAMER':
-            $redirectUrl = '/live-streamer';
-            break;
         case 'MODERATOR':
         case 'MEDIA_MODERATOR':
-            $redirectUrl = '/moderation';
+            $staffRow = php_query_one(
+                'SELECT es.role, e.slug, e.organizer_id 
+                 FROM event_staff es 
+                 JOIN events e ON e.id = es.event_id 
+                 WHERE es.user_id = ? 
+                 LIMIT 1',
+                [$user['id']]
+            );
+            if ($staffRow) {
+                $user['eventSlug']   = $staffRow['slug'];
+                $user['organizerId'] = $staffRow['organizer_id'];
+            }
+            if ($user['role'] === 'GATE_SCANNER' || $user['role'] === 'SCANNER') {
+                $redirectUrl = '/scanner';
+            } elseif ($user['role'] === 'LIVE_STREAMER') {
+                $redirectUrl = '/live-streamer';
+            } else {
+                $redirectUrl = '/moderation';
+            }
             break;
     }
 

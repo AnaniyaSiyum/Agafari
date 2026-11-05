@@ -45,20 +45,38 @@ if ($method === 'OPTIONS') {
 // GET — Retrieve media assets
 // ---------------------------------------------------------------------------
 if ($method === 'GET') {
-    $eventId = trim($_GET['eventId'] ?? $_GET['id'] ?? '');
-    $slug = trim($_GET['slug'] ?? '');
+    $rawId = trim($_GET['eventId'] ?? $_GET['id'] ?? '');
+    $slug  = trim($_GET['slug'] ?? '');
 
     try {
         if (!empty($slug)) {
             $ev = php_query_one("SELECT id FROM events WHERE LOWER(slug) = LOWER(?)", [$slug]);
-            if ($ev) $eventId = $ev['id'];
+            if ($ev) $rawId = $ev['id'];
         }
 
-        if (!empty($eventId)) {
-            $rows = php_query(
-                "SELECT * FROM media_assets WHERE event_id = ? ORDER BY created_at DESC",
-                [$eventId]
-            );
+        if (!empty($rawId)) {
+            $stripped = preg_replace('/^org-/', '', $rawId);
+
+            // 1. First check if it is a specific event_id
+            $isEvent = php_query_one("SELECT id FROM events WHERE id = ? LIMIT 1", [$rawId]);
+            if ($isEvent) {
+                $rows = php_query(
+                    "SELECT * FROM media_assets WHERE event_id = ? ORDER BY created_at DESC",
+                    [$rawId]
+                );
+            } else {
+                // 2. Otherwise scope by organizer's events
+                $rows = php_query(
+                    "SELECT m.* 
+                       FROM media_assets m 
+                       JOIN events e ON e.id = m.event_id 
+                      WHERE e.organizer_id = ? 
+                         OR e.organizer_id = ? 
+                         OR e.organizer_id = ?
+                   ORDER BY m.created_at DESC",
+                    [$rawId, $stripped, "org-{$stripped}"]
+                );
+            }
         } else {
             $rows = php_query("SELECT * FROM media_assets ORDER BY created_at DESC LIMIT 100");
         }

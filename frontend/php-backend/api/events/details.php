@@ -53,13 +53,28 @@ if (empty($slug)) {
 // ---------------------------------------------------------------------------
 if ($method === 'GET') {
     try {
+        $hasTempPass = false;
+        try {
+            $col = php_query_one("SHOW COLUMNS FROM users LIKE 'temporary_password'");
+            if ($col) $hasTempPass = true;
+        } catch (Throwable $e) {}
+
+        $tempPassField = $hasTempPass ? 'u.temporary_password AS couple_temp_password' : 'NULL AS couple_temp_password';
+
         $event = php_query_one(
-            'SELECT id, slug, title, bride_name, groom_name, event_date, start_time, second_event_date,
-                    venue_name, venue_address, venue_map_url, dress_code, welcome_message, cover_image_url,
-                    status, is_live, youtube_video_id, thank_you_message, thank_you_image_url,
-                    template_id, template_customization_json
-               FROM events
-              WHERE LOWER(slug) = LOWER(?)',
+            "SELECT e.id, e.slug, e.title, e.bride_name, e.groom_name, e.event_date, e.start_time, e.second_event_date,
+                    e.venue_name, e.venue_address, e.venue_map_url, e.dress_code, e.welcome_message, e.cover_image_url,
+                    e.status, e.is_live, e.youtube_video_id, e.thank_you_message, e.thank_you_image_url,
+                    e.template_id, e.template_customization_json, e.managed_by, e.organizer_id, e.admin_approval_status,
+                    e.couple_user_id,
+                    u.email AS couple_email,
+                    u.full_name AS couple_full_name,
+                    {$tempPassField},
+                    o.business_name AS organizer_name
+               FROM events e
+          LEFT JOIN users u ON u.id = e.couple_user_id
+          LEFT JOIN organizers o ON o.id = e.organizer_id
+              WHERE LOWER(e.slug) = LOWER(?)",
             [$slug]
         );
 
@@ -72,23 +87,59 @@ if ($method === 'GET') {
         $customization = json_decode($event['template_customization_json'] ?? '{}', true) ?: [];
 
         $formatted = [
-            'id'             => $event['id'],
-            'slug'           => $event['slug'],
-            'title'          => $event['title'] ?: ($event['bride_name'] . ' & ' . $event['groom_name'] . "'s Wedding"),
-            'brideName'      => $event['bride_name'],
-            'groomName'      => $event['groom_name'],
-            'eventDate'      => $event['event_date'],
-            'startTime'      => $event['start_time'] ?: '14:00',
-            'venueName'      => $event['venue_name'] ?: 'Wedding Venue',
-            'venueAddress'   => $event['venue_address'] ?: '',
-            'venueMapUrl'    => $event['venue_map_url'] ?: '',
-            'dressCode'      => $event['dress_code'] ?: 'Formal Black Tie & Habesha Kemis',
-            'welcomeMessage' => $event['welcome_message'] ?: 'We are overjoyed to welcome you to our special day!',
-            'coverImageUrl'  => $event['cover_image_url'] ?: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200',
-            'couplePhotoUrl' => $customization['couplePhotoUrl'] ?? ($event['cover_image_url'] ?: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800'),
-            'status'         => $event['status'],
-            'isLive'         => (bool) $event['is_live'],
-            'youtubeVideoId' => $event['youtube_video_id'] ?: '',
+            'id'                  => $event['id'],
+            'slug'                => $event['slug'],
+            'title'               => $event['title'] ?: ($event['bride_name'] . ' & ' . $event['groom_name'] . "'s Wedding"),
+            'brideName'           => $event['bride_name'],
+            'groomName'           => $event['groom_name'],
+            'eventDate'           => $event['event_date'],
+            'startTime'           => $event['start_time'] ?: '14:00',
+            'venueName'           => $event['venue_name'] ?: 'Wedding Venue',
+            'venueAddress'        => $event['venue_address'] ?: '',
+            'venueMapUrl'         => $event['venue_map_url'] ?: '',
+            'dressCode'           => $event['dress_code'] ?: 'Formal Black Tie & Habesha Kemis',
+            'welcomeMessage'      => $event['welcome_message'] ?: 'We are overjoyed to welcome you to our special day!',
+            'coverImageUrl'       => $event['cover_image_url'] ?: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1200',
+            'couplePhotoUrl'      => $customization['couplePhotoUrl'] ?? ($event['cover_image_url'] ?: 'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=800'),
+            'status'              => $event['status'],
+            'isLive'              => (bool) $event['is_live'],
+            'youtubeVideoId'      => $event['youtube_video_id'] ?: '',
+            'managedBy'           => $event['managed_by'] ?? 'ADMIN',
+            'organizerId'         => $event['organizer_id'] ?? null,
+            'organizer_id'        => $event['organizer_id'] ?? null,
+            'organizerName'       => $event['organizer_name'] ?? null,
+            'adminApprovalStatus' => $event['admin_approval_status'] ?? 'APPROVED',
+            'admin_approval_status' => $event['admin_approval_status'] ?? 'APPROVED',
+            'coupleCredentials'   => [
+                'email'             => $event['couple_email'] ?? "couple@{$slug}.com",
+                'temporaryPassword' => $event['couple_temp_password'] ?? 'agafari2026',
+            ],
+            'credentials'         => [
+                'couple'    => [
+                    'fullName'          => $event['couple_full_name'] ?? "{$event['bride_name']} & {$event['groom_name']}",
+                    'email'             => $event['couple_email'] ?? "couple@{$slug}.com",
+                    'temporaryPassword' => $event['couple_temp_password'] ?? 'agafari2026',
+                    'role'              => 'BRIDE_GROOM',
+                ],
+                'organizer' => [
+                    'fullName'          => $event['organizer_name'] ?? 'Event Organizer',
+                    'email'             => "organizer@{$slug}.com",
+                    'temporaryPassword' => 'org2026',
+                    'role'              => 'EVENT_ORGANIZER',
+                ],
+                'streamer'  => [
+                    'fullName'          => 'Live Streamer Crew',
+                    'email'             => "streamer@{$slug}.com",
+                    'temporaryPassword' => 'stream123',
+                    'role'              => 'LIVE_STREAMER',
+                ],
+                'scanner'   => [
+                    'fullName'          => 'Gate QR Scanner',
+                    'email'             => "scanner@{$slug}.com",
+                    'temporaryPassword' => 'scan123',
+                    'role'              => 'GATE_SCANNER',
+                ],
+            ],
             'loveStory'      => $customization['loveStory'] ?? [
                 'headline'      => 'Our Journey to Forever',
                 'firstMetDate'  => '2024-05-12',

@@ -408,10 +408,19 @@ function OrganizerDashboardContent() {
     const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
     const userObj = userStr ? JSON.parse(userStr) : null;
 
+    // 1. If backend returned a valid agencyName from DB, prioritize it!
+    if (info?.agencyName && !info.agencyName.startsWith('org-') && !info.agencyName.includes('@') && info.agencyName !== 'Certified Agafari Event Agency') {
+      return info.agencyName.trim();
+    }
+
+    // 2. If logged-in user profile has companyName / agencyName
     if (userObj?.companyName && !userObj.companyName.includes('@') && !userObj.companyName.includes('Certified Event')) {
       return userObj.companyName.trim();
     }
-    if (userObj?.fullName && !userObj.fullName.includes('@') && userObj.fullName.trim() !== 'Event Organizer' && !userObj.fullName.includes('Certified Event')) {
+    if (userObj?.agencyName && !userObj.agencyName.includes('@') && !userObj.agencyName.includes('Certified Event')) {
+      return userObj.agencyName.trim();
+    }
+    if (userObj?.fullName && !userObj.fullName.includes('@') && userObj.fullName.trim() !== 'Event Organizer' && userObj.fullName.trim() !== 'System Administrator' && !userObj.fullName.includes('Certified Event')) {
       return userObj.fullName.trim();
     }
 
@@ -421,27 +430,28 @@ function OrganizerDashboardContent() {
       !rawName.startsWith('org-') &&
       !rawName.includes('@') &&
       rawName.trim() !== 'Event Organizer' &&
+      rawName.trim() !== 'Event Organizer Admin' &&
       !rawName.includes('Certified Event')
     ) {
       return rawName.trim();
     }
 
     const email = userObj?.email || info?.email;
-    if (email && email.includes('@')) {
+    if (email && email.includes('@') && !email.startsWith('admin@')) {
       const uname = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
       const titleCase = uname.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
       return `${titleCase} Event Production Agency`;
     }
 
-    return 'Event Production Agency';
+    return info?.agencyName?.trim() || 'Event Production Agency';
   }
 
   const displayAgencyName = getDynamicAgencyTitle(rawOrgIdParam, organizerInfo);
 
   const displayOrganizerSubTitle =
-    organizerInfo?.fullName && !organizerInfo.fullName.includes('@') && organizerInfo.fullName.trim() !== 'Event Organizer'
+    organizerInfo?.fullName && !organizerInfo.fullName.includes('@') && organizerInfo.fullName.trim() !== 'Event Organizer' && organizerInfo.fullName.trim() !== 'Event Organizer Admin'
       ? organizerInfo.fullName.trim()
-      : (organizerInfo?.email && !organizerInfo.email.startsWith('organizer-') ? organizerInfo.email : 'EVENT ORGANIZER SUITE');
+      : (organizerInfo?.email && !organizerInfo.email.startsWith('organizer-') ? organizerInfo.email : 'EVENT ORGANIZER ADMIN');
 
   if (loading) {
     return (

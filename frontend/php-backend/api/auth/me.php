@@ -46,23 +46,92 @@ if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
 
 if (empty($token)) {
     http_response_code(401);
-    echo json_encode(['error' => 'Unauthenticated']);
+    echo json_encode(['authenticated' => false, 'error' => 'Unauthenticated']);
     exit;
 }
 
-// Fallback System Admin session
-if (str_starts_with($token, 'agafari_')) {
-    echo json_encode([
-        'authenticated' => true,
-        'user' => [
-            'id' => 'usr-admin-1',
-            'email' => 'admin@agafari.com',
-            'full_name' => 'System Administrator',
-            'role' => 'SYSTEM_ADMIN',
-        ]
-    ]);
+try {
+    // 1. Check php_sessions table
+    $sess = php_query_one(
+        'SELECT user_id, role, expires_at FROM php_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1',
+        [$token]
+    );
+
+    if ($sess) {
+        $user = php_query_one(
+            'SELECT id, email, full_name, phone, role, is_active FROM users WHERE id = ? LIMIT 1',
+            [$sess['user_id']]
+        );
+
+        if ($user) {
+            // Organizer details
+            if ($user['role'] === 'EVENT_ORGANIZER' || $user['role'] === 'ORGANIZER_OWNER') {
+                $org = php_query_one(
+                    'SELECT id, business_name, contact_phone FROM organizers WHERE owner_user_id = ? LIMIT 1',
+                    [$user['id']]
+                );
+                if ($org) {
+                    $user['organizerId'] = $org['id'];
+                    $user['companyName'] = $org['business_name'];
+                    $user['agencyName']  = $org['business_name'];
+                } else {
+                    $user['organizerId'] = 'org-' . $user['id'];
+                    $user['companyName'] = $user['full_name'];
+                    $user['agencyName']  = $user['full_name'];
+                }
+            }
+
+            // Couple event details
+            if ($user['role'] === 'COUPLE' || $user['role'] === 'BRIDE_GROOM') {
+                $evt = php_query_one('SELECT slug FROM events WHERE couple_user_id = ? LIMIT 1', [$user['id']]);
+                if ($evt) {
+                    $user['eventSlug'] = $evt['slug'];
+                }
+            }
+
+            // Staff assignment details
+            $staffRoles = ['GATE_SCANNER', 'SCANNER', 'LIVE_STREAMER', 'MODERATOR', 'MEDIA_MODERATOR'];
+            if (in_array($user['role'], $staffRoles)) {
+                $staff = php_query_one(
+                    'SELECT es.role, e.slug, e.organizer_id 
+                     FROM event_staff es 
+                     JOIN events e ON e.id = es.event_id 
+                     WHERE es.user_id = ? 
+                     LIMIT 1',
+                    [$user['id']]
+                );
+                if ($staff) {
+                    $user['eventSlug']   = $staff['slug'];
+                    $user['organizerId'] = $staff['organizer_id'];
+                }
+            }
+
+            echo json_encode([
+                'authenticated' => true,
+                'user'          => $user,
+            ]);
+            exit;
+        }
+    }
+
+    // 2. Fallback System Admin session
+    if (str_starts_with($token, 'agafari_')) {
+        echo json_encode([
+            'authenticated' => true,
+            'user' => [
+                'id'        => 'usr-admin-1',
+                'email'     => 'admin@agafari.com',
+                'full_name' => 'System Administrator',
+                'role'      => 'SYSTEM_ADMIN',
+            ]
+        ]);
+        exit;
+    }
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Auth service error: ' . $e->getMessage()]);
     exit;
 }
 
 http_response_code(401);
-echo json_encode(['error' => 'Invalid token']);
+echo json_encode(['authenticated' => false, 'error' => 'Invalid or expired session token']);
