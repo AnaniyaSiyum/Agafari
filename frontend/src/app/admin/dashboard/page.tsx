@@ -53,7 +53,12 @@ import {
   Upload,
   Globe,
   Save,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Heart,
+  Tv,
+  Shield,
+  ArrowLeft,
+  Smartphone
 } from 'lucide-react';
 import { useTranslation, LanguageSwitcher } from '@/lib/i18n';
 import { inspectImageFile, IMAGE_SPECS } from '@/lib/imageInspector';
@@ -151,6 +156,7 @@ function SystemAdminDashboardContent() {
 
   // Selected Drill-Down Event & Impersonation Hub
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
+  const [inspectingWedding, setInspectingWedding] = useState<EventData | null>(null);
 
   // Event Fleet Directory Filters
   const [fleetFilter, setFleetFilter] = useState<'ALL' | 'ACTIVE' | 'ARCHIVE' | 'PENDING'>('ALL');
@@ -367,8 +373,18 @@ function SystemAdminDashboardContent() {
         setEvents(loadedEvents);
         if (loadedEvents.length > 0) {
           setSelectedEvent((prev) => prev || loadedEvents[0]);
+          const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+          const targetSlug = urlParams?.get('wedding') || urlParams?.get('eventSlug');
+          if (targetSlug) {
+            const matched = loadedEvents.find((e) => e.slug === targetSlug || e.id === targetSlug);
+            if (matched) {
+              setInspectingWedding(matched);
+              setSelectedEvent(matched);
+            }
+          }
         } else {
           setSelectedEvent(null);
+          setInspectingWedding(null);
         }
       }
 
@@ -804,6 +820,52 @@ function SystemAdminDashboardContent() {
     setShowPasswords((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const handleCopyAllCredentials = (evt: EventData) => {
+    const rawOrgId = (evt as any).organizerId || (evt as any).organizer_id || `org-${evt.slug}`;
+    const cleanOrgId = String(rawOrgId).startsWith('org-') ? String(rawOrgId) : `org-${String(rawOrgId)}`;
+    const dedicatedUrl = `/${cleanOrgId}/${evt.slug}`;
+
+    const cEmail = evt.credentials?.couple?.email || evt.coupleCredentials?.email || `couple@${evt.slug}.com`;
+    const cPass = evt.credentials?.couple?.temporaryPassword || evt.coupleCredentials?.temporaryPassword || 'agafari2026';
+
+    const sEmail = evt.credentials?.scanner?.email || `scanner@${evt.slug}.com`;
+    const sPass = evt.credentials?.scanner?.temporaryPassword || 'scan123';
+
+    const mEmail = evt.credentials?.moderator?.email || `moderator@${evt.slug}.com`;
+    const mPass = evt.credentials?.moderator?.temporaryPassword || 'mod123';
+
+    const stEmail = evt.credentials?.streamer?.email || `streamer@${evt.slug}.com`;
+    const stPass = evt.credentials?.streamer?.temporaryPassword || 'stream123';
+
+    const allCreds = `=== AGAFARI WEDDING ACCESS CREDENTIALS ===
+Event: ${evt.title} (ID: evt-${evt.slug})
+Dedicated Control URL: ${window.location.origin}${dedicatedUrl}
+
+1. BRIDE & GROOM (COUPLE SUITE)
+Email: ${cEmail}
+Password: ${cPass}
+Direct Link: ${window.location.origin}${dedicatedUrl}/couple
+
+2. GATE SECURITY SCANNER (DOOR STAFF)
+Email: ${sEmail}
+Password: ${sPass}
+Direct Link: ${window.location.origin}${dedicatedUrl}/scanner
+
+3. CONTENT & MEDIA MODERATOR
+Email: ${mEmail}
+Password: ${mPass}
+Direct Link: ${window.location.origin}${dedicatedUrl}/moderation
+
+4. LIVE STREAMER CAMERA CREW
+Email: ${stEmail}
+Password: ${stPass}
+Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
+==========================================`;
+    navigator.clipboard.writeText(allCreds);
+    setCopiedKey('all-creds');
+    setTimeout(() => setCopiedKey(''), 3000);
+  };
+
   // Open Edit User Credentials Modal
   const handleOpenEditModal = (u: UserData) => {
     setSelectedEditUser(u);
@@ -1001,9 +1063,9 @@ function SystemAdminDashboardContent() {
             
             {/* 1. Licensing & Approvals */}
             <button
-              onClick={() => { setActiveTab('APPROVALS'); setMobileSidebarOpen(false); }}
+              onClick={() => { setActiveTab('APPROVALS'); setInspectingWedding(null); setMobileSidebarOpen(false); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                activeTab === 'APPROVALS'
+                activeTab === 'APPROVALS' && !inspectingWedding
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold shadow-md'
                   : 'text-white/80 hover:bg-white/5 hover:text-white'
               }`}
@@ -1025,9 +1087,9 @@ function SystemAdminDashboardContent() {
 
             {/* 2. Global Weddings Fleet & Role Command */}
             <button
-              onClick={() => { setActiveTab('EVENTS'); setMobileSidebarOpen(false); }}
+              onClick={() => { setActiveTab('EVENTS'); setInspectingWedding(null); setMobileSidebarOpen(false); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                activeTab === 'EVENTS'
+                activeTab === 'EVENTS' && !inspectingWedding
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold shadow-md'
                   : 'text-white/80 hover:bg-white/5 hover:text-white'
               }`}
@@ -1043,9 +1105,9 @@ function SystemAdminDashboardContent() {
 
             {/* 3. Event Organizing Agencies */}
             <button
-              onClick={() => { setActiveTab('ORGANIZERS'); setMobileSidebarOpen(false); }}
+              onClick={() => { setActiveTab('ORGANIZERS'); setInspectingWedding(null); setMobileSidebarOpen(false); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                activeTab === 'ORGANIZERS'
+                activeTab === 'ORGANIZERS' && !inspectingWedding
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold shadow-md'
                   : 'text-white/80 hover:bg-white/5 hover:text-white'
               }`}
@@ -1061,9 +1123,9 @@ function SystemAdminDashboardContent() {
 
             {/* 4. Platform Users & RBAC */}
             <button
-              onClick={() => { setActiveTab('USERS'); setMobileSidebarOpen(false); }}
+              onClick={() => { setActiveTab('USERS'); setInspectingWedding(null); setMobileSidebarOpen(false); }}
               className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all ${
-                activeTab === 'USERS'
+                activeTab === 'USERS' && !inspectingWedding
                   ? 'bg-gradient-to-r from-gold-500 to-gold-600 text-black font-bold shadow-md'
                   : 'text-white/80 hover:bg-white/5 hover:text-white'
               }`}
@@ -1111,25 +1173,46 @@ function SystemAdminDashboardContent() {
           <div className="flex items-center gap-3">
             <div>
               <div className="text-[11px] text-gold-600 font-semibold uppercase tracking-wider">
-                {t('adminDashboard.header.tag')}
+                {inspectingWedding ? 'DEDICATED WEDDING CONTROL CENTER' : t('adminDashboard.header.tag')}
               </div>
               <h1 className="font-serif font-bold text-lg sm:text-xl text-gray-900">
-                {activeTab === 'APPROVALS' && t('adminDashboard.approvals.title')}
-                {activeTab === 'EVENTS' && t('adminDashboard.fleet.title')}
-                {activeTab === 'ORGANIZERS' && t('adminDashboard.agencies.title')}
-                {activeTab === 'USERS' && t('adminDashboard.users.title')}
+                {inspectingWedding ? inspectingWedding.title : (
+                  <>
+                    {activeTab === 'APPROVALS' && t('adminDashboard.approvals.title')}
+                    {activeTab === 'EVENTS' && t('adminDashboard.fleet.title')}
+                    {activeTab === 'ORGANIZERS' && t('adminDashboard.agencies.title')}
+                    {activeTab === 'USERS' && t('adminDashboard.users.title')}
+                  </>
+                )}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-3 shrink-0 ml-auto">
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold shadow-md transition-all flex items-center gap-1.5 border border-gold-500/40"
-            >
-              <Plus className="w-3.5 h-3.5 text-gold-400" />
-              <span className="hidden sm:inline">{t('adminDashboard.header.createBtn')}</span>
-            </button>
+            {inspectingWedding ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setInspectingWedding(null);
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('wedding');
+                  url.searchParams.delete('eventSlug');
+                  window.history.replaceState({}, '', url.toString());
+                }}
+                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all flex items-center gap-1.5 border border-gray-300 cursor-pointer shadow-sm"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Back to Overview</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold shadow-md transition-all flex items-center gap-1.5 border border-gold-500/40"
+              >
+                <Plus className="w-3.5 h-3.5 text-gold-400" />
+                <span className="hidden sm:inline">{t('adminDashboard.header.createBtn')}</span>
+              </button>
+            )}
 
             <LanguageSwitcher />
           </div>
@@ -1137,11 +1220,580 @@ function SystemAdminDashboardContent() {
 
         {/* Workspace Main Area */}
         <main className="p-6 max-w-7xl w-full mx-auto space-y-6">
-          
-          {/* =========================================================================
-              TAB 1: LICENSING & APPROVALS PIPELINE
-             ========================================================================= */}
-          {activeTab === 'APPROVALS' && (
+
+          {inspectingWedding ? (
+            (() => {
+              const rawOrgId = (inspectingWedding as any).organizerId || (inspectingWedding as any).organizer_id || `org-${inspectingWedding.slug}`;
+              const cleanOrgId = String(rawOrgId).startsWith('org-') ? String(rawOrgId) : `org-${String(rawOrgId)}`;
+              const dedicatedUrl = `/${cleanOrgId}/${inspectingWedding.slug}`;
+
+              const coupleEmail = inspectingWedding.credentials?.couple?.email || inspectingWedding.coupleCredentials?.email || `couple@${inspectingWedding.slug}.com`;
+              const couplePass = inspectingWedding.credentials?.couple?.temporaryPassword || inspectingWedding.coupleCredentials?.temporaryPassword || 'agafari2026';
+
+              const scannerEmail = inspectingWedding.credentials?.scanner?.email || `scanner@${inspectingWedding.slug}.com`;
+              const scannerPass = inspectingWedding.credentials?.scanner?.temporaryPassword || 'scan123';
+
+              const moderatorEmail = inspectingWedding.credentials?.moderator?.email || `moderator@${inspectingWedding.slug}.com`;
+              const moderatorPass = inspectingWedding.credentials?.moderator?.temporaryPassword || 'mod123';
+
+              const streamerEmail = inspectingWedding.credentials?.streamer?.email || `streamer@${inspectingWedding.slug}.com`;
+              const streamerPass = inspectingWedding.credentials?.streamer?.temporaryPassword || 'stream123';
+
+              return (
+                <div className="space-y-6">
+                  {/* Top Action & Navigation Bar */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-gold-500/30 shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setInspectingWedding(null);
+                          const url = new URL(window.location.href);
+                          url.searchParams.delete('wedding');
+                          url.searchParams.delete('eventSlug');
+                          window.history.replaceState({}, '', url.toString());
+                        }}
+                        className="px-3.5 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm border border-gray-200"
+                      >
+                        <ArrowLeft className="w-4 h-4 text-gray-700" />
+                        <span>Back to Platform Licenses & Fleet</span>
+                      </button>
+
+                      <span className="hidden sm:inline text-xs text-gray-400 font-mono">/</span>
+                      <span className="text-xs font-serif font-bold text-gray-900 truncate max-w-xs sm:max-w-md">
+                        {inspectingWedding.title}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyAllCredentials(inspectingWedding)}
+                        className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border border-gold-500/40 cursor-pointer"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-gold-400" />
+                        <span>{copiedKey === 'all-creds' ? 'All Credentials Copied ✓' : 'Copy All Role Logins'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleToggleLiveStream(inspectingWedding.id, inspectingWedding.isLive || false)}
+                        className={`px-4 py-2 rounded-xl text-xs font-extrabold flex items-center gap-1.5 transition-all shadow-sm cursor-pointer ${
+                          inspectingWedding.isLive
+                            ? 'bg-rose-600 text-white animate-pulse'
+                            : 'bg-stone-900 text-gold-400 border border-gold-500/40 hover:bg-stone-800'
+                        }`}
+                      >
+                        <Radio className="w-3.5 h-3.5" />
+                        <span>{inspectingWedding.isLive ? '🔴 LIVE STREAM ACTIVE' : 'Start Live Stream'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Dedicated Wedding Control Center Banner */}
+                  <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white border-2 border-gold-500 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+                      <div className="flex items-start sm:items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-black text-gold-400 flex items-center justify-center font-bold text-2xl border border-gold-500/40 shadow-lg shrink-0">
+                          <Crown className="w-8 h-8 text-gold-400" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-3 py-1 rounded-full bg-gold-500 text-black text-[11px] font-black uppercase tracking-wider">
+                              SYSTEM ADMIN CONTROL CENTER
+                            </span>
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+                              ✓ Certified Platform License
+                            </span>
+                            {inspectingWedding.isIndividual ? (
+                              <span className="px-2.5 py-0.5 rounded-full bg-purple-500/20 text-purple-200 border border-purple-500/30 text-[11px] font-bold">
+                                👤 Individual Wedding
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-500/30 text-[11px] font-bold flex items-center gap-1">
+                                <Building2 className="w-3 h-3 text-blue-300" /> {inspectingWedding.organizerName || 'Organizer Agency'}
+                              </span>
+                            )}
+                            {inspectingWedding.isLive && (
+                              <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold animate-pulse flex items-center gap-1">
+                                <Radio className="w-3 h-3 text-rose-400" /> LIVE NOW
+                              </span>
+                            )}
+                          </div>
+
+                          <h1 className="font-serif font-bold text-2xl sm:text-3xl text-gold-300 tracking-tight">
+                            {inspectingWedding.title}
+                          </h1>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-stone-300 font-sans pt-1">
+                            <span className="flex items-center gap-1 text-gold-400">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {new Date(inspectingWedding.eventDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-stone-300">
+                              <MapPin className="w-3.5 h-3.5 text-gold-400" />
+                              {inspectingWedding.venueName}
+                            </span>
+                            <span>•</span>
+                            <span className="font-mono text-stone-400 text-[11px]">
+                              ID: evt-{inspectingWedding.slug}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dedicated URL Box */}
+                      <div className="w-full md:w-auto bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-gold-500/30 space-y-2">
+                        <div className="text-[10px] uppercase font-bold text-gold-400 tracking-wider">
+                          Dedicated Clean Event URL
+                        </div>
+                        <div className="font-mono text-xs text-white truncate max-w-sm">
+                          {dedicatedUrl}
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`${window.location.origin}${dedicatedUrl}`, 'wedding-clean-url')}
+                            className="px-3 py-1.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>{copiedKey === 'wedding-clean-url' ? 'Copied ✓' : 'Copy Link'}</span>
+                          </button>
+                          <Link
+                            href={dedicatedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 border border-stone-600"
+                          >
+                            <span>Public Page</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* =====================================================================
+                      ROLE COMMAND & CREDENTIALS HUB (4 ROLES OF THIS WEDDING)
+                     ===================================================================== */}
+                  <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/30 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-100 text-gold-950 font-bold text-[11px] mb-1">
+                          <Shield className="w-3.5 h-3.5 text-gold-700" />
+                          <span>Dedicated Wedding Role Access Hub</span>
+                        </div>
+                        <h2 className="font-serif font-bold text-xl sm:text-2xl text-gray-900">
+                          Roles & Access Credentials for {inspectingWedding.brideName} & {inspectingWedding.groomName}
+                        </h2>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          View, copy, or launch into any role dashboard for this specific wedding. Under System Super Admin, you are directly authorized without any credential barriers.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-2xl border border-gray-200">
+                        <Smartphone className="w-7 h-7 text-gold-600" />
+                        <div className="text-right">
+                          <div className="text-[10px] font-bold text-gray-500 uppercase">Dedicated Hub</div>
+                          <div className="text-xs font-black text-gray-900">4 Active Roles</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4 Role Command Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                      {/* ROLE 1: BRIDE & GROOM (COUPLE SUITE) */}
+                      <div className="p-6 rounded-3xl bg-white border border-rose-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200 flex items-center gap-1.5">
+                              <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+                              <span>Bride & Groom Role</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h3 className="font-serif font-bold text-lg text-gray-900">
+                              {inspectingWedding.brideName} & {inspectingWedding.groomName}
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Full access to couple dashboard, guest list management, seating charts, and mezmur playlist controls.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Portal Login Email:</span>
+                              <span className="font-bold text-gray-900">{coupleEmail}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-rose-800 bg-white px-2.5 py-0.5 rounded border border-rose-200">
+                                  {showPasswords['couple'] ? couplePass : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword('couple')}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords['couple'] ? 'Hide Password' : 'Show Password'}
+                                >
+                                  {showPasswords['couple'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <Link
+                            href={`${dedicatedUrl}/couple`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Couple Portal</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Bride & Groom Login: ${window.location.origin}${dedicatedUrl}/couple\nEmail: ${coupleEmail}\nPassword: ${couplePass}`, 'couple')}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === 'couple' ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ROLE 2: GATE SECURITY SCANNER */}
+                      <div className="p-6 rounded-3xl bg-white border border-indigo-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold border border-indigo-200 flex items-center gap-1.5">
+                              <ScanLine className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Gate Security Scanner</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h3 className="font-serif font-bold text-lg text-gray-900">
+                              Door Registration Staff Terminal
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Camera QR barcode scanner app for fast guest verification and digital ticket validation at the entrance.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Portal Login Email:</span>
+                              <span className="font-bold text-gray-900">{scannerEmail}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-indigo-800 bg-white px-2.5 py-0.5 rounded border border-indigo-200">
+                                  {showPasswords['scanner'] ? scannerPass : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword('scanner')}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords['scanner'] ? 'Hide Password' : 'Show Password'}
+                                >
+                                  {showPasswords['scanner'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <Link
+                            href={`${dedicatedUrl}/scanner`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Scanner App</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Gate Scanner: ${window.location.origin}${dedicatedUrl}/scanner\nEmail: ${scannerEmail}\nPassword: ${scannerPass}`, 'scanner')}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === 'scanner' ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ROLE 3: MEDIA & CONTENT MODERATOR */}
+                      <div className="p-6 rounded-3xl bg-white border border-purple-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-[11px] font-bold border border-purple-200 flex items-center gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Content Moderator</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h3 className="font-serif font-bold text-lg text-gray-900">
+                              Media Approval Officer Hub
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Review and approve guest-uploaded photo and video wishes before public display on the wedding wall feed.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Portal Login Email:</span>
+                              <span className="font-bold text-gray-900">{moderatorEmail}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-purple-800 bg-white px-2.5 py-0.5 rounded border border-purple-200">
+                                  {showPasswords['moderator'] ? moderatorPass : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword('moderator')}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords['moderator'] ? 'Hide Password' : 'Show Password'}
+                                >
+                                  {showPasswords['moderator'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <Link
+                            href={`${dedicatedUrl}/moderation`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Moderation Hub</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Content Moderator: ${window.location.origin}${dedicatedUrl}/moderation\nEmail: ${moderatorEmail}\nPassword: ${moderatorPass}`, 'moderator')}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === 'moderator' ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ROLE 4: LIVE STREAMER CREW */}
+                      <div className="p-6 rounded-3xl bg-white border border-red-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-red-100 text-red-800 text-[11px] font-bold border border-red-200 flex items-center gap-1.5">
+                              <Tv className="w-3.5 h-3.5 text-red-600" />
+                              <span>Live Streamer Crew</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h3 className="font-serif font-bold text-lg text-gray-900">
+                              Live Broadcast Camera Crew Studio
+                            </h3>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Direct YouTube broadcast integration studio for live streaming the celebration to guests worldwide.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-red-50/50 border border-red-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Portal Login Email:</span>
+                              <span className="font-bold text-gray-900">{streamerEmail}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-red-800 bg-white px-2.5 py-0.5 rounded border border-red-200">
+                                  {showPasswords['streamer'] ? streamerPass : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword('streamer')}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords['streamer'] ? 'Hide Password' : 'Show Password'}
+                                >
+                                  {showPasswords['streamer'] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <Link
+                            href={`${dedicatedUrl}/live-streamer`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 py-3 rounded-2xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Streamer Studio</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Streamer Studio: ${window.location.origin}${dedicatedUrl}/live-streamer\nEmail: ${streamerEmail}\nPassword: ${streamerPass}`, 'streamer')}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === 'streamer' ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Couple Photo & Banner Asset Management Panel */}
+                  <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/30 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between pb-4 border-b border-gray-100">
+                      <div>
+                        <h3 className="font-serif font-bold text-lg text-gray-900 flex items-center gap-2">
+                          <ImageIcon className="w-5 h-5 text-gold-500" />
+                          <span>Couple Photo & Banner Asset</span>
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Inspect or upload high-resolution wedding banner photo for {inspectingWedding.brideName} & {inspectingWedding.groomName}.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+                      <div className="h-64 rounded-2xl overflow-hidden border-2 border-gold-500/30 bg-black/10 relative shadow-sm">
+                        {inspectingWedding.coverImageUrl ? (
+                          <img
+                            src={inspectingWedding.coverImageUrl}
+                            alt={inspectingWedding.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-4 bg-gray-900 text-gold-400 text-center font-serif">
+                            <ImageIcon className="w-10 h-10 mb-2 text-gold-500/60" />
+                            <span>No Couple Photo Uploaded Yet</span>
+                            <span className="text-[11px] text-gray-400 mt-1 font-sans">Use the uploader to add an appropriate size photo.</span>
+                          </div>
+                        )}
+                        {inspectingWedding.coverImageUrl && (
+                          <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md px-3 py-1 rounded-xl text-[10px] text-gold-400 font-mono font-bold border border-gold-500/30">
+                            ✓ Active Couple Photo
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="space-y-4 p-5 rounded-2xl bg-gray-50 border border-gold-500/30">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-serif font-bold text-sm text-gray-900 flex items-center gap-2">
+                            <Upload className="w-4 h-4 text-gold-600" />
+                            <span>Upload / Replace Couple Photo</span>
+                          </h4>
+                          <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-gold-100 text-gold-900 font-bold font-mono">
+                            Appropriate Size Required
+                          </span>
+                        </div>
+
+                        <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-[11px] text-amber-900 space-y-1 font-sans">
+                          <div className="font-bold flex items-center gap-1 text-amber-950">
+                            <span>📐 Image Size & Dimension Requirements:</span>
+                          </div>
+                          <ul className="list-disc list-inside space-y-0.5 text-amber-900/90 text-[10px]">
+                            <li>Recommended: <strong>800 × 800 px</strong> (1:1 square) or <strong>800 × 1000 px</strong> (4:5 portrait)</li>
+                            <li>Maximum File Size: <strong>5 MB</strong></li>
+                            <li>Minimum Resolution: <strong>400 × 400 px</strong></li>
+                          </ul>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-bold text-gray-900 mb-1">
+                            Select Couple Photo File:
+                          </label>
+                          <input
+                            type="file"
+                            accept="image/png, image/jpeg, image/webp"
+                            onChange={handleCouplePhotoSelect}
+                            className="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-black file:text-gold-400 hover:file:bg-gray-800 cursor-pointer border border-gray-300 rounded-xl p-1 bg-white"
+                          />
+                        </div>
+
+                        {isInspectingPhoto && (
+                          <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 text-xs font-semibold flex items-center gap-2 animate-pulse">
+                            <RefreshCw className="w-4 h-4 animate-spin text-amber-700" />
+                            <span>Inspecting image dimensions & file size...</span>
+                          </div>
+                        )}
+
+                        {photoValidationError && (
+                          <div className="p-4 rounded-2xl bg-rose-50 border-2 border-rose-500 text-rose-950 text-xs font-bold space-y-1 shadow-md">
+                            <div className="flex items-center gap-2 text-rose-800 text-sm font-extrabold">
+                              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                              <span>Upload Rejected</span>
+                            </div>
+                            <p className="text-rose-900 font-sans leading-relaxed text-[11px]">
+                              {photoValidationError}
+                            </p>
+                          </div>
+                        )}
+
+                        {photoValidationSuccess && (
+                          <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 text-xs font-bold flex items-center gap-2">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                            <span>{photoValidationSuccess}</span>
+                          </div>
+                        )}
+
+                        {couplePhotoPreview && !photoValidationError && (
+                          <div className="flex items-center gap-3 pt-2">
+                            <button
+                              type="button"
+                              onClick={handleSaveSelectedEventPhoto}
+                              disabled={savingPhotoUpdate}
+                              className="px-6 py-2.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 font-bold text-xs shadow-md border border-gold-500/40 flex items-center gap-2 cursor-pointer"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-gold-400" />
+                              <span>{savingPhotoUpdate ? 'Saving Couple Photo...' : 'Save & Publish Couple Photo'}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          ) : (
+            <>
+              {/* =========================================================================
+                  TAB 1: LICENSING & APPROVALS PIPELINE
+                 ========================================================================= */}
+              {activeTab === 'APPROVALS' && (
             <div className="space-y-6">
               
               {/* Header Box */}
@@ -1332,13 +1984,21 @@ function SystemAdminDashboardContent() {
                                 <span>Couple Portal</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </Link>
-                              <Link
-                                href={dedicatedUrl}
-                                className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30"
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setInspectingWedding(evt);
+                                  setSelectedEvent(evt);
+                                  const url = new URL(window.location.href);
+                                  url.searchParams.set('wedding', evt.slug);
+                                  window.history.pushState({}, '', url.toString());
+                                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                                }}
+                                className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30 cursor-pointer"
                               >
                                 <span>Open Dedicated Dashboard</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
-                              </Link>
+                              </button>
                             </div>
                           </div>
                         </div>
@@ -1438,7 +2098,14 @@ function SystemAdminDashboardContent() {
                     return (
                       <div
                         key={evt.id}
-                        onClick={() => setSelectedEvent(evt)}
+                        onClick={() => {
+                          setSelectedEvent(evt);
+                          setInspectingWedding(evt);
+                          const url = new URL(window.location.href);
+                          url.searchParams.set('wedding', evt.slug);
+                          window.history.pushState({}, '', url.toString());
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }}
                         className={`
                           rounded-3xl p-5 border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden bg-white
                           ${isSelected ? 'border-gold-500 ring-2 ring-gold-500/50 shadow-lg' : 'border-gold-500/30 hover:border-gold-500 shadow-sm'}
@@ -1470,7 +2137,7 @@ function SystemAdminDashboardContent() {
                                   👤 Individual Event
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-bold border border-blue-200 flex items-center gap-1">
+                                <span className="px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 text-[10px] font-bold border border-blue-200 flex items-center gap-1">
                                   <Building2 className="w-3 h-3 text-blue-700" />
                                   {evt.organizerName || 'Organizer Agency'}
                                 </span>
@@ -1507,7 +2174,7 @@ function SystemAdminDashboardContent() {
 
                         <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-bold">
                           <span className="text-gray-900">
-                            {isSelected ? '✓ Selected in Command Room' : 'Click to Inspect Roles'}
+                            {isSelected ? '✓ Open Dedicated Control Center' : 'Click to Open Dedicated Control Center'}
                           </span>
                           <div className="flex items-center gap-2">
                             <button
@@ -2311,6 +2978,8 @@ function SystemAdminDashboardContent() {
               </div>
 
             </div>
+          )}
+            </>
           )}
 
         </main>

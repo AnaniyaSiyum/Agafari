@@ -139,6 +139,12 @@ if ($method === 'GET') {
                     'temporaryPassword' => 'scan123',
                     'role'              => 'GATE_SCANNER',
                 ],
+                'moderator' => [
+                    'fullName'          => 'Media Moderator Hub',
+                    'email'             => "moderator@{$slug}.com",
+                    'temporaryPassword' => 'mod123',
+                    'role'              => 'MODERATOR',
+                ],
             ],
             'loveStory'      => $customization['loveStory'] ?? [
                 'headline'      => 'Our Journey to Forever',

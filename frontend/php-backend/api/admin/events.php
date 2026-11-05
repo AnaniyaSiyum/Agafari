@@ -48,10 +48,13 @@ function formatAdminEvent(array $e): array {
     $brideName = $e['bride_name'] ?? '';
     $groomName = $e['groom_name'] ?? '';
     $title = $e['title'] ?? ($brideName && $groomName ? "{$brideName} & {$groomName}'s Wedding" : 'Wedding Event');
+    $slug = $e['slug'] ?? '';
+    $coupleEmail = $e['couple_email'] ?? "couple@{$slug}.com";
+    $coupleTempPassword = $e['couple_temp_password'] ?? 'agafari2026';
     
     return [
         'id'                  => $e['id'],
-        'slug'                => $e['slug'],
+        'slug'                => $slug,
         'title'               => $title,
         'brideName'           => $brideName,
         'groomName'           => $groomName,
@@ -76,8 +79,38 @@ function formatAdminEvent(array $e): array {
         'managedBy'           => $e['managed_by'] ?? 'ADMIN',
         'organizerId'         => $e['organizer_id'] ?? null,
         'organizerName'       => $e['organizer_name'] ?? ($e['organizer_id'] ? 'Certified Organizer Agency' : 'Individual Event'),
-        'coupleEmail'         => $e['couple_email'] ?? null,
+        'coupleEmail'         => $coupleEmail,
         'createdAt'           => $e['created_at'] ?? null,
+        'coupleCredentials'   => [
+            'email'             => $coupleEmail,
+            'temporaryPassword' => $coupleTempPassword,
+        ],
+        'credentials'         => [
+            'couple'    => [
+                'fullName'          => "{$brideName} & {$groomName}",
+                'email'             => $coupleEmail,
+                'temporaryPassword' => $coupleTempPassword,
+                'role'              => 'BRIDE_GROOM',
+            ],
+            'scanner'   => [
+                'fullName'          => 'Gate QR Scanner',
+                'email'             => "scanner@{$slug}.com",
+                'temporaryPassword' => 'scan123',
+                'role'              => 'GATE_SCANNER',
+            ],
+            'streamer'  => [
+                'fullName'          => 'Live Streamer Crew',
+                'email'             => "streamer@{$slug}.com",
+                'temporaryPassword' => 'stream123',
+                'role'              => 'LIVE_STREAMER',
+            ],
+            'moderator' => [
+                'fullName'          => 'Media Moderator Hub',
+                'email'             => "moderator@{$slug}.com",
+                'temporaryPassword' => 'mod123',
+                'role'              => 'MODERATOR',
+            ],
+        ],
     ];
 }
 
@@ -86,9 +119,18 @@ function formatAdminEvent(array $e): array {
 // ---------------------------------------------------------------------------
 if ($method === 'GET') {
     try {
+        $hasTempPass = false;
+        try {
+            $col = php_query_one("SHOW COLUMNS FROM users LIKE 'temporary_password'");
+            if ($col) $hasTempPass = true;
+        } catch (Throwable $e) {}
+
+        $tempPassField = $hasTempPass ? 'u.temporary_password AS couple_temp_password' : 'NULL AS couple_temp_password';
+
         $sql = "
             SELECT e.*, 
                    u.email AS couple_email,
+                   {$tempPassField},
                    o.business_name AS organizer_name
               FROM events e
          LEFT JOIN users u ON e.couple_user_id = u.id

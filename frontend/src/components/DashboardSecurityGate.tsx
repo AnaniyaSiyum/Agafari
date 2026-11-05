@@ -166,11 +166,11 @@ export default function DashboardSecurityGate({
           const isStaffOrAdmin = currentUser.role === 'SYSTEM_ADMIN' || currentUser.role === 'EVENT_ORGANIZER' || currentUser.role === 'ORGANIZER_OWNER';
           isSessionAuthorized = isCouple || isStaffOrAdmin;
         } else if (dashboardType === 'scanner') {
-          isSessionAuthorized = currentUser.role === 'GATE_SCANNER';
+          isSessionAuthorized = currentUser.role === 'GATE_SCANNER' || currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'streamer') {
-          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER';
+          isSessionAuthorized = currentUser.role === 'LIVE_STREAMER' || currentUser.role === 'SYSTEM_ADMIN';
         } else if (dashboardType === 'moderator') {
-          isSessionAuthorized = currentUser.role === 'MODERATOR' || currentUser.role === 'MEDIA_MODERATOR';
+          isSessionAuthorized = currentUser.role === 'MODERATOR' || currentUser.role === 'MEDIA_MODERATOR' || currentUser.role === 'SYSTEM_ADMIN';
         }
       }
 
