@@ -62,6 +62,18 @@ if (Test-Path $serverAppDir) {
         }
         $copiedCount++
     }
+
+    # Ensure event control route entry exists from couple dashboard template
+    $coupleDashPath = Join-Path $outDir "couple\dashboard.html"
+    if (Test-Path $coupleDashPath) {
+        $eventControlDir = Join-Path $outDir "event\control"
+        if (!(Test-Path $eventControlDir)) {
+            New-Item -ItemType Directory -Path $eventControlDir -Force | Out-Null
+        }
+        Copy-Item -Path $coupleDashPath -Destination (Join-Path $outDir "event\control.html") -Force
+        Copy-Item -Path $coupleDashPath -Destination (Join-Path $eventControlDir "index.html") -Force
+    }
+
     Write-Host "[4/8] Copied $copiedCount prerendered static HTML pages to out/"
 }
 
@@ -144,7 +156,19 @@ $htaccessContent = @'
   RewriteCond %{REQUEST_FILENAME}/index.html -f
   RewriteRule ^(.*)$ $1/index.html [L]
 
-  # 6. Fallback: rewrite all client routes to index.html
+  # 6. Dedicated Wedding Event Dashboard (matches /org-xxx/event-yyy or any agency wedding clean URL)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_URI} !^/(api|admin|organizer|couple|scanner|live-streamer|moderation|select-access|docs|_next|assets|branding|audio) [NC]
+  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/?$ couple/dashboard.html?org=$1&slug=$2 [L,QSA]
+
+  # 7. Sub-routes for staff & crew:
+  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/couple/?$ couple/dashboard.html?org=$1&slug=$2 [L,QSA]
+  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/scanner/?$ scanner/index.html?org=$1&slug=$2 [L,QSA]
+  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/live-streamer/?$ live-streamer/index.html?org=$1&slug=$2 [L,QSA]
+  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/moderation/?$ moderation/index.html?org=$1&slug=$2 [L,QSA]
+
+  # 8. Fallback: rewrite all other routes to index.html
   RewriteRule . /index.html [L]
 </IfModule>
 '@

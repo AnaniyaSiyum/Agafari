@@ -2356,8 +2356,8 @@ function SystemAdminDashboardContent() {
                     </p>
 
                     <div className="p-3 rounded-xl bg-white border border-emerald-200 font-mono space-y-1.5 text-[11px] text-gray-900">
-                      <div>Couple Portal URL: <strong className="text-gold-600 font-bold">{createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple</strong></div>
-                      <div>System Admin URL: <strong className="text-gray-900">{createdAdminControlUrl}</strong></div>
+                      <div>Couple Portal URL: <strong className="text-gold-600 font-bold">{`/couple/dashboard?slug=${selectedEvent?.slug || ''}`}</strong></div>
+                      <div>System Admin URL: <strong className="text-gray-900">{`/couple/dashboard?slug=${selectedEvent?.slug || ''}`}</strong></div>
                       <div>Couple Login Email: <strong className="text-gray-900">{newCoupleEmail || 'couple@agafari.com'}</strong></div>
                       <div>Couple Password: <strong className="text-gray-900">agafari2026</strong></div>
                     </div>
@@ -2366,25 +2366,25 @@ function SystemAdminDashboardContent() {
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
                     <button
                       onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`);
+                        navigator.clipboard.writeText(`${window.location.origin}/couple/dashboard?slug=${selectedEvent?.slug || ''}`);
                         setCopiedKey('modal-admin-url');
                         setTimeout(() => setCopiedKey(''), 2500);
                       }}
                       className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold text-xs border border-gray-300 shadow-sm"
                     >
-                      {copiedKey === 'modal-admin-url' ? 'Copied ✓' : 'Copy Couple Suite URL'}
+                      {copiedKey === 'modal-admin-url' ? 'Copied ✓' : 'Copy Wedding Dashboard URL'}
                     </button>
 
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <Link
-                        href={`${createdAdminControlUrl.replace('/admin/event/', '/event/')}/couple`}
+                        href={`/couple/dashboard?slug=${selectedEvent?.slug || ''}`}
                         onClick={() => {
                           setShowCreateModal(false);
                           setCreatedAdminControlUrl(null);
                         }}
                         className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black font-extrabold text-xs shadow-md flex items-center justify-center gap-1.5"
                       >
-                        <span>🚀 Launch Couple Suite</span>
+                        <span>🚀 Open Wedding Dashboard</span>
                         <ExternalLink className="w-3.5 h-3.5" />
                       </Link>
 

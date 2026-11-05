@@ -145,11 +145,41 @@ interface EventData {
 export default function DedicatedEventControlPage({
   params,
 }: {
-  params: { organizerSlug: string; eventSlug: string };
-}) {
+  params?: { organizerSlug?: string; eventSlug?: string };
+} = {}) {
   const { t } = useTranslation();
   const router = useRouter();
-  const { organizerSlug, eventSlug } = params;
+
+  // Robust slug resolution across Route Params, Query Params, Pathname, and Storage
+  let orgSlugResolved = params?.organizerSlug || '';
+  let evtSlugResolved = params?.eventSlug || '';
+
+  if (typeof window !== 'undefined') {
+    const search = new URLSearchParams(window.location.search);
+    const qOrg = search.get('organizerSlug') || search.get('org') || search.get('organizerId') || search.get('id');
+    const qEvt = search.get('eventSlug') || search.get('slug') || search.get('eventId') || search.get('event');
+
+    if (!evtSlugResolved && qEvt) evtSlugResolved = qEvt;
+    if (!orgSlugResolved && qOrg) orgSlugResolved = qOrg;
+
+    if (!evtSlugResolved) {
+      const parts = window.location.pathname.split('/').filter(Boolean);
+      if (parts.length >= 2 && parts[0] !== 'event' && parts[0] !== 'organizer' && parts[0] !== 'admin') {
+        orgSlugResolved = orgSlugResolved || parts[0];
+        evtSlugResolved = evtSlugResolved || parts[1];
+      } else if (parts.length >= 1 && parts[parts.length - 1] !== 'control' && parts[parts.length - 1] !== 'dashboard') {
+        evtSlugResolved = evtSlugResolved || parts[parts.length - 1];
+      }
+    }
+
+    if (!evtSlugResolved) {
+      const storedSlug = localStorage.getItem('agafari_current_event_slug');
+      if (storedSlug) evtSlugResolved = storedSlug;
+    }
+  }
+
+  const organizerSlug = orgSlugResolved || 'org';
+  const eventSlug = evtSlugResolved || '';
 
   const [activeTab, setActiveTab] = useState<'ROLES' | 'DETAILS' | 'RSVPS' | 'MEDIA'>('ROLES');
   const [event, setEvent] = useState<EventData | null>(null);
@@ -322,7 +352,7 @@ export default function DedicatedEventControlPage({
             const userOrg = String(userObj.organizerId || userObj.tenantId || userObj.id || '').toLowerCase().replace(/^org-/, '');
             const targetOrg = organizerSlug.toLowerCase().replace(/^org-/, '');
             const evtOrg = String(evt.organizerId || evt.organizer_id || '').toLowerCase().replace(/^org-/, '');
-            if (userOrg && ((targetOrg && userOrg !== targetOrg) || (evtOrg && userOrg !== evtOrg))) {
+            if (userOrg && evtOrg && userOrg !== evtOrg) {
               setAccessDenied(true);
               setLoading(false);
               return;

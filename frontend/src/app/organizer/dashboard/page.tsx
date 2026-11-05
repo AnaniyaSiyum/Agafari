@@ -748,8 +748,13 @@ function OrganizerDashboardContent() {
                     <div
                       key={evt.id}
                       onClick={() => {
-                        // Navigate directly to the dedicated event management page
-                        const destination = `/${organizerUrlSlug}/${evt.slug}`;
+                        // Navigate directly to the dedicated event dashboard
+                        if (typeof window !== 'undefined') {
+                          localStorage.setItem('agafari_couple_slug', evt.slug);
+                          localStorage.setItem('agafari_current_event_slug', evt.slug);
+                          localStorage.setItem('agafari_current_org_slug', organizerUrlSlug);
+                        }
+                        const destination = `/couple/dashboard?slug=${encodeURIComponent(evt.slug)}`;
                         router.push(destination);
                       }}
                       className={`

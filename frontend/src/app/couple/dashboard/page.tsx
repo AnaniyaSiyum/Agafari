@@ -165,7 +165,18 @@ function CoupleDashboardContent() {
         const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
         const querySlug = urlParams?.get('slug') || urlParams?.get('event') || urlParams?.get('id');
 
-        // 2. Resolve logged-in couple user object from localStorage
+        // 2. Resolve pathname segments (e.g. /org-xxx/abraham-and-melat-mw3gxblm)
+        let pathSlug: string | null = null;
+        if (typeof window !== 'undefined') {
+          const parts = window.location.pathname.split('/').filter(Boolean);
+          if (parts.length >= 2 && !['couple', 'admin', 'organizer', 'event', 'api', '_next'].includes(parts[0])) {
+            pathSlug = parts[1];
+          } else if (parts.length >= 1 && !['couple', 'admin', 'organizer', 'dashboard', 'login', 'scanner', 'live-streamer', 'moderation'].includes(parts[parts.length - 1])) {
+            pathSlug = parts[parts.length - 1];
+          }
+        }
+
+        // 3. Resolve logged-in couple user object from localStorage
         const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
         let userObj: any = null;
         if (userStr) {
@@ -174,9 +185,9 @@ function CoupleDashboardContent() {
           } catch (e) { }
         }
         const userSlug = userObj?.eventSlug || userObj?.slug || userObj?.eventId || userObj?.event_slug || userObj?.event_id;
-        const storedCoupleSlug = typeof window !== 'undefined' ? localStorage.getItem('agafari_couple_slug') : null;
+        const storedCoupleSlug = typeof window !== 'undefined' ? (localStorage.getItem('agafari_couple_slug') || localStorage.getItem('agafari_current_event_slug')) : null;
 
-        coupleEventSlug = querySlug || userSlug || storedCoupleSlug || null;
+        coupleEventSlug = querySlug || pathSlug || userSlug || storedCoupleSlug || null;
 
         // Strict Security: If no explicit wedding event slug is authorized for this user, do NOT load random data
         if (!coupleEventSlug) {

@@ -20,7 +20,7 @@ export default function AdminIndividualEventControlPage({ params }: { params: { 
             const orgId = data.event.organizerId || data.event.organizer_id || `org-${slug}`;
             const cleanOrgId = String(orgId).startsWith('org-') ? String(orgId) : `org-${String(orgId)}`;
             setOrganizerSlug(cleanOrgId);
-            router.replace(`/${cleanOrgId}/${slug}`);
+            router.replace(`/couple/dashboard?slug=${encodeURIComponent(slug)}`);
             return;
           }
         }
@@ -29,7 +29,7 @@ export default function AdminIndividualEventControlPage({ params }: { params: { 
       }
       const fallbackOrgId = `org-${slug}`;
       setOrganizerSlug(fallbackOrgId);
-      router.replace(`/${fallbackOrgId}/${slug}`);
+      router.replace(`/couple/dashboard?slug=${encodeURIComponent(slug)}`);
     }
 
     resolveAndRedirect();
