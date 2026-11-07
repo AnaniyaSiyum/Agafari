@@ -2476,7 +2476,7 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                         </tr>
                       ) : (
                         organizerUsers.map((org) => {
-                          const specificOrgId = org.id.startsWith('org-') ? org.id : `org-${org.id}`;
+                          const specificOrgId = org.organizerId || (org.id.startsWith('org-') ? org.id : `org-${org.id}`);
                           const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
                           const nameVal = org.fullName && !org.fullName.includes('@') ? org.fullName : (org.companyName || org.email.split('@')[0]);
                           const activePass = org.temporaryPassword || 'org123';
@@ -2744,7 +2744,7 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
 
                   {/* Organizer Cards */}
                   {organizerUsers.map((org) => {
-                    const specificOrgId = org.id.startsWith('org-') ? org.id : `org-${org.id}`;
+                    const specificOrgId = org.organizerId || (org.id.startsWith('org-') ? org.id : `org-${org.id}`);
                     const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
                     const companyName = getOrganizerCompanyName(org);
                     return (

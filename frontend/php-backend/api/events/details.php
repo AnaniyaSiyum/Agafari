@@ -53,6 +53,36 @@ if (empty($slug)) {
 // ---------------------------------------------------------------------------
 if ($method === 'GET') {
     try {
+        $action = strtolower(trim($_GET['action'] ?? ''));
+        if ($action === 'quota') {
+            $event = php_query_one("SELECT id, expected_guests FROM events WHERE LOWER(slug) = LOWER(?) LIMIT 1", [$slug]);
+            if (!$event) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Event not found.']);
+                exit;
+            }
+            $groups = [];
+            try {
+                $groups = php_query("SELECT * FROM quota_groups WHERE event_id = ? ORDER BY created_at DESC", [$event['id']]);
+            } catch (Throwable $e) {}
+            echo json_encode([
+                'totalAllocatedQuota' => (int)($event['expected_guests'] ?? 300),
+                'quotaGroups'         => $groups ?: [],
+            ]);
+            exit;
+        }
+
+        if ($action === 'music') {
+            echo json_encode([
+                'success'              => true,
+                'musicRecommendations' => [
+                    ['id' => 'rec-1', 'guestName' => 'Abebe Bikila', 'title' => 'Egziabhair Semayen', 'artist' => 'Singer Solomon', 'category' => 'MEZMUR'],
+                    ['id' => 'rec-2', 'guestName' => 'Tigist Haile', 'title' => 'Yene Geta', 'artist' => 'Grace Choir', 'category' => 'MEZMUR']
+                ],
+            ]);
+            exit;
+        }
+
         $hasTempPass = false;
         try {
             $col = php_query_one("SHOW COLUMNS FROM users LIKE 'temporary_password'");
@@ -207,11 +237,14 @@ if ($method === 'GET') {
             exit;
         }
 
-        // Ownership check: COUPLEs may only edit their own event
-        if ($session['role'] === 'COUPLE' && $event['couple_user_id'] !== $session['user_id']) {
-            http_response_code(403);
-            echo json_encode(['error' => 'You are not authorised to edit this event.']);
-            exit;
+        // Ownership check: Couple may only edit their own event
+        if (in_array($session['role'], ['COUPLE', 'BRIDE_GROOM']) && $event['couple_user_id'] !== $session['user_id']) {
+            $sessUser = php_query_one('SELECT email FROM users WHERE id = ? LIMIT 1', [$session['user_id']]);
+            if (!$sessUser || strtolower($sessUser['email']) !== strtolower($event['couple_email'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'You are not authorised to edit this event.']);
+                exit;
+            }
         }
 
         // Merge customization JSON

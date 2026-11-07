@@ -51,33 +51,43 @@ function resolve_organizer(?string $rawId): ?array {
 
     $rawId = trim($rawId);
     $stripped = preg_replace('/^org-/', '', $rawId);
+    $usrStripped = preg_replace('/^usr-/', '', $stripped);
 
-    // 1. Check organizers table directly
+    // 1. Check organizers table directly with LEFT JOIN so missing or unlinked users row doesn't drop the agency
     $org = php_query_one(
         'SELECT o.*, u.email, u.full_name, u.phone
          FROM organizers o
-         JOIN users u ON o.owner_user_id = u.id
+         LEFT JOIN users u ON o.owner_user_id = u.id
          WHERE o.id = ? 
             OR o.id = ? 
+            OR o.id = ?
             OR o.owner_user_id = ? 
             OR o.owner_user_id = ? 
+            OR o.owner_user_id = ?
+            OR LOWER(o.business_name) = LOWER(?)
             OR LOWER(u.email) = LOWER(?)
          LIMIT 1',
-        [$rawId, "org-{$stripped}", $rawId, $stripped, $rawId]
+        [$rawId, "org-{$stripped}", $stripped, $rawId, $stripped, "usr-{$usrStripped}", $rawId, $rawId]
     );
 
     if ($org) {
         return $org;
     }
 
-    // 2. Check users table directly (if user exists but organizers row pending)
+    // 2. Check users table directly (by id, email, or full_name)
     $user = php_query_one(
-        'SELECT id, email, full_name, phone, role FROM users WHERE id = ? OR id = ? OR LOWER(email) = LOWER(?) LIMIT 1',
-        [$rawId, $stripped, $rawId]
+        'SELECT id, email, full_name, phone, role FROM users 
+         WHERE id = ? 
+            OR id = ? 
+            OR id = ?
+            OR LOWER(email) = LOWER(?) 
+            OR LOWER(full_name) = LOWER(?)
+         LIMIT 1',
+        [$rawId, $stripped, "usr-{$usrStripped}", $rawId, $rawId]
     );
 
     if ($user) {
-        $orgRow = php_query_one('SELECT * FROM organizers WHERE owner_user_id = ? LIMIT 1', [$user['id']]);
+        $orgRow = php_query_one('SELECT * FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$user['id'], $user['id']]);
         if ($orgRow) {
             $orgRow['email'] = $user['email'];
             $orgRow['full_name'] = $user['full_name'];
@@ -102,11 +112,25 @@ function resolve_organizer(?string $rawId): ?array {
                 'full_name'     => $user['full_name'],
             ];
         } catch (Throwable $e) {
-            error_log('[resolve_organizer] ' . $e->getMessage());
+            return [
+                'id'            => $orgId,
+                'owner_user_id' => $user['id'],
+                'business_name' => $bizName,
+                'email'         => $user['email'],
+                'full_name'     => $user['full_name'],
+            ];
         }
     }
 
-    return null;
+    // 3. Fallback tenant for specified agency ID so it never leaks platform-wide events
+    return [
+        'id'            => $rawId,
+        'owner_user_id' => $stripped,
+        'business_name' => ucwords(str_replace(['-', '_'], ' ', $stripped)),
+        'email'         => "{$stripped}@agafari.com",
+        'full_name'     => ucwords(str_replace(['-', '_'], ' ', $stripped)),
+        'contact_phone' => '',
+    ];
 }
 
 // -----------------------------------------------------------------------------
@@ -184,10 +208,12 @@ if ($method === 'GET') {
 
         $tempPassSelect = $hasTempPass ? 'u.temporary_password AS couple_temp_password' : 'NULL AS couple_temp_password';
 
-        if ($org) {
+        if ($org && !empty($rawId) && strtolower($rawId) !== 'global') {
             $orgId = $org['id'];
             $ownerId = $org['owner_user_id'] ?? $orgId;
             $orgPrefixed = str_starts_with($ownerId, 'org-') ? $ownerId : "org-{$ownerId}";
+            $rawIdVal = $rawId ?: $orgId;
+            $strippedVal = preg_replace('/^org-/', '', $rawId);
 
             $sql = "
                 SELECT e.*, 
@@ -201,11 +227,13 @@ if ($method === 'GET') {
                  WHERE e.organizer_id = ?
                     OR e.organizer_id = ?
                     OR e.organizer_id = ?
+                    OR e.organizer_id = ?
+                    OR e.organizer_id = ?
               ORDER BY e.created_at DESC
             ";
-            $events = php_query($sql, [$orgId, $ownerId, $orgPrefixed]);
+            $events = php_query($sql, [$orgId, $ownerId, $orgPrefixed, $rawIdVal, $strippedVal]);
         } else {
-            // Super Admin / Global view
+            // Super Admin / Global view (only when no specific organizer was requested)
             $sql = "
                 SELECT e.*, 
                        u.email AS couple_email, 

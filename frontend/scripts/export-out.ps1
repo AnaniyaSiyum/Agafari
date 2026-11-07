@@ -131,6 +131,9 @@ $htaccessContent = @'
   RewriteRule ^api/cms/?$ api/cms.php [L,QSA]
   RewriteRule ^api/events/([^/]+)/team/?$ api/events/team.php?slug=$1 [L,QSA]
   RewriteRule ^api/events/([^/]+)/invitations/?$ api/events/invitations.php?slug=$1 [L,QSA]
+  RewriteRule ^api/events/([^/]+)/media/?$ api/organizer/media.php?slug=$1 [L,QSA]
+  RewriteRule ^api/events/([^/]+)/quota/?$ api/events/details.php?slug=$1&action=quota [L,QSA]
+  RewriteRule ^api/events/([^/]+)/music/?$ api/events/details.php?slug=$1&action=music [L,QSA]
   RewriteRule ^api/events/([^/]+)/?$ api/events/details.php?slug=$1 [L,QSA]
   RewriteRule ^api/qr/([^/]+)/?$ api/qr/scan.php?code=$1 [L,QSA]
 

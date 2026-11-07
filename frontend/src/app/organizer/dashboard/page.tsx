@@ -203,12 +203,14 @@ function OrganizerDashboardContent() {
         const userObj = userStr ? JSON.parse(userStr) : null;
         const myOrgId = userObj?.organizerId || userObj?.tenantId || userObj?.userId || userObj?.id;
 
-        // Multi-tenant Isolation: Organizers are strictly locked to their own tenant/agency profile
-        let effectiveOrgId = orgId || myOrgId || 'usr-org-1';
-        if ((userObj?.role === 'EVENT_ORGANIZER' || userObj?.role === 'ORGANIZER_OWNER') && myOrgId) {
-          effectiveOrgId = myOrgId;
+        // Multi-tenant Isolation: Prioritize explicit ?id=... from URL navigation
+        let effectiveOrgId = orgId || myOrgId || 'global';
+        if (orgId) {
+          effectiveOrgId = orgId;
         } else if (userObj?.role === 'SYSTEM_ADMIN') {
-          effectiveOrgId = orgId || 'global';
+          effectiveOrgId = 'global';
+        } else if (myOrgId) {
+          effectiveOrgId = myOrgId;
         }
 
         // Derive the organizer URL slug used in /{organizerSlug}/{eventSlug} deep links
