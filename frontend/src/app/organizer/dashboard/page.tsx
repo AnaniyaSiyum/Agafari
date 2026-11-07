@@ -17,6 +17,10 @@ import {
   KeyRound, 
   Film, 
   ShieldCheck, 
+  Shield,
+  Heart,
+  Smartphone,
+  Building2,
   LogOut, 
   Sparkles, 
   ChevronRight, 
@@ -198,6 +202,7 @@ function OrganizerDashboardContent() {
         const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
         const paramId = routeParams?.id ? String(routeParams.id) : null;
         const orgId = paramId || urlParams?.get('id') || urlParams?.get('organizerId');
+        const nameParam = urlParams?.get('name') || urlParams?.get('agencyName') || '';
 
         const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
         const userObj = userStr ? JSON.parse(userStr) : null;
@@ -217,8 +222,8 @@ function OrganizerDashboardContent() {
         const derivedSlug = effectiveOrgId === 'global' ? 'admin' : (effectiveOrgId.startsWith('org-') ? effectiveOrgId : `org-${effectiveOrgId}`);
         setOrganizerUrlSlug(derivedSlug);
 
-        const eventsApiUrl = `/api/organizer/events?id=${encodeURIComponent(effectiveOrgId)}`;
-        const mediaApiUrl = `/api/organizer/media?id=${encodeURIComponent(effectiveOrgId)}`;
+        const eventsApiUrl = `/api/organizer/events?id=${encodeURIComponent(effectiveOrgId)}` + (nameParam ? `&name=${encodeURIComponent(nameParam)}` : '');
+        const mediaApiUrl = `/api/organizer/media?id=${encodeURIComponent(effectiveOrgId)}` + (nameParam ? `&name=${encodeURIComponent(nameParam)}` : '');
 
         const reqHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
         if (typeof window !== 'undefined') {
@@ -401,35 +406,47 @@ function OrganizerDashboardContent() {
     return true;
   });
 
-  // Helper to format clean Agency Name & ID for top sidebar header
-  const rawOrgIdParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
-  const currentOrgId = rawOrgIdParam || 'org-certified';
-  const displayOrgId = currentOrgId.length > 22 ? `${currentOrgId.slice(0, 18)}...` : currentOrgId;
+  // Helper to detect if a string is a raw system ID rather than a human agency name
+  function isIdLike(str?: string | null): boolean {
+    if (!str) return true;
+    const s = str.trim();
+    if (/^(org-|usr-|evt-)?[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) return true;
+    if (/^(org-|usr-|evt-)?[0-9a-f]{6,}$/i.test(s)) return true;
+    if (/^usr\s+[0-9a-f]{4,}/i.test(s)) return true;
+    if (s.toLowerCase().startsWith('org-') || s.toLowerCase().startsWith('usr-') || s.toLowerCase().startsWith('evt-')) return true;
+    return false;
+  }
 
   function getDynamicAgencyTitle(orgIdParam: string | null, info: { agencyName?: string; fullName?: string; email?: string } | null): string {
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const urlName = urlParams?.get('name') || urlParams?.get('agencyName') || urlParams?.get('title');
+    if (urlName && !isIdLike(urlName) && !urlName.includes('@')) {
+      return urlName.trim();
+    }
+
     const userStr = typeof window !== 'undefined' ? localStorage.getItem('agafari_user') : null;
     const userObj = userStr ? JSON.parse(userStr) : null;
 
     // 1. If backend returned a valid agencyName from DB, prioritize it!
-    if (info?.agencyName && !info.agencyName.startsWith('org-') && !info.agencyName.includes('@') && info.agencyName !== 'Certified Agafari Event Agency') {
+    if (info?.agencyName && !isIdLike(info.agencyName) && !info.agencyName.includes('@') && info.agencyName !== 'Certified Agafari Event Agency' && info.agencyName !== 'Event Production Agency') {
       return info.agencyName.trim();
     }
 
     // 2. If logged-in user profile has companyName / agencyName
-    if (userObj?.companyName && !userObj.companyName.includes('@') && !userObj.companyName.includes('Certified Event')) {
+    if (userObj?.companyName && !isIdLike(userObj.companyName) && !userObj.companyName.includes('@') && !userObj.companyName.includes('Certified Event')) {
       return userObj.companyName.trim();
     }
-    if (userObj?.agencyName && !userObj.agencyName.includes('@') && !userObj.agencyName.includes('Certified Event')) {
+    if (userObj?.agencyName && !isIdLike(userObj.agencyName) && !userObj.agencyName.includes('@') && !userObj.agencyName.includes('Certified Event')) {
       return userObj.agencyName.trim();
     }
-    if (userObj?.fullName && !userObj.fullName.includes('@') && userObj.fullName.trim() !== 'Event Organizer' && userObj.fullName.trim() !== 'System Administrator' && !userObj.fullName.includes('Certified Event')) {
+    if (userObj?.fullName && !isIdLike(userObj.fullName) && !userObj.fullName.includes('@') && userObj.fullName.trim() !== 'Event Organizer' && userObj.fullName.trim() !== 'System Administrator' && !userObj.fullName.includes('Certified Event')) {
       return userObj.fullName.trim();
     }
 
     const rawName = info?.agencyName || info?.fullName;
     if (
       rawName &&
-      !rawName.startsWith('org-') &&
+      !isIdLike(rawName) &&
       !rawName.includes('@') &&
       rawName.trim() !== 'Event Organizer' &&
       rawName.trim() !== 'Event Organizer Admin' &&
@@ -445,15 +462,36 @@ function OrganizerDashboardContent() {
       return `${titleCase} Event Production Agency`;
     }
 
-    return info?.agencyName?.trim() || 'Event Production Agency';
+    return info?.agencyName?.trim() || 'Executive Event Agency';
   }
 
+  const rawOrgIdParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('id') : null;
+  const currentOrgId = rawOrgIdParam || 'org-certified';
+  const displayOrgId = currentOrgId.length > 22 ? `${currentOrgId.slice(0, 18)}...` : currentOrgId;
   const displayAgencyName = getDynamicAgencyTitle(rawOrgIdParam, organizerInfo);
 
+  const rawSub = organizerInfo?.fullName || '';
   const displayOrganizerSubTitle =
-    organizerInfo?.fullName && !organizerInfo.fullName.includes('@') && organizerInfo.fullName.trim() !== 'Event Organizer' && organizerInfo.fullName.trim() !== 'Event Organizer Admin'
-      ? organizerInfo.fullName.trim()
-      : (organizerInfo?.email && !organizerInfo.email.startsWith('organizer-') ? organizerInfo.email : 'EVENT ORGANIZER ADMIN');
+    !isIdLike(rawSub) && !rawSub.includes('@') && rawSub.trim() !== 'Event Organizer' && rawSub.trim() !== 'Event Organizer Admin'
+      ? rawSub.trim()
+      : (organizerInfo?.email && !organizerInfo.email.startsWith('organizer-') ? organizerInfo.email : 'OFFICIAL ORGANIZER AGENCY');
+
+  const launchRolePortal = (evt: EventData, roleType: 'couple' | 'scanner' | 'streamer' | 'moderator') => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('agafari_couple_slug', evt.slug);
+      localStorage.setItem('agafari_current_event_slug', evt.slug);
+      localStorage.setItem('agafari_current_org_slug', organizerUrlSlug);
+    }
+    const orgSlug = organizerUrlSlug || 'admin';
+    const rolePaths: Record<string, string> = {
+      couple: `/${orgSlug}/${evt.slug}/couple`,
+      scanner: `/${orgSlug}/${evt.slug}/scanner`,
+      streamer: `/${orgSlug}/${evt.slug}/live-streamer`,
+      moderator: `/${orgSlug}/${evt.slug}/moderation`,
+    };
+    const path = rolePaths[roleType] || `/${orgSlug}/${evt.slug}/couple`;
+    router.push(path);
+  };
 
   if (loading) {
     return (
@@ -727,6 +765,381 @@ function OrganizerDashboardContent() {
                 </div>
               </div>
 
+              {/* =========================================================================
+                  DEDICATED WEDDING CONTROL CENTER & STAFF ROSTER HUB
+                 ========================================================================= */}
+              {selectedEvent && (
+                <div className="space-y-6">
+                  {/* Dedicated Wedding Control Center Banner */}
+                  <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white border-2 border-gold-500 shadow-xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative z-10">
+                      <div className="flex items-start sm:items-center gap-4">
+                        <div className="w-16 h-16 rounded-2xl bg-black text-gold-400 flex items-center justify-center font-bold text-2xl border border-gold-500/40 shadow-lg shrink-0">
+                          <Crown className="w-8 h-8 text-gold-400" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="px-3 py-1 rounded-full bg-gold-500 text-black text-[11px] font-black uppercase tracking-wider">
+                              AGENCY WEDDING CONTROL CENTER
+                            </span>
+                            <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[11px] font-bold">
+                              ✓ Managed by {displayAgencyName}
+                            </span>
+                            {selectedEvent.status === 'LIVE' && (
+                              <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40 text-[11px] font-bold animate-pulse flex items-center gap-1">
+                                <Radio className="w-3 h-3 text-rose-400" /> LIVE NOW
+                              </span>
+                            )}
+                          </div>
+
+                          <h2 className="font-serif font-bold text-2xl sm:text-3xl text-gold-300 tracking-tight">
+                            {selectedEvent.title}
+                          </h2>
+
+                          <div className="flex flex-wrap items-center gap-3 text-xs text-stone-300 font-sans pt-1">
+                            <span className="flex items-center gap-1 text-gold-400">
+                              <Calendar className="w-3.5 h-3.5" />
+                              {new Date(selectedEvent.eventDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-stone-300">
+                              <MapPin className="w-3.5 h-3.5 text-gold-400" />
+                              {selectedEvent.venueName}
+                            </span>
+                            <span>•</span>
+                            <span className="font-mono text-stone-400 text-[11px]">
+                              ID: evt-{selectedEvent.slug}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Dedicated URL Box */}
+                      <div className="w-full md:w-auto bg-black/60 backdrop-blur-md p-4 rounded-2xl border border-gold-500/30 space-y-2">
+                        <div className="text-[10px] uppercase font-bold text-gold-400 tracking-wider">
+                          Dedicated Clean Event URL
+                        </div>
+                        <div className="font-mono text-xs text-white truncate max-w-sm">
+                          {`/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}`}
+                        </div>
+                        <div className="flex items-center gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`${typeof window !== 'undefined' ? window.location.origin : ''}/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}`, 'wedding-clean-url')}
+                            className="px-3 py-1.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                            <span>{copiedKey === 'wedding-clean-url' ? 'Copied ✓' : 'Copy Link'}</span>
+                          </button>
+                          <Link
+                            href={`/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 border border-stone-600"
+                          >
+                            <span>Public Page</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Dedicated Wedding Role Access Hub (4 Roles of This Wedding) */}
+                  <div className="p-6 sm:p-8 rounded-3xl bg-white border border-gold-500/30 shadow-sm space-y-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                      <div>
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gold-100 text-gold-950 font-bold text-[11px] mb-1">
+                          <Shield className="w-3.5 h-3.5 text-gold-700" />
+                          <span>Dedicated Wedding Staff Hub</span>
+                        </div>
+                        <h3 className="font-serif font-bold text-xl sm:text-2xl text-gray-900">
+                          Roles & Access Credentials for {selectedEvent.brideName} & {selectedEvent.groomName}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          View, copy, or launch into any staff role dashboard for this specific wedding under your agency.
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2 bg-gray-50 p-2.5 rounded-2xl border border-gray-200">
+                        <Smartphone className="w-7 h-7 text-gold-600" />
+                        <div className="text-right">
+                          <div className="text-[10px] font-bold text-gray-500 uppercase">Agency Fleet</div>
+                          <div className="text-xs font-black text-gray-900">4 Active Roles</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4 Role Command Cards Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                      {/* ROLE 1: BRIDE & GROOM (COUPLE SUITE) */}
+                      <div className="p-6 rounded-3xl bg-white border border-rose-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-800 text-[11px] font-bold border border-rose-200 flex items-center gap-1.5">
+                              <Heart className="w-3.5 h-3.5 text-rose-600 fill-rose-600" />
+                              <span>Bride & Groom Role</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="font-serif font-bold text-lg text-gray-900">
+                              {selectedEvent.brideName} & {selectedEvent.groomName}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Full access to couple dashboard, guest list management, invitations, and wedding playlist controls.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-rose-50/50 border border-rose-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Login Email:</span>
+                              <span className="font-bold text-gray-900">{selectedEvent.credentials?.couple?.email || selectedEvent.coupleCredentials?.email || `couple@${selectedEvent.slug}.com`}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-rose-800 bg-white px-2.5 py-0.5 rounded border border-rose-200">
+                                  {showPasswords[`couple-${selectedEvent.id}`] ? (selectedEvent.credentials?.couple?.temporaryPassword || selectedEvent.coupleCredentials?.temporaryPassword || 'agafari2026') : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword(`couple-${selectedEvent.id}`)}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords[`couple-${selectedEvent.id}`] ? 'Hide' : 'Show'}
+                                >
+                                  {showPasswords[`couple-${selectedEvent.id}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => launchRolePortal(selectedEvent, 'couple')}
+                            className="flex-1 py-3 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Couple Suite</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Bride & Groom Login: ${typeof window !== 'undefined' ? window.location.origin : ''}/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}/couple\nEmail: ${selectedEvent.credentials?.couple?.email || selectedEvent.coupleCredentials?.email || `couple@${selectedEvent.slug}.com`}\nPassword: ${selectedEvent.credentials?.couple?.temporaryPassword || selectedEvent.coupleCredentials?.temporaryPassword || 'agafari2026'}`, `couple-${selectedEvent.id}`)}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === `couple-${selectedEvent.id}` ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ROLE 2: GATE SECURITY SCANNER */}
+                      <div className="p-6 rounded-3xl bg-white border border-indigo-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 text-[11px] font-bold border border-indigo-200 flex items-center gap-1.5">
+                              <ScanLine className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>Gate Security Scanner Staff</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="font-serif font-bold text-lg text-gray-900">
+                              Door Registration Staff Terminal
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Camera QR barcode scanner app for fast guest verification and digital ticket validation at the entrance.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Login Email:</span>
+                              <span className="font-bold text-gray-900">{selectedEvent.credentials?.scanner?.email || `scanner@${selectedEvent.slug}.com`}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-indigo-800 bg-white px-2.5 py-0.5 rounded border border-indigo-200">
+                                  {showPasswords[`scanner-${selectedEvent.id}`] ? (selectedEvent.credentials?.scanner?.temporaryPassword || 'scan123') : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword(`scanner-${selectedEvent.id}`)}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords[`scanner-${selectedEvent.id}`] ? 'Hide' : 'Show'}
+                                >
+                                  {showPasswords[`scanner-${selectedEvent.id}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => launchRolePortal(selectedEvent, 'scanner')}
+                            className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Gate Scanner</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Gate Scanner Login: ${typeof window !== 'undefined' ? window.location.origin : ''}/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}/scanner\nEmail: ${selectedEvent.credentials?.scanner?.email || `scanner@${selectedEvent.slug}.com`}\nPassword: ${selectedEvent.credentials?.scanner?.temporaryPassword || 'scan123'}`, `scanner-${selectedEvent.id}`)}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === `scanner-${selectedEvent.id}` ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ROLE 3: LIVE STREAMER CREW */}
+                      <div className="p-6 rounded-3xl bg-white border border-amber-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold border border-amber-200 flex items-center gap-1.5">
+                              <Video className="w-3.5 h-3.5 text-amber-600" />
+                              <span>Live Stream Broadcast Crew</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="font-serif font-bold text-lg text-gray-900">
+                              Studio Streaming & Camera Desk
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Connect YouTube / RTMP camera feeds, monitor live attendee count, and run realtime wedding broadcasts.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-amber-50/50 border border-amber-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Login Email:</span>
+                              <span className="font-bold text-gray-900">{selectedEvent.credentials?.streamer?.email || `streamer@${selectedEvent.slug}.com`}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-amber-800 bg-white px-2.5 py-0.5 rounded border border-amber-200">
+                                  {showPasswords[`streamer-${selectedEvent.id}`] ? (selectedEvent.credentials?.streamer?.temporaryPassword || 'stream123') : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword(`streamer-${selectedEvent.id}`)}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords[`streamer-${selectedEvent.id}`] ? 'Hide' : 'Show'}
+                                >
+                                  {showPasswords[`streamer-${selectedEvent.id}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => launchRolePortal(selectedEvent, 'streamer')}
+                            className="flex-1 py-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Streamer Desk</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Streamer Desk Login: ${typeof window !== 'undefined' ? window.location.origin : ''}/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}/live-streamer\nEmail: ${selectedEvent.credentials?.streamer?.email || `streamer@${selectedEvent.slug}.com`}\nPassword: ${selectedEvent.credentials?.streamer?.temporaryPassword || 'stream123'}`, `streamer-${selectedEvent.id}`)}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === `streamer-${selectedEvent.id}` ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* ROLE 4: MEDIA CONTENT MODERATOR */}
+                      <div className="p-6 rounded-3xl bg-white border border-purple-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-5">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <span className="px-3 py-1 rounded-full bg-purple-100 text-purple-800 text-[11px] font-bold border border-purple-200 flex items-center gap-1.5">
+                              <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                              <span>Media Content Moderator</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-800 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                              ✓ Active Account
+                            </span>
+                          </div>
+
+                          <div>
+                            <h4 className="font-serif font-bold text-lg text-gray-900">
+                              Guest Moments & Reel Moderation
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                              Review guest photos, videos, and wishes before they appear on the public feed and couple memorial archive.
+                            </p>
+                          </div>
+
+                          <div className="p-4 rounded-2xl bg-purple-50/50 border border-purple-100 text-xs space-y-2.5 font-mono">
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Login Email:</span>
+                              <span className="font-bold text-gray-900">{selectedEvent.credentials?.moderator?.email || `moderator@${selectedEvent.slug}.com`}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-500 text-[11px] font-sans font-semibold">Temporary Password:</span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-purple-800 bg-white px-2.5 py-0.5 rounded border border-purple-200">
+                                  {showPasswords[`moderator-${selectedEvent.id}`] ? (selectedEvent.credentials?.moderator?.temporaryPassword || 'mod123') : '••••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword(`moderator-${selectedEvent.id}`)}
+                                  className="text-gray-400 hover:text-gray-700 p-1"
+                                  title={showPasswords[`moderator-${selectedEvent.id}`] ? 'Hide' : 'Show'}
+                                >
+                                  {showPasswords[`moderator-${selectedEvent.id}`] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 pt-3 border-t border-gray-100">
+                          <button
+                            type="button"
+                            onClick={() => launchRolePortal(selectedEvent, 'moderator')}
+                            className="flex-1 py-3 rounded-2xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer"
+                          >
+                            <span>Launch Moderator Hub</span>
+                            <ExternalLink className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(`Media Moderator Login: ${typeof window !== 'undefined' ? window.location.origin : ''}/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}/moderation\nEmail: ${selectedEvent.credentials?.moderator?.email || `moderator@${selectedEvent.slug}.com`}\nPassword: ${selectedEvent.credentials?.moderator?.temporaryPassword || 'mod123'}`, `moderator-${selectedEvent.id}`)}
+                            className="px-4 py-3 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-800 text-xs font-bold transition-all border border-gray-200 cursor-pointer"
+                          >
+                            {copiedKey === `moderator-${selectedEvent.id}` ? 'Copied ✓' : 'Copy'}
+                          </button>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Event Cards Grid */}
               {filteredEvents.length === 0 ? (
                 <div className="p-12 text-center rounded-3xl bg-white border border-gold-500/30 shadow-sm space-y-4">
@@ -750,14 +1163,7 @@ function OrganizerDashboardContent() {
                     <div
                       key={evt.id}
                       onClick={() => {
-                        // Navigate directly to the dedicated event dashboard
-                        if (typeof window !== 'undefined') {
-                          localStorage.setItem('agafari_couple_slug', evt.slug);
-                          localStorage.setItem('agafari_current_event_slug', evt.slug);
-                          localStorage.setItem('agafari_current_org_slug', organizerUrlSlug);
-                        }
-                        const destination = `/couple/dashboard?slug=${encodeURIComponent(evt.slug)}`;
-                        router.push(destination);
+                        setSelectedEvent(evt);
                       }}
                       className={`
                         rounded-3xl p-5 border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden bg-white
@@ -832,14 +1238,97 @@ function OrganizerDashboardContent() {
                             <div className="text-gray-500">Reels</div>
                           </div>
                         </div>
+
+                        {/* Assigned Staff Roles & Quick 1-Click Launch Bar */}
+                        <div className="pt-2.5 pb-2 border-t border-gold-500/20 space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-bold text-gray-700">
+                            <span className="flex items-center gap-1 text-gold-700 uppercase tracking-wider">
+                              <Users className="w-3 h-3 text-gold-600" />
+                              Staff Roles
+                            </span>
+                            <span className="text-[9px] text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                              4 Portals
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-1 text-[9px] font-bold">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                launchRolePortal(evt, 'couple');
+                              }}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-900 border border-rose-200 flex items-center justify-between cursor-pointer"
+                              title="Launch Couple Suite"
+                            >
+                              <span className="truncate">💑 Couple</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-rose-600 shrink-0 ml-1" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                launchRolePortal(evt, 'scanner');
+                              }}
+                              className="p-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border border-indigo-200 flex items-center justify-between cursor-pointer"
+                              title="Launch Gate Scanner"
+                            >
+                              <span className="truncate">📱 Scanner</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-indigo-600 shrink-0 ml-1" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                launchRolePortal(evt, 'streamer');
+                              }}
+                              className="p-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 flex items-center justify-between cursor-pointer"
+                              title="Launch Live Streamer"
+                            >
+                              <span className="truncate">🎥 Streamer</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-amber-600 shrink-0 ml-1" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                launchRolePortal(evt, 'moderator');
+                              }}
+                              className="p-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-900 border border-purple-200 flex items-center justify-between cursor-pointer"
+                              title="Launch Moderator"
+                            >
+                              <span className="truncate">🛡️ Moderator</span>
+                              <ExternalLink className="w-2.5 h-2.5 text-purple-600 shrink-0 ml-1" />
+                            </button>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-bold">
-                        <span className="text-gold-600 flex items-center gap-1">
+                      <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-bold gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedEvent(evt);
+                          }}
+                          className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold border transition-colors flex items-center justify-center gap-1 ${
+                            isSelected ? 'bg-gold-500 text-black border-gold-600' : 'bg-gray-50 hover:bg-gold-50 text-gray-800 border-gray-200'
+                          }`}
+                        >
+                          <Crown className="w-3 h-3 text-gold-600" />
+                          <span>{isSelected ? '✓ Inspecting' : 'Inspect Roles'}</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            launchRolePortal(evt, 'couple');
+                          }}
+                          className="py-1 px-2 rounded-lg bg-black hover:bg-gray-800 text-gold-400 text-[11px] font-bold border border-gold-500/30 flex items-center justify-center gap-1 cursor-pointer"
+                        >
                           <ExternalLink className="w-3 h-3" />
-                          Open Event Dashboard
-                        </span>
-                        <ChevronRight className="w-4 h-4 text-gold-500 group-hover:translate-x-0.5 transition-transform" />
+                          <span>Open</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -1009,49 +1498,112 @@ function OrganizerDashboardContent() {
                     <thead>
                       <tr className="border-b border-gold-500/20 text-[10px] text-gold-700 font-bold uppercase tracking-wider bg-gray-50">
                         <th className="py-3 px-4 rounded-l-xl">Wedding Title</th>
-                        <th className="py-3 px-4">Couple Contact Login</th>
+                        <th className="py-3 px-4">Couple Credentials</th>
+                        <th className="py-3 px-4">Assigned Staff Portals</th>
                         <th className="py-3 px-4">Admin Verification</th>
-                        <th className="py-3 px-4 text-right rounded-r-xl">1-Click Portal</th>
+                        <th className="py-3 px-4 text-right rounded-r-xl">1-Click Launch</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {events.map((evt) => (
-                        <tr key={evt.id} className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 px-4 font-serif font-bold text-gray-900">
-                            {evt.title}
-                          </td>
-                          <td className="py-3 px-4 font-mono text-gray-600">
-                            {evt.coupleCredentials?.email || `couple@${evt.slug}.com`}
-                          </td>
-                          <td className="py-3 px-4">
-                            {evt.adminApprovalStatus === 'APPROVED' ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-bold">
-                                <CheckCircle2 className="w-3 h-3 text-emerald-700" /> Approved
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">
-                                <Clock className="w-3 h-3 text-amber-700" /> Pending Admin
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            {evt.adminApprovalStatus === 'APPROVED' ? (
-                              <Link
-                                href={`/login?redirect=${encodeURIComponent(`/${(evt as any).organizer_id || (evt as any).organizerId || currentOrgId || 'org-default'}/${evt.slug}/couple`)}`}
-                                className="px-3 py-1.5 rounded-lg bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold shadow-sm inline-flex items-center gap-1 border border-gold-500/30"
+                      {events.map((evt) => {
+                        const coupleEmailVal = evt.credentials?.couple?.email || evt.coupleCredentials?.email || `couple@${evt.slug}.com`;
+                        const couplePassVal = evt.credentials?.couple?.temporaryPassword || evt.coupleCredentials?.temporaryPassword || 'agafari2026';
+
+                        return (
+                          <tr key={evt.id} className="hover:bg-gray-50 transition-colors">
+                            <td className="py-3 px-4 font-serif font-bold text-gray-900">
+                              <div>{evt.title}</div>
+                              <div className="text-[10px] text-gray-500 font-mono font-normal">
+                                {new Date(evt.eventDate).toLocaleDateString()} • {evt.venueName}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-gray-600">
+                              <div className="font-semibold text-gray-900">{coupleEmailVal}</div>
+                              <div className="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
+                                <span>Pass: {showPasswords[`table-${evt.id}`] ? couplePassVal : '••••••••'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleShowPassword(`table-${evt.id}`)}
+                                  className="text-gray-400 hover:text-gray-700"
+                                >
+                                  {showPasswords[`table-${evt.id}`] ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(`Email: ${coupleEmailVal}\nPassword: ${couplePassVal}`, `t-creds-${evt.id}`)}
+                                  className="text-gold-700 hover:text-black font-bold text-[9px] px-1 rounded bg-gold-50"
+                                >
+                                  {copiedKey === `t-creds-${evt.id}` ? 'Copied' : 'Copy'}
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-wrap items-center gap-1 text-[10px] font-bold">
+                                <button
+                                  type="button"
+                                  onClick={() => launchRolePortal(evt, 'couple')}
+                                  className="px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100"
+                                  title="Launch Couple Suite"
+                                >
+                                  💑 Couple
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => launchRolePortal(evt, 'scanner')}
+                                  className="px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 hover:bg-indigo-100"
+                                  title="Launch Gate Scanner"
+                                >
+                                  📱 Scanner
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => launchRolePortal(evt, 'streamer')}
+                                  className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100"
+                                  title="Launch Live Streamer"
+                                >
+                                  🎥 Streamer
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => launchRolePortal(evt, 'moderator')}
+                                  className="px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 hover:bg-purple-100"
+                                  title="Launch Content Moderator"
+                                >
+                                  🛡️ Moderator
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              {evt.adminApprovalStatus === 'APPROVED' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 text-[10px] font-bold">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-700" /> Approved
+                                </span>
+                              ) : evt.adminApprovalStatus === 'REJECTED' ? (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-900 text-[10px] font-bold">
+                                  <XCircle className="w-3 h-3 text-rose-700" /> Rejected
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[10px] font-bold">
+                                  <Clock className="w-3 h-3 text-amber-700" /> Pending Admin
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedEvent(evt);
+                                  setActiveTab('WEDDINGS');
+                                }}
+                                className="px-3 py-1.5 rounded-lg bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold shadow-sm inline-flex items-center gap-1 border border-gold-500/30 cursor-pointer"
                               >
-                                <span>Launch Couple Suite</span>
+                                <span>Inspect Hub</span>
                                 <ExternalLink className="w-3 h-3 text-gold-400" />
-                              </Link>
-                            ) : (
-                              <span className="px-3.5 py-1.5 rounded-lg bg-amber-100/80 text-amber-900 border border-amber-300 text-[11px] font-bold inline-flex items-center gap-1 opacity-85 cursor-not-allowed">
-                                <Clock className="w-3 h-3 text-amber-700 animate-pulse" />
-                                <span>Awaiting Admin Approval</span>
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

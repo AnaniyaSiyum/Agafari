@@ -766,7 +766,7 @@ function SystemAdminDashboardContent() {
         setUsers((prev) => [createdUser, ...prev]);
 
         const orgIdVal = data.user.organizerId || `org-${data.user.id}`;
-        const dedicatedLink = `/organizer/dashboard?id=${encodeURIComponent(orgIdVal)}`;
+        const dedicatedLink = `/organizer/dashboard?id=${encodeURIComponent(orgIdVal)}&name=${encodeURIComponent(orgAgencyName.trim())}`;
 
         setOrgSuccessMsg(`Agency "${orgAgencyName.trim()}" onboarded successfully! Dedicated Dashboard Link: ${dedicatedLink}`);
         setOrgAgencyName('');
@@ -2477,8 +2477,8 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                       ) : (
                         organizerUsers.map((org) => {
                           const specificOrgId = org.organizerId || (org.id.startsWith('org-') ? org.id : `org-${org.id}`);
-                          const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
-                          const nameVal = org.fullName && !org.fullName.includes('@') ? org.fullName : (org.companyName || org.email.split('@')[0]);
+                          const nameVal = org.companyName || (org.fullName && !org.fullName.includes('@') ? org.fullName : org.email.split('@')[0]);
+                          const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}&name=${encodeURIComponent(nameVal)}`;
                           const activePass = org.temporaryPassword || 'org123';
 
                           return (
@@ -2745,8 +2745,8 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                   {/* Organizer Cards */}
                   {organizerUsers.map((org) => {
                     const specificOrgId = org.organizerId || (org.id.startsWith('org-') ? org.id : `org-${org.id}`);
-                    const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
                     const companyName = getOrganizerCompanyName(org);
+                    const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}&name=${encodeURIComponent(companyName)}`;
                     return (
                       <div
                         key={org.id}
@@ -2848,10 +2848,10 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                       </tr>
                     ) : (
                       filteredUsers.map((u) => {
-                        const nameVal = u.fullName || (u as any).full_name || u.email.split('@')[0];
+                        const nameVal = u.companyName || u.fullName || (u as any).full_name || u.email.split('@')[0];
                         const roleVal = u.role || (u as any).role || 'GUEST';
                         const specificOrgId = u.organizerId || (u.id.startsWith('org-') ? u.id : `org-${u.id}`);
-                        const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}`;
+                        const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}&name=${encodeURIComponent(nameVal)}`;
                         const activePass = u.temporaryPassword || (roleVal === 'SYSTEM_ADMIN' ? 'admin123' : roleVal === 'EVENT_ORGANIZER' ? 'org123' : roleVal === 'BRIDE_GROOM' ? 'couple123' : 'agafari2026');
 
                         return (

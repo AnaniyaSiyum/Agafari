@@ -44,33 +44,55 @@ if ($method === 'OPTIONS') {
 // -----------------------------------------------------------------------------
 // Helper: Resolve Organizer by ID, Owner User ID, or Email
 // -----------------------------------------------------------------------------
-function resolve_organizer(?string $rawId): ?array {
-    if (empty($rawId) || strtolower($rawId) === 'global') {
+// Helper: Resolve Organizer by ID, Owner User ID, or Email
+// -----------------------------------------------------------------------------
+function resolve_organizer(?string $rawId, ?string $rawName = null): ?array {
+    if ((empty($rawId) || strtolower($rawId) === 'global' || strtolower($rawId) === 'all') && empty($rawName)) {
         return null;
     }
 
-    $rawId = trim($rawId);
+    $rawId = trim($rawId ?? '');
+    $rawName = trim($rawName ?? '');
     $stripped = preg_replace('/^org-/', '', $rawId);
     $usrStripped = preg_replace('/^usr-/', '', $stripped);
+    $nameToCheck = !empty($rawName) ? $rawName : (!empty($stripped) ? $stripped : $rawId);
 
     // 1. Check organizers table directly with LEFT JOIN so missing or unlinked users row doesn't drop the agency
-    $org = php_query_one(
-        'SELECT o.*, u.email, u.full_name, u.phone
-         FROM organizers o
-         LEFT JOIN users u ON o.owner_user_id = u.id
-         WHERE o.id = ? 
-            OR o.id = ? 
-            OR o.id = ?
-            OR o.owner_user_id = ? 
-            OR o.owner_user_id = ? 
-            OR o.owner_user_id = ?
-            OR LOWER(o.business_name) = LOWER(?)
-            OR LOWER(u.email) = LOWER(?)
-         LIMIT 1',
-        [$rawId, "org-{$stripped}", $stripped, $rawId, $stripped, "usr-{$usrStripped}", $rawId, $rawId]
-    );
+    $sql = 'SELECT o.*, u.email, u.full_name, u.phone
+            FROM organizers o
+            LEFT JOIN users u ON o.owner_user_id = u.id
+            WHERE o.id = ? 
+               OR o.id = ? 
+               OR o.id = ?
+               OR o.owner_user_id = ? 
+               OR o.owner_user_id = ? 
+               OR o.owner_user_id = ?
+               OR (LENGTH(?) > 0 AND LOWER(o.business_name) = LOWER(?))
+               OR (LENGTH(?) > 0 AND LOWER(REPLACE(o.business_name, " ", "-")) = LOWER(?))
+               OR (LENGTH(?) > 0 AND LOWER(u.full_name) = LOWER(?))
+               OR (LENGTH(?) > 0 AND LOWER(REPLACE(u.full_name, " ", "-")) = LOWER(?))
+               OR (LENGTH(?) > 0 AND LOWER(u.email) = LOWER(?))
+            LIMIT 1';
+
+    $org = php_query_one($sql, [
+        $rawId, "org-{$stripped}", $stripped,
+        $rawId, $stripped, "usr-{$usrStripped}",
+        $nameToCheck, $nameToCheck,
+        $nameToCheck, $nameToCheck,
+        $nameToCheck, $nameToCheck,
+        $nameToCheck, $nameToCheck,
+        $rawId, $rawId
+    ]);
 
     if ($org) {
+        // Ensure business_name is clean and human-readable, not a raw ID
+        if (empty($org['business_name']) || preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $org['business_name']) || str_starts_with($org['business_name'], 'Usr ')) {
+            if (!empty($org['full_name']) && !preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $org['full_name'])) {
+                $org['business_name'] = $org['full_name'];
+            } elseif (!empty($rawName)) {
+                $org['business_name'] = $rawName;
+            }
+        }
         return $org;
     }
 
@@ -80,55 +102,51 @@ function resolve_organizer(?string $rawId): ?array {
          WHERE id = ? 
             OR id = ? 
             OR id = ?
-            OR LOWER(email) = LOWER(?) 
-            OR LOWER(full_name) = LOWER(?)
+            OR (LENGTH(?) > 0 AND LOWER(email) = LOWER(?)) 
+            OR (LENGTH(?) > 0 AND LOWER(full_name) = LOWER(?))
+            OR (LENGTH(?) > 0 AND LOWER(REPLACE(full_name, " ", "-")) = LOWER(?))
          LIMIT 1',
-        [$rawId, $stripped, "usr-{$usrStripped}", $rawId, $rawId]
+        [$rawId, $stripped, "usr-{$usrStripped}", $rawId, $rawId, $nameToCheck, $nameToCheck, $nameToCheck, $nameToCheck]
     );
 
     if ($user) {
         $orgRow = php_query_one('SELECT * FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$user['id'], $user['id']]);
+        $bizName = !empty($rawName) ? $rawName : (!empty($user['full_name']) ? $user['full_name'] : 'Executive Event Agency');
         if ($orgRow) {
             $orgRow['email'] = $user['email'];
             $orgRow['full_name'] = $user['full_name'];
             $orgRow['phone'] = $user['phone'] ?? '';
+            $orgRow['business_name'] = !empty($orgRow['business_name']) && !preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $orgRow['business_name']) ? $orgRow['business_name'] : $bizName;
             return $orgRow;
         }
 
         // Auto-provision organizers row for this user
         $orgId = 'org-' . $user['id'];
-        $bizName = !empty($user['full_name']) ? $user['full_name'] : 'Executive Event Agency';
         try {
             php_execute(
                 'INSERT INTO organizers (id, owner_user_id, business_name, contact_phone, created_at) VALUES (?, ?, ?, ?, NOW())',
                 [$orgId, $user['id'], $bizName, $user['phone'] ?? null]
             );
-            return [
-                'id'            => $orgId,
-                'owner_user_id' => $user['id'],
-                'business_name' => $bizName,
-                'contact_phone' => $user['phone'] ?? '',
-                'email'         => $user['email'],
-                'full_name'     => $user['full_name'],
-            ];
-        } catch (Throwable $e) {
-            return [
-                'id'            => $orgId,
-                'owner_user_id' => $user['id'],
-                'business_name' => $bizName,
-                'email'         => $user['email'],
-                'full_name'     => $user['full_name'],
-            ];
-        }
+        } catch (Throwable $e) {}
+
+        return [
+            'id'            => $orgId,
+            'owner_user_id' => $user['id'],
+            'business_name' => $bizName,
+            'contact_phone' => $user['phone'] ?? '',
+            'email'         => $user['email'],
+            'full_name'     => $user['full_name'],
+        ];
     }
 
-    // 3. Fallback tenant for specified agency ID so it never leaks platform-wide events
+    // 3. Fallback tenant for specified agency ID/name so it NEVER leaks platform-wide events
+    $fallbackName = !empty($rawName) ? $rawName : (!empty($stripped) && !preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $stripped) ? ucwords(str_replace(['-', '_'], ' ', $stripped)) : 'Event Agency');
     return [
         'id'            => $rawId,
         'owner_user_id' => $stripped,
-        'business_name' => ucwords(str_replace(['-', '_'], ' ', $stripped)),
+        'business_name' => $fallbackName,
         'email'         => "{$stripped}@agafari.com",
-        'full_name'     => ucwords(str_replace(['-', '_'], ' ', $stripped)),
+        'full_name'     => $fallbackName,
         'contact_phone' => '',
     ];
 }
@@ -142,10 +160,12 @@ function formatOrganizerEvent(array $ev): array {
     $title = $ev['title'] ?? ($brideName && $groomName ? "{$brideName} & {$groomName}'s Wedding" : 'Wedding Event');
     $custom = json_decode($ev['template_customization_json'] ?? '{}', true) ?: [];
     $expected = (int)($ev['expected_guests'] ?? $custom['expectedGuests'] ?? 300);
+    $slug = $ev['slug'] ?? 'wedding';
+    $tempPass = $ev['couple_temp_password'] ?? 'agafari2026';
 
     return [
         'id'                   => $ev['id'],
-        'slug'                 => $ev['slug'],
+        'slug'                 => $slug,
         'title'                => $title,
         'brideName'            => $brideName,
         'groomName'            => $groomName,
@@ -168,13 +188,39 @@ function formatOrganizerEvent(array $ev): array {
         'organizerId'          => $ev['organizer_id'] ?? null,
         'organizerName'        => $ev['organizer_name'] ?? null,
         'couple'               => [
-            'email'             => $ev['couple_email'] ?? '',
-            'temporaryPassword' => $ev['couple_temp_password'] ?? 'agafari2026',
-            'fullName'          => $ev['couple_full_name'] ?? '',
+            'email'             => $ev['couple_email'] ?? "couple@{$slug}.com",
+            'temporaryPassword' => $tempPass,
+            'fullName'          => $ev['couple_full_name'] ?? "{$brideName} & {$groomName}",
         ],
         'coupleCredentials'    => [
-            'email'             => $ev['couple_email'] ?? '',
-            'temporaryPassword' => $ev['couple_temp_password'] ?? 'agafari2026',
+            'email'             => $ev['couple_email'] ?? "couple@{$slug}.com",
+            'temporaryPassword' => $tempPass,
+        ],
+        'credentials'          => [
+            'couple'    => [
+                'fullName'          => $ev['couple_full_name'] ?? "{$brideName} & {$groomName}",
+                'email'             => $ev['couple_email'] ?? "couple@{$slug}.com",
+                'temporaryPassword' => $tempPass,
+                'role'              => 'BRIDE_GROOM',
+            ],
+            'scanner'   => [
+                'fullName'          => 'Gate QR Scanner',
+                'email'             => "scanner@{$slug}.com",
+                'temporaryPassword' => 'scan123',
+                'role'              => 'GATE_SCANNER',
+            ],
+            'streamer'  => [
+                'fullName'          => 'Live Streamer Crew',
+                'email'             => "streamer@{$slug}.com",
+                'temporaryPassword' => 'stream123',
+                'role'              => 'LIVE_STREAMER',
+            ],
+            'moderator' => [
+                'fullName'          => 'Media Moderator Hub',
+                'email'             => "moderator@{$slug}.com",
+                'temporaryPassword' => 'mod123',
+                'role'              => 'MODERATOR',
+            ],
         ],
     ];
 }
@@ -185,19 +231,23 @@ function formatOrganizerEvent(array $ev): array {
 if ($method === 'GET') {
     try {
         $rawId = trim($_GET['id'] ?? $_GET['organizerId'] ?? '');
+        $nameParam = trim($_GET['name'] ?? $_GET['agencyName'] ?? '');
 
         // If no ID in query params, inspect Bearer token
         if (empty($rawId)) {
             $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
             if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
-                $sess = php_query_one('SELECT user_id FROM php_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1', [$matches[1]]);
+                $sess = php_query_one('SELECT user_id, role FROM php_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1', [$matches[1]]);
                 if ($sess) {
-                    $rawId = $sess['user_id'];
+                    if (in_array($sess['role'], ['EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER'])) {
+                        $rawId = $sess['user_id'];
+                    }
                 }
             }
         }
 
-        $org = resolve_organizer($rawId);
+        $isSpecificOrg = (!empty($rawId) && strtolower($rawId) !== 'global' && strtolower($rawId) !== 'all') || !empty($nameParam);
+        $org = resolve_organizer($rawId, $nameParam);
 
         // Fetch events with safe schema checking
         $hasTempPass = false;
@@ -208,12 +258,13 @@ if ($method === 'GET') {
 
         $tempPassSelect = $hasTempPass ? 'u.temporary_password AS couple_temp_password' : 'NULL AS couple_temp_password';
 
-        if ($org && !empty($rawId) && strtolower($rawId) !== 'global') {
-            $orgId = $org['id'];
-            $ownerId = $org['owner_user_id'] ?? $orgId;
+        if ($isSpecificOrg) {
+            $orgId = $org ? $org['id'] : $rawId;
+            $ownerId = $org ? ($org['owner_user_id'] ?? $orgId) : $rawId;
             $orgPrefixed = str_starts_with($ownerId, 'org-') ? $ownerId : "org-{$ownerId}";
             $rawIdVal = $rawId ?: $orgId;
             $strippedVal = preg_replace('/^org-/', '', $rawId);
+            $bizNameVal = $org ? ($org['business_name'] ?? '') : $nameParam;
 
             $sql = "
                 SELECT e.*, 
@@ -229,11 +280,22 @@ if ($method === 'GET') {
                     OR e.organizer_id = ?
                     OR e.organizer_id = ?
                     OR e.organizer_id = ?
+                    OR o.owner_user_id = ?
+                    OR o.owner_user_id = ?
+                    OR (LENGTH(?) > 0 AND LOWER(e.organizer_id) = LOWER(?))
+                    OR (LENGTH(?) > 0 AND LOWER(o.business_name) = LOWER(?))
+                    OR (LENGTH(?) > 0 AND LOWER(o.business_name) = LOWER(?))
               ORDER BY e.created_at DESC
             ";
-            $events = php_query($sql, [$orgId, $ownerId, $orgPrefixed, $rawIdVal, $strippedVal]);
+            $events = php_query($sql, [
+                $orgId, $ownerId, $orgPrefixed, $rawIdVal, $strippedVal,
+                $ownerId, $rawIdVal,
+                $bizNameVal, $bizNameVal,
+                $bizNameVal, $bizNameVal,
+                $nameParam, $nameParam
+            ]);
         } else {
-            // Super Admin / Global view (only when no specific organizer was requested)
+            // Super Admin / Global view (ONLY when no specific agency ID or name was requested)
             $sql = "
                 SELECT e.*, 
                        u.email AS couple_email, 
@@ -250,11 +312,32 @@ if ($method === 'GET') {
 
         $formatted = array_map('formatOrganizerEvent', $events);
 
-        // Dynamic branding values
-        $agencyName = $org['business_name'] ?? $org['full_name'] ?? 'Certified Agafari Event Agency';
-        $fullName   = $org['full_name'] ?? $org['business_name'] ?? 'Event Organizer Admin';
-        $email      = $org['email'] ?? 'organizer@agafari.com';
-        $orgIdVal   = $org['id'] ?? ($rawId ?: 'org-certified');
+        // Dynamic branding values - prioritize human agency name, NEVER show raw ID
+        $agencyName = '';
+        if ($org) {
+            $candidateName = $org['business_name'] ?? $org['full_name'] ?? '';
+            if (!empty($candidateName) && !preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $candidateName) && !str_starts_with($candidateName, 'Usr ')) {
+                $agencyName = $candidateName;
+            }
+        }
+        if (empty($agencyName) && !empty($nameParam)) {
+            $agencyName = $nameParam;
+        }
+        if (empty($agencyName) && !empty($org['email']) && strpos($org['email'], '@') !== false) {
+            $prefix = explode('@', $org['email'])[0];
+            $agencyName = ucwords(str_replace(['.', '_', '-'], ' ', $prefix));
+        }
+        if (empty($agencyName)) {
+            $agencyName = 'Event Agency';
+        }
+
+        $fullName = $org['full_name'] ?? $agencyName;
+        if (preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $fullName) || str_starts_with($fullName, 'Usr ')) {
+            $fullName = $agencyName;
+        }
+
+        $email    = $org['email'] ?? 'organizer@agafari.com';
+        $orgIdVal = $org['id'] ?? ($rawId ?: 'org-certified');
 
         $activeHosting = array_filter($formatted, function($e) {
             return ($e['status'] ?? '') !== 'COMPLETED' && ($e['status'] ?? '') !== 'ARCHIVED';
@@ -317,10 +400,16 @@ if ($method === 'POST') {
         }
 
         // 1. Resolve Organizer Record
-        $org = resolve_organizer($rawOrgId);
+        $nameParam = trim($body['organizerName'] ?? $body['agencyName'] ?? $_GET['name'] ?? '');
+        $org = resolve_organizer($rawOrgId, $nameParam);
         $resolvedOrgId = $org ? $org['id'] : null;
 
-        // If no organizer resolved, fallback to finding first organizer in DB
+        // If no organizer resolved, but rawOrgId was provided, ensure it stays bound to this agency
+        if (!$resolvedOrgId && !empty($rawOrgId)) {
+            $resolvedOrgId = $rawOrgId;
+        }
+
+        // Only for unauthenticated global requests with no organizer specified at all
         if (!$resolvedOrgId) {
             $firstOrg = php_query_one('SELECT id FROM organizers ORDER BY created_at ASC LIMIT 1');
             if ($firstOrg) {
