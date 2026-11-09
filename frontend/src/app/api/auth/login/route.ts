@@ -63,17 +63,24 @@ export async function POST(req: NextRequest) {
 
     // 3. Query MySQL users table by email (or phone/id)
     const user = await queryOne<any>(
-      `SELECT id, email, phone, full_name, role, password_hash, is_active, status, totp_secret, totp_enabled, session_version
+      `SELECT id, email, phone, full_name, role, password_hash, temporary_password, is_active, status, totp_secret, totp_enabled, session_version
        FROM users
-       WHERE LOWER(email) = $1 OR LOWER(phone) = $1 OR id = $1
+       WHERE LOWER(email) = $1 OR LOWER(phone) = $1 OR id = $1 OR LOWER(email) = $2
        LIMIT 1`,
-      [email]
+      [email, `${email}@agafari.com`]
     );
 
     // 4. Timing-Safe Credential Verification to prevent user enumeration
     // Ensures constant execution duration regardless of whether account exists in DB
-    const isPasswordValid = await timingSafeVerifyPassword(password, user?.password_hash);
-    if (!user || !user.password_hash || !isPasswordValid) {
+    let isPasswordValid = false;
+    if (user?.password_hash) {
+      isPasswordValid = await timingSafeVerifyPassword(password, user.password_hash);
+    }
+    if (!isPasswordValid && user?.temporary_password) {
+      isPasswordValid = user.temporary_password === password;
+    }
+
+    if (!user || !isPasswordValid) {
       recordAuthFailure(ip, email);
       await logAudit({
         actorId: user?.id || null,

@@ -26,6 +26,7 @@ if (!$backendBase) {
 
 require_once $backendBase . '/config/db.php';
 require_once $backendBase . '/lib/auth.php';
+require_once $backendBase . '/lib/jwt.php';
 require_once $backendBase . '/lib/middleware.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -51,16 +52,25 @@ if (empty($token)) {
 }
 
 try {
-    // 1. Check php_sessions table
-    $sess = php_query_one(
-        'SELECT user_id, role, expires_at FROM php_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1',
-        [$token]
-    );
+    // 1. Primary: Verify RFC 7519 JWT
+    $claims = jwt_verify($token);
+    $userId = $claims ? ($claims['userId'] ?? $claims['sub'] ?? null) : null;
 
-    if ($sess) {
+    // 2. Secondary: Check php_sessions table
+    if (!$userId) {
+        $sess = php_query_one(
+            'SELECT user_id, role, expires_at FROM php_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1',
+            [$token]
+        );
+        if ($sess) {
+            $userId = $sess['user_id'];
+        }
+    }
+
+    if ($userId) {
         $user = php_query_one(
             'SELECT id, email, full_name, phone, role, is_active FROM users WHERE id = ? LIMIT 1',
-            [$sess['user_id']]
+            [$userId]
         );
 
         if ($user) {

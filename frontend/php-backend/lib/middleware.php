@@ -26,6 +26,8 @@ if (!$cfgLoaded) {
     require_once __DIR__ . '/../config/db.php';
 }
 
+require_once __DIR__ . '/jwt.php';
+
 // ---------------------------------------------------------------------------
 // CORS
 // ---------------------------------------------------------------------------
@@ -148,6 +150,7 @@ function get_auth_token(): ?string {
 
 /**
  * Return current session array or null if unauthenticated / expired.
+ * Validates RFC 7519 HMAC-SHA256 JWT claims, with fallback to php_sessions table.
  */
 function get_authenticated_user(): ?array {
     $token = get_auth_token();
@@ -155,6 +158,31 @@ function get_authenticated_user(): ?array {
         return null;
     }
 
+    // 1. Primary: Cryptographic RFC 7519 JWT verification
+    $claims = jwt_verify($token);
+    if ($claims && is_array($claims)) {
+        $userId = $claims['userId'] ?? $claims['sub'] ?? '';
+        $role = $claims['role'] ?? 'GUEST';
+
+        // Check if user was deleted or disabled in users table
+        try {
+            $userCheck = php_query_one('SELECT is_active FROM users WHERE id = ? LIMIT 1', [$userId]);
+            if ($userCheck && isset($userCheck['is_active']) && !(bool)$userCheck['is_active']) {
+                return null;
+            }
+        } catch (Throwable $e) {}
+
+        return [
+            'user_id'      => $userId,
+            'role'         => $role,
+            'email'        => $claims['email'] ?? '',
+            'organizer_id' => $claims['organizerId'] ?? null,
+            'event_slug'   => $claims['eventSlug'] ?? null,
+            'expires_at'   => date('Y-m-d H:i:s', $claims['exp'] ?? (time() + 86400)),
+        ];
+    }
+
+    // 2. Secondary: Fallback to php_sessions table for stateful tokens
     try {
         return php_query_one(
             'SELECT user_id, role, expires_at
