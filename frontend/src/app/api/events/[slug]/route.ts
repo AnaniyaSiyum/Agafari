@@ -336,7 +336,8 @@ async function handleUpdate(req: NextRequest, slug: string) {
     } = body;
 
       if (existing) {
-        const currentCustomization = parseCustomization(existing.template_customization_json);
+        try {
+          const currentCustomization = parseCustomization(existing.template_customization_json);
         const updatedCustomization = {
           ...currentCustomization,
           coverImageUrl: coverImageUrl !== undefined ? coverImageUrl : currentCustomization.coverImageUrl,
@@ -401,9 +402,9 @@ async function handleUpdate(req: NextRequest, slug: string) {
         );
 
         return NextResponse.json({ success: true, event: formatEvent(updated) });
+      } catch (e) {
+        console.error('Failed to update event in DB:', e);
       }
-    } catch (e) {
-      console.error('Failed to update event in DB:', e);
     }
 
     // In-memory mockStore update fallback

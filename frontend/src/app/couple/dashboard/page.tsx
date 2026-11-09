@@ -147,12 +147,12 @@ function CoupleDashboardContent() {
       const token = localStorage.getItem('agafari_token');
       const role = localStorage.getItem('agafari_role');
       const allowedRoles = ['BRIDE_GROOM', 'COUPLE', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'SYSTEM_ADMIN'];
-      if (!userStr || !token || !allowedRoles.includes(role || '')) {
-        localStorage.removeItem('agafari_user');
-        localStorage.removeItem('agafari_role');
-        localStorage.removeItem('agafari_token');
-        document.cookie = 'agafari_token=; path=/; max-age=0';
+      if (!userStr || !token) {
         router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+        return;
+      }
+      if (!allowedRoles.includes(role || '')) {
+        router.push('/login');
         return;
       }
     }

@@ -348,11 +348,22 @@ export default function DedicatedEventControlPage({
           if (userStr) {
             try { userObj = JSON.parse(userStr); } catch (e) {}
           }
-          if (userObj && userObj.role === 'EVENT_ORGANIZER') {
+          if (userObj && (userObj.role === 'EVENT_ORGANIZER' || userObj.role === 'ORGANIZER_OWNER')) {
             const userOrg = String(userObj.organizerId || userObj.tenantId || userObj.id || '').toLowerCase().replace(/^org-/, '');
-            const targetOrg = organizerSlug.toLowerCase().replace(/^org-/, '');
+            const userPrefix = String(userObj.email || '').split('@')[0].toLowerCase();
             const evtOrg = String(evt.organizerId || evt.organizer_id || '').toLowerCase().replace(/^org-/, '');
-            if (userOrg && evtOrg && userOrg !== evtOrg) {
+            const evtOrgName = String(evt.organizerName || '').toLowerCase();
+
+            const isAuthorizedOrg = 
+              userObj.role === 'SYSTEM_ADMIN' ||
+              !evtOrg ||
+              userOrg === evtOrg ||
+              userOrg.includes(evtOrg) ||
+              evtOrg.includes(userOrg) ||
+              (userPrefix && evtOrgName.includes(userPrefix)) ||
+              (userPrefix && evtOrg.includes(userPrefix));
+
+            if (!isAuthorizedOrg) {
               setAccessDenied(true);
               setLoading(false);
               return;

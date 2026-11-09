@@ -769,7 +769,7 @@ function OrganizerDashboardContent() {
                   DEDICATED WEDDING CONTROL CENTER & STAFF ROSTER HUB
                  ========================================================================= */}
               {selectedEvent && (
-                <div className="space-y-6">
+                <div id="wedding-control-center-anchor" className="space-y-6">
                   {/* Dedicated Wedding Control Center Banner */}
                   <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-stone-950 via-stone-900 to-black text-white border-2 border-gold-500 shadow-xl relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-96 h-96 bg-gold-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
@@ -1310,25 +1310,25 @@ function OrganizerDashboardContent() {
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedEvent(evt);
+                            const el = document.getElementById('wedding-control-center-anchor');
+                            if (el) el.scrollIntoView({ behavior: 'smooth' });
                           }}
-                          className={`flex-1 py-1 px-2 rounded-lg text-[11px] font-bold border transition-colors flex items-center justify-center gap-1 ${
-                            isSelected ? 'bg-gold-500 text-black border-gold-600' : 'bg-gray-50 hover:bg-gold-50 text-gray-800 border-gray-200'
+                          className={`flex-1 py-1.5 px-2 rounded-xl text-[11px] font-bold border transition-colors flex items-center justify-center gap-1.5 cursor-pointer ${
+                            isSelected ? 'bg-gold-500 text-black border-gold-600 shadow-sm' : 'bg-gray-50 hover:bg-gold-50 text-gray-800 border-gray-200'
                           }`}
                         >
-                          <Crown className="w-3 h-3 text-gold-600" />
-                          <span>{isSelected ? '✓ Inspecting' : 'Inspect Roles'}</span>
+                          <Crown className="w-3.5 h-3.5 text-gold-600" />
+                          <span>{isSelected ? '✓ Active Control' : 'Inspect Roles & Staff'}</span>
                         </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            launchRolePortal(evt, 'couple');
-                          }}
-                          className="py-1 px-2 rounded-lg bg-black hover:bg-gray-800 text-gold-400 text-[11px] font-bold border border-gold-500/30 flex items-center justify-center gap-1 cursor-pointer"
+                        <Link
+                          href={`/event/control?slug=${encodeURIComponent(evt.slug)}&org=${encodeURIComponent(organizerUrlSlug || 'admin')}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="py-1.5 px-3 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-[11px] font-bold border border-gold-500/30 flex items-center justify-center gap-1.5 cursor-pointer"
+                          title="Open Full Event Control Room"
                         >
-                          <ExternalLink className="w-3 h-3" />
-                          <span>Open</span>
-                        </button>
+                          <span>Full Control Room</span>
+                          <ExternalLink className="w-3 h-3 text-gold-400" />
+                        </Link>
                       </div>
                     </div>
                   );

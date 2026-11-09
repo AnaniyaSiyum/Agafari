@@ -126,9 +126,9 @@ if ($method === 'POST') {
 
     try {
         php_execute(
-            "INSERT INTO users (id, email, password_hash, full_name, role, is_active, created_at)
-             VALUES (?, ?, ?, ?, ?, 1, NOW())",
-            [$userId, $email, $passwordHash, $fullName, $targetRole]
+            "INSERT INTO users (id, email, password_hash, temporary_password, full_name, role, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 1, NOW())",
+            [$userId, $email, $passwordHash, $password, $fullName, $targetRole]
         );
 
         if ($role === 'EVENT_ORGANIZER' || $role === 'ORGANIZER_OWNER' || $targetRole === 'EVENT_ORGANIZER' || $targetRole === 'ORGANIZER_OWNER') {
@@ -195,6 +195,8 @@ if ($method === 'PATCH') {
     if (!empty($body['password'])) {
         $updates[] = "password_hash = ?";
         $params[] = password_hash(trim($body['password']), PASSWORD_BCRYPT);
+        $updates[] = "temporary_password = ?";
+        $params[] = trim($body['password']);
     }
 
     if (empty($updates)) {

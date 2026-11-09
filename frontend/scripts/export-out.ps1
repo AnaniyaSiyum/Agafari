@@ -177,7 +177,7 @@ $htaccessContent = @'
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteCond %{REQUEST_URI} !^/(api|admin|organizer|couple|scanner|live-streamer|moderation|select-access|docs|_next|assets|branding|audio) [NC]
-  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/?$ couple/dashboard.html?org=$1&slug=$2 [L,QSA]
+  RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/?$ event/control.html?org=$1&slug=$2 [L,QSA]
 
   # 7. Sub-routes for staff & crew:
   RewriteRule ^([a-zA-Z0-9_-]+)/([a-zA-Z0-9_-]+)/couple/?$ couple/dashboard.html?org=$1&slug=$2 [L,QSA]

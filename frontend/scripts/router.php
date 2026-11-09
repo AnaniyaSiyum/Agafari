@@ -190,12 +190,16 @@ if (preg_match('#^([^/]+)/([^/]+)/moderation/?$#', $cleanUri, $m)) {
     readfile($docRoot . '/moderation/index.html');
     exit;
 }
-// /:org/:slug -> dedicated event page or couple dashboard
+// /:org/:slug -> dedicated event control page
 if (preg_match('#^([^/]+)/([^/]+)/?$#', $cleanUri, $m)) {
     $_GET['org'] = $m[1];
     $_GET['slug'] = $m[2];
     header('Content-Type: text/html; charset=utf-8');
-    readfile($docRoot . '/couple/dashboard.html');
+    if (file_exists($docRoot . '/event/control.html')) {
+        readfile($docRoot . '/event/control.html');
+    } else {
+        readfile($docRoot . '/index.html');
+    }
     exit;
 }
 

@@ -240,13 +240,24 @@ try {
 
         case 'EVENT_ORGANIZER':
             if (empty($user['organizerId'])) {
-                $org = php_query_one('SELECT id, business_name, contact_phone FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$user['id'], $user['id']]);
+                $cleanPrefix = explode('@', $user['email'])[0];
+                $cleanUserId = preg_replace('/-alt$/', '', $user['id']);
+                $org = php_query_one(
+                    'SELECT id, business_name, contact_phone 
+                     FROM organizers 
+                     WHERE owner_user_id = ? 
+                        OR owner_user_id = ? 
+                        OR id = ? 
+                        OR LOWER(business_name) LIKE ? 
+                     LIMIT 1', 
+                    [$user['id'], $cleanUserId, $user['id'], "%{$cleanPrefix}%"]
+                );
                 if ($org) {
                     $user['organizerId'] = $org['id'];
                     $user['companyName'] = $org['business_name'];
                     $user['agencyName']  = $org['business_name'];
                 } else {
-                    $orgIdVal = 'org-' . $user['id'];
+                    $orgIdVal = 'org-' . preg_replace('/^usr-/', '', $user['id']);
                     $user['organizerId'] = $orgIdVal;
                     $user['companyName'] = $user['full_name'];
                     $user['agencyName']  = $user['full_name'];
