@@ -12,7 +12,8 @@ const rsvpService = new RsvpService(
 
 export async function POST(req: NextRequest) {
   const secret = req.headers.get('authorization')?.replace('Bearer ', '');
-  if (process.env.CRON_SECRET && secret !== process.env.CRON_SECRET) {
+  const expectedSecret = process.env.CRON_SECRET || 'agafari_cron_worker_production_token';
+  if (!secret || secret !== expectedSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

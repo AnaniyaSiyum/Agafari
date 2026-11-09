@@ -83,7 +83,7 @@ import { mockStore } from '@/lib/mockData';
 
 // GET: every wedding event on the platform, with organizer/couple names and stats
 export async function GET(req: NextRequest) {
-  const auth = requireRole(req, ['SYSTEM_ADMIN', 'EVENT_ORGANIZER']);
+  const auth = requireRole(req, ['SYSTEM_ADMIN']);
   if (!auth.ok) return auth.response;
 
   let rawEvents: any[] = [];

@@ -68,7 +68,10 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     }
 
     const emailTrimmed = email.toLowerCase().trim();
-    let staffUser = await queryOne<{ id: string }>('SELECT id FROM users WHERE lower(email) = lower($1)', [emailTrimmed]);
+    let staffUser = await queryOne<{ id: string; role: string }>('SELECT id, role FROM users WHERE lower(email) = lower($1)', [emailTrimmed]);
+    if (staffUser && staffUser.role === 'SYSTEM_ADMIN') {
+      return NextResponse.json({ error: 'Security Violation: Cannot reassign an administrative account.' }, { status: 400 });
+    }
     let temporaryPassword: string | null = password && String(password).trim().length >= 4
       ? String(password).trim()
       : `agafari${Math.floor(1000 + Math.random() * 9000)}`;
@@ -81,10 +84,10 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
            VALUES ($1, $2, $3, $4, 'GUEST', $5, $6)`,
           [newUserId, emailTrimmed, hashPassword(temporaryPassword), fullName.trim(), temporaryPassword, user.userId]
         );
-        staffUser = { id: newUserId };
+        staffUser = { id: newUserId, role: 'GUEST' };
       } catch (dbErr) {
         console.warn('DB User staff creation fallback:', dbErr);
-        staffUser = { id: newUserId };
+        staffUser = { id: newUserId, role: 'GUEST' };
       }
 
       // Sync into mockStore
@@ -97,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
         fullName: fullName.trim(),
         role: role === 'GATE_SCANNER' ? 'GATE_SCANNER' : role === 'LIVE_STREAMER' ? 'LIVE_STREAMER' : 'GUEST',
       });
-    } else if (password) {
+    } else if (password && staffUser.role !== 'SYSTEM_ADMIN') {
       try {
         await query(
           `UPDATE users SET password_hash = $1, temporary_password = $2 WHERE id = $3`,

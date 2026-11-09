@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { queryOne, query } from '@/lib/db';
+import { getAuthUser } from '@/lib/auth';
+import { checkEventAccess } from '@/lib/eventScope';
 import { mockStore } from '@/lib/mockData';
 
 // Helper to sanitize & parse template customization JSON
@@ -219,9 +221,31 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
         },
       };
 
-      (formattedEvent as any).credentials = dynamicCredentials;
-      (formattedEvent as any).coupleCredentials = dynamicCredentials.couple;
-      (formattedEvent as any).team = staffMembers;
+      const user = getAuthUser(_req);
+      let isPrivileged = false;
+      if (user) {
+        if (user.role === 'SYSTEM_ADMIN') {
+          isPrivileged = true;
+        } else {
+          const access = await checkEventAccess(user, event.id);
+          if (access.allowed && access.via !== 'STAFF') {
+            isPrivileged = true;
+          }
+        }
+      }
+
+      if (isPrivileged) {
+        (formattedEvent as any).credentials = dynamicCredentials;
+        (formattedEvent as any).coupleCredentials = dynamicCredentials.couple;
+      } else {
+        delete (formattedEvent as any).credentials;
+        delete (formattedEvent as any).coupleCredentials;
+      }
+      (formattedEvent as any).team = (staffMembers || []).map((s: any) => ({
+        id: s.assignment_id || s.id,
+        role: s.role,
+        fullName: s.full_name,
+      }));
 
       let locations: any[] = [];
       try {
@@ -264,7 +288,30 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
 }
 
 async function handleUpdate(req: NextRequest, slug: string) {
+  const user = getAuthUser(req);
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized: login required.' }, { status: 401 });
+  }
+
+  const cleanSlug = slug.toLowerCase();
+  const cleanId = cleanSlug.startsWith('evt-') ? cleanSlug : `evt-${cleanSlug}`;
+  const rawSlug = cleanSlug.replace(/^evt-/, '');
+
   try {
+    const existing = await queryOne<{ id: string; template_customization_json: any }>(
+      'SELECT id, template_customization_json FROM events WHERE LOWER(slug) = LOWER($1) OR id = $2 OR LOWER(slug) = LOWER($3) OR id = $4',
+      [cleanSlug, cleanId, rawSlug, slug]
+    );
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
+    }
+
+    const access = await checkEventAccess(user, existing.id);
+    if (!access.allowed || access.via === 'STAFF') {
+      return NextResponse.json({ error: 'Forbidden: insufficient event authority.' }, { status: 403 });
+    }
+
     const body = await req.json();
     const {
       brideName,
@@ -287,16 +334,6 @@ async function handleUpdate(req: NextRequest, slug: string) {
       programs,
       additionalLocations
     } = body;
-
-    const cleanSlug = slug.toLowerCase();
-    const cleanId = cleanSlug.startsWith('evt-') ? cleanSlug : `evt-${cleanSlug}`;
-    const rawSlug = cleanSlug.replace(/^evt-/, '');
-
-    try {
-      const existing = await queryOne<{ id: string; template_customization_json: any }>(
-        'SELECT id, template_customization_json FROM events WHERE LOWER(slug) = LOWER($1) OR id = $2 OR LOWER(slug) = LOWER($3) OR id = $4',
-        [cleanSlug, cleanId, rawSlug, slug]
-      );
 
       if (existing) {
         const currentCustomization = parseCustomization(existing.template_customization_json);

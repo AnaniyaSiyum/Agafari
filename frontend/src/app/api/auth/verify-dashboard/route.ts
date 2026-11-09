@@ -84,10 +84,7 @@ export async function POST(req: NextRequest) {
 
       const isDbPasswordValid =
         (await timingSafeVerifyPassword(password, dbUser?.password_hash)) ||
-        (dbUser?.temporary_password && dbUser.temporary_password === password) ||
-        password === 'admin123' ||
-        password === 'agafari2026' ||
-        password === 'org123';
+        (dbUser?.temporary_password && dbUser.temporary_password === password);
 
       if (dbUser && isDbPasswordValid) {
           userRole = (dbUser.role as UserRole) || 'EVENT_ORGANIZER';
@@ -122,10 +119,7 @@ export async function POST(req: NextRequest) {
       if (storedUser) {
         const isPasswordValid =
           (storedUser.passwordHash && verifyPassword(password, storedUser.passwordHash)) ||
-          storedUser.temporaryPassword === password ||
-          password === 'admin123' ||
-          password === 'agafari2026' ||
-          password === 'org123';
+          storedUser.temporaryPassword === password;
 
         if (isPasswordValid) {
           userRole = storedUser.role || 'EVENT_ORGANIZER';
@@ -151,11 +145,7 @@ export async function POST(req: NextRequest) {
         if (dbStaff) {
           const isValid =
             (dbStaff.password_hash && verifyPassword(password, dbStaff.password_hash)) ||
-            (dbStaff.temporary_password && dbStaff.temporary_password === password) ||
-            password === 'agafari2026' ||
-            password === 'scan123' ||
-            password === 'stream123' ||
-            password === 'mod123';
+            (dbStaff.temporary_password && dbStaff.temporary_password === password);
           if (isValid) {
             userRole = dbStaff.staff_role as UserRole;
             userId = dbStaff.id;
@@ -183,10 +173,7 @@ export async function POST(req: NextRequest) {
       if (mockUser) {
         const isPasswordValid =
           (mockUser.passwordHash && verifyPassword(password, mockUser.passwordHash)) ||
-          mockUser.temporaryPassword === password ||
-          password === 'admin123' ||
-          password === 'agafari2026' ||
-          password === 'org123';
+          mockUser.temporaryPassword === password;
 
         if (isPasswordValid) {
           userRole = (mockUser.role as UserRole) || 'EVENT_ORGANIZER';
@@ -198,7 +185,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Search event-level credentials in mockStore.events (e.g. couple, streamer, scanner)
+    // 3b. Search event-level credentials in mockStore.events (e.g. couple, streamer, scanner)
     if (!userRole) {
       for (const evt of mockStore.events) {
         const creds = evt.credentials;
@@ -207,8 +194,8 @@ export async function POST(req: NextRequest) {
         // A. Couple / Bride & Groom
         if (
           creds.couple &&
-          (creds.couple.email?.toLowerCase() === identifier || (identifier === 'couple' && evt.id === 'evt-adeday-123456')) &&
-          (creds.couple.temporaryPassword === password || password === 'agafari2026')
+          creds.couple.email?.toLowerCase() === identifier &&
+          creds.couple.temporaryPassword === password
         ) {
           userRole = 'BRIDE_GROOM';
           userId = `usr-couple-${evt.id}`;
@@ -224,13 +211,12 @@ export async function POST(req: NextRequest) {
           (organizerSlug && (evtOrg === organizerSlug || evtOrg.replace(/^org-/, '') === organizerSlug.replace(/^org-/, ''))) ||
           evtOrg === identifier ||
           evtOrg.replace(/^org-/, '') === identifier.replace(/^org-/, '') ||
-          (creds.organizer && creds.organizer.email?.toLowerCase() === identifier) ||
-          (identifier === 'organizer' && evt.id === 'evt-adeday-123456');
+          (creds.organizer && creds.organizer.email?.toLowerCase() === identifier);
 
         if (
           creds.organizer &&
           matchesOrg &&
-          (creds.organizer.temporaryPassword === password || password === 'org123' || password === 'agafari2026')
+          creds.organizer.temporaryPassword === password
         ) {
           userRole = 'EVENT_ORGANIZER';
           userId = `usr-org-${evt.id}`;
@@ -243,8 +229,8 @@ export async function POST(req: NextRequest) {
         // C. Live Streamer Crew
         if (
           creds.streamer &&
-          (creds.streamer.email?.toLowerCase() === identifier || (identifier === 'streamer' && evt.id === 'evt-adeday-123456')) &&
-          (creds.streamer.temporaryPassword === password || password === 'stream123')
+          creds.streamer.email?.toLowerCase() === identifier &&
+          creds.streamer.temporaryPassword === password
         ) {
           userRole = 'LIVE_STREAMER';
           userId = `usr-streamer-${evt.id}`;
@@ -257,8 +243,8 @@ export async function POST(req: NextRequest) {
         // D. Gate Scanner
         if (
           creds.scanner &&
-          (creds.scanner.email?.toLowerCase() === identifier || (identifier === 'scanner' && evt.id === 'evt-adeday-123456')) &&
-          (creds.scanner.temporaryPassword === password || password === 'scan123')
+          creds.scanner.email?.toLowerCase() === identifier &&
+          creds.scanner.temporaryPassword === password
         ) {
           userRole = 'GATE_SCANNER';
           userId = `usr-scanner-${evt.id}`;
@@ -271,8 +257,8 @@ export async function POST(req: NextRequest) {
         // E. Content Moderator
         if (
           creds.moderator &&
-          (creds.moderator.email?.toLowerCase() === identifier || (identifier === 'moderator' && evt.id === 'evt-adeday-123456')) &&
-          (creds.moderator.temporaryPassword === password || password === 'mod123' || password === 'agafari2026')
+          creds.moderator.email?.toLowerCase() === identifier &&
+          creds.moderator.temporaryPassword === password
         ) {
           userRole = 'MODERATOR';
           userId = `usr-moderator-${evt.id}`;
@@ -280,70 +266,6 @@ export async function POST(req: NextRequest) {
           userName = creds.moderator.fullName || 'Content Moderator';
           tenantId = evt.organizerId || 'event';
           break;
-        }
-      }
-    }
-
-    // 4. Built-in Fallback for Core Demo Roles and Dynamic Organizers
-    if (!userRole) {
-      if (
-        identifier === 'admin@agafari.com' ||
-        identifier === 'admin' ||
-        identifier === 'superadmin' ||
-        identifier === 'systemadmin'
-      ) {
-        if (password === 'admin123' || password === 'admin' || password === 'agafari2026') {
-          userRole = 'SYSTEM_ADMIN';
-          userId = 'usr-admin-1';
-          userEmail = 'admin@agafari.com';
-          userName = 'System Super Admin';
-        }
-      } else if (identifier === 'kebkab@agafari.com' || identifier === 'kebkab') {
-        if (password === 'org123' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr-kebkab-1';
-          userEmail = 'kebkab@agafari.com';
-          userName = 'Kebkab Wedding & Events Coordinator';
-          tenantId = 'org-kebkab';
-        }
-      } else if (identifier === 'matrimony@agafari.com' || identifier === 'matrimony') {
-        if (password === 'org123' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr-matrimony-1';
-          userEmail = 'matrimony@agafari.com';
-          userName = 'Matrimony Event Planners';
-          tenantId = 'org-matrimony-1';
-        }
-      } else if (identifier === 'organizer@agafari.com' || identifier === 'organizer') {
-        if (password === 'org123' || password === 'agafari2026') {
-          userRole = 'EVENT_ORGANIZER';
-          userId = 'usr-org-1';
-          userEmail = 'organizer@agafari.com';
-          userName = 'Agafari Luxury Event Production';
-          tenantId = 'org-usr-org-1';
-        }
-      } else if (identifier === 'couple@agafari.com' || identifier === 'couple') {
-        if (password === 'agafari2026' || password === 'couple123') {
-          userRole = 'BRIDE_GROOM';
-          userId = 'usr-couple-1';
-          userEmail = 'couple@agafari.com';
-          userName = 'Bride & Groom';
-          tenantId = 'org-usr-org-1';
-        }
-      } else if (
-        identifier.startsWith('org-') ||
-        identifier.startsWith('usr-') ||
-        (organizerSlug && (organizerSlug === identifier || organizerSlug.replace(/^org-/, '') === identifier.replace(/^org-/, ''))) ||
-        (dashboardType === 'organizer' && (password === 'org123' || password === 'agafari2026' || password === 'admin123'))
-      ) {
-        // Dynamic organizer agency identifier match
-        if (password === 'org123' || password === 'agafari2026' || password === 'admin123') {
-          userRole = 'EVENT_ORGANIZER';
-          const cleanOrgId = organizerSlug || (identifier.startsWith('org-') ? identifier : `org-${identifier}`);
-          userId = identifier.startsWith('usr-') ? identifier : `usr-${identifier.replace(/[^a-zA-Z0-9]/g, '')}`;
-          userEmail = identifier.includes('@') ? identifier : `${identifier}@agafari.com`;
-          userName = 'Event Organizer Agency';
-          tenantId = cleanOrgId;
         }
       }
     }

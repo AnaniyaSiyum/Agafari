@@ -110,24 +110,26 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   // Dashboard lookup: require authenticated user & event access for bulk guest list
   const user = getAuthUser(req);
-  if (user) {
-    const access = await checkEventAccess(user, resolved.event.id);
-    if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
-      console.warn(`User ${user.userId} access not explicit, proceeding in preview scope.`);
-    }
-
-    await logAuditEvent({
-      actorId: user.userId,
-      actorRole: user.role,
-      targetResource: 'INVITATION_EXPORT',
-      targetId: resolved.event.id,
-      operation: 'READ_SENSITIVE',
-      action: 'BULK_GUEST_LIST_ACCESSED',
-      req,
-      outcome: 'SUCCESS',
-      details: { eventSlug: params.slug, eventId: resolved.event.id },
-    });
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized: session required to view guest list.' }, { status: 401 });
   }
+
+  const access = await checkEventAccess(user, resolved.event.id);
+  if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
+    return NextResponse.json({ error: 'Forbidden: not authorized for this event.' }, { status: 403 });
+  }
+
+  await logAuditEvent({
+    actorId: user.userId,
+    actorRole: user.role,
+    targetResource: 'INVITATION_EXPORT',
+    targetId: resolved.event.id,
+    operation: 'READ_SENSITIVE',
+    action: 'BULK_GUEST_LIST_ACCESSED',
+    req,
+    outcome: 'SUCCESS',
+    details: { eventSlug: params.slug, eventId: resolved.event.id },
+  });
 
   let rawRows: any[] = [];
   try {

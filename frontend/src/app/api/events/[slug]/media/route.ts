@@ -114,7 +114,8 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const user = getAuthUser(req);
-    const initialStatus = (user?.role === 'SYSTEM_ADMIN' || user?.role === 'EVENT_ORGANIZER' || status === 'APPROVED') ? 'APPROVED' : 'PENDING';
+    const isAuthorized = user && ['SYSTEM_ADMIN', 'EVENT_ORGANIZER', 'COUPLE', 'MODERATOR'].includes(user.role);
+    const initialStatus = (isAuthorized && status === 'APPROVED') || user?.role === 'SYSTEM_ADMIN' || user?.role === 'EVENT_ORGANIZER' ? 'APPROVED' : 'PENDING';
 
     const mediaId = `med_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
     await query(

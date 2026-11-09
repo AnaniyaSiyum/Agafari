@@ -233,7 +233,10 @@ export async function GET(req: NextRequest) {
 
   try {
     let auth = requireRole(req, ['EVENT_ORGANIZER', 'SYSTEM_ADMIN']);
-    const userId = auth.ok ? auth.user.userId : null;
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const userId = auth.user.userId;
 
     // Strict Multi-Tenant Isolation: An organizer can NEVER fetch another organizer's events
     let effectiveTargetOrgId = targetOrgId;
@@ -408,7 +411,10 @@ export async function POST(req: NextRequest) {
     const tempPassword = `agafari${Math.floor(1000 + Math.random() * 9000)}`;
 
     let auth = requireRole(req, ['EVENT_ORGANIZER', 'SYSTEM_ADMIN']);
-    const userId = auth.ok ? auth.user.userId : null;
+    if (!auth.ok) {
+      return auth.response;
+    }
+    const userId = auth.user.userId;
 
     if ((!targetOrgId || targetOrgId === 'global') && auth.ok) {
       if (auth.user.role === 'EVENT_ORGANIZER') {
@@ -441,7 +447,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Reuse user if email already exists in DB
-        let coupleUser = (await client.query('SELECT id, email FROM users WHERE email = $1', [targetCoupleEmail])).rows[0];
+        let coupleUser = (await client.query('SELECT id, email, role FROM users WHERE email = $1', [targetCoupleEmail])).rows[0];
         const coupleFullName = `${brideName.trim()} & ${groomName.trim()}`;
         if (!coupleUser) {
           const coupleUserId = `usr-couple-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -451,13 +457,15 @@ export async function POST(req: NextRequest) {
              ON DUPLICATE KEY UPDATE status = 'ACTIVE', role = 'BRIDE_GROOM', full_name = $4, temporary_password = $5`,
             [coupleUserId, targetCoupleEmail, hashPassword(tempPassword), coupleFullName, tempPassword]
           );
-          coupleUser = (await client.query('SELECT id, email FROM users WHERE id = $1', [coupleUserId])).rows[0];
+          coupleUser = (await client.query('SELECT id, email, role FROM users WHERE id = $1', [coupleUserId])).rows[0];
+        } else if (coupleUser.role === 'SYSTEM_ADMIN') {
+          throw new Error('Security Violation: Cannot reassign an administrative account as event couple.');
         } else {
           await client.query(
             `UPDATE users 
-             SET role = 'BRIDE_GROOM', full_name = $1, password_hash = $2, temporary_password = $3, status = 'ACTIVE'
-             WHERE id = $4`,
-            [coupleFullName, hashPassword(tempPassword), tempPassword, coupleUser.id]
+             SET full_name = $1, status = 'ACTIVE'
+             WHERE id = $2`,
+            [coupleFullName, coupleUser.id]
           );
         }
 
