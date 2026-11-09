@@ -103,6 +103,13 @@ try {
         [$identifier, $identifier, $identifier, $identifier . '@agafari.com', $identifier . '@gmail.com', $identifier]
     );
 
+    // Strict requirement: System Admin username must strictly be "admin@agafari.com"
+    if ($user && in_array(strtoupper($user['role'] ?? ''), ['SYSTEM_ADMIN', 'ADMIN', 'SUPER_ADMIN'])) {
+        if (strtolower($identifier) !== 'admin@agafari.com') {
+            $user = null;
+        }
+    }
+
     // 3. Fallback A: Check organizers table by business name or agency id
     if (!$user) {
         $orgRecord = php_query_one(
