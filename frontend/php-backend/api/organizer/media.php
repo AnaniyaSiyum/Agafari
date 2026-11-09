@@ -125,13 +125,18 @@ if ($method === 'POST') {
         exit;
     }
 
+    $session = get_authenticated_user();
+    $privilegedRoles = ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'EVENT_ORGANIZER', 'COUPLE', 'MODERATOR', 'MEDIA_MODERATOR'];
+    $isPrivileged = $session && in_array($session['role'] ?? '', $privilegedRoles, true);
+    $status = $isPrivileged ? 'APPROVED' : 'PENDING';
+
     $id = function_exists('generate_safe_id') ? generate_safe_id('med-') : 'med-' . substr(generate_uuid_v4(), 4);
 
     try {
         php_execute(
             "INSERT INTO media_assets (id, event_id, uploader_name, media_type, category, cdn_url, caption, status, created_at)
-             VALUES (?, ?, ?, ?, 'WISHES', ?, ?, 'APPROVED', NOW())",
-            [$id, $eventId ?: 'global', $uploaderName, $mediaType, $cdnUrl, $caption]
+             VALUES (?, ?, ?, ?, 'WISHES', ?, ?, ?, NOW())",
+            [$id, $eventId ?: 'global', $uploaderName, $mediaType, $cdnUrl, $caption, $status]
         );
 
         echo json_encode([
@@ -143,6 +148,7 @@ if ($method === 'POST') {
                 'cdnUrl'       => $cdnUrl,
                 'uploaderName' => $uploaderName,
                 'caption'      => $caption,
+                'status'       => $status,
             ],
         ]);
         exit;
@@ -157,6 +163,14 @@ if ($method === 'POST') {
 // DELETE — Delete media asset
 // ---------------------------------------------------------------------------
 if ($method === 'DELETE') {
+    $session = require_auth();
+    $allowedRoles = ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'EVENT_ORGANIZER', 'COUPLE', 'MODERATOR', 'MEDIA_MODERATOR'];
+    if (!in_array($session['role'] ?? '', $allowedRoles, true)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: insufficient permissions to delete media.']);
+        exit;
+    }
+
     $id = trim($_GET['id'] ?? '');
     if (empty($id)) {
         $raw = file_get_contents('php://input');
@@ -168,6 +182,32 @@ if ($method === 'DELETE') {
         http_response_code(400);
         echo json_encode(['error' => 'Missing media id.']);
         exit;
+    }
+
+    // Tenant authorization check
+    if (!in_array($session['role'] ?? '', ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'], true)) {
+        $asset = php_query_one(
+            "SELECT m.id, m.event_id, e.organizer_id, e.couple_user_id 
+               FROM media_assets m 
+          LEFT JOIN events e ON e.id = m.event_id 
+              WHERE m.id = ? LIMIT 1",
+            [$id]
+        );
+        if (!$asset) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Media asset not found.']);
+            exit;
+        }
+
+        $userId = $session['user_id'] ?? '';
+        $isOwner = (!empty($asset['organizer_id']) && ($asset['organizer_id'] === $userId || $asset['organizer_id'] === 'org-' . $userId))
+                || (!empty($asset['couple_user_id']) && $asset['couple_user_id'] === $userId);
+
+        if (!$isOwner) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: not authorized to delete this media asset.']);
+            exit;
+        }
     }
 
     try {

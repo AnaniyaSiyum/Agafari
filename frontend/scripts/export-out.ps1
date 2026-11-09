@@ -111,6 +111,12 @@ if (Test-Path $phpBackendDir) {
         Copy-Item -Path "$phpLibSrc\*" -Destination "$outDir\lib" -Recurse -Force
     }
 
+    # Copy router.php to out/router.php
+    $routerSrc = "$scriptDir\router.php"
+    if (Test-Path $routerSrc) {
+        Copy-Item -Path $routerSrc -Destination "$outDir\router.php" -Force
+    }
+
     Write-Host "[5/8] Bundled PHP API microservices into out/api/, out/php-backend/, out/config, and out/lib/"
 }
 
@@ -141,10 +147,18 @@ $htaccessContent = @'
   RewriteCond %{REQUEST_URI} ^/api/ [NC]
   RewriteRule ^ - [L]
 
-  # 3. Block direct web access to sensitive config files
-  <FilesMatch "(db_config\.php|\.env|\.sql|\.log|\.ini)$">
-    Order allow,deny
-    Deny from all
+  # 3. Block direct web access to sensitive config files and directories
+  RewriteCond %{REQUEST_URI} ^/(config|db|\.git)/ [NC]
+  RewriteRule ^ - [F,L]
+
+  <FilesMatch "(db_config\.php|db\.php|\.env.*|\.sql|\.log|\.ini|\.git.*|\.sh)$">
+    <IfModule mod_authz_core.c>
+      Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+      Order allow,deny
+      Deny from all
+    </IfModule>
   </FilesMatch>
 
   # 4. Serve existing physical files directly
@@ -180,10 +194,9 @@ $htaccessContent = @'
 Write-Host "[6/8] Generated .htaccess for Apache / LiteSpeed server routing"
 
 # 7. Mirror to project root out/
-if (Test-Path $rootOutDir) {
-    Remove-Item -Path $rootOutDir -Recurse -Force
+if (-not (Test-Path $rootOutDir)) {
+    New-Item -ItemType Directory -Path $rootOutDir -Force | Out-Null
 }
-New-Item -ItemType Directory -Path $rootOutDir -Force | Out-Null
 Copy-Item -Path "$outDir\*" -Destination $rootOutDir -Recurse -Force
 Copy-Item -Path "$outDir\.htaccess" -Destination $rootOutDir -Force
 Write-Host "[7/8] Mirrored out/ to project root: $rootOutDir"

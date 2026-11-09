@@ -84,11 +84,37 @@ try {
 
 $tempPassField = $hasTempPass ? 'u.temporary_password' : 'NULL AS temporary_password';
 
+function check_team_access(array $event): array {
+    $session = require_auth();
+    $isSystemAdmin = in_array($session['role'], ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'], true);
+    $isEventOrganizer = in_array($session['role'], ['EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER'], true);
+    $isCouple = ($session['user_id'] === ($event['couple_user_id'] ?? '') || in_array($session['role'], ['COUPLE', 'BRIDE_GROOM'], true));
+
+    if (!$isSystemAdmin) {
+        if ($isEventOrganizer) {
+            $orgRow = php_query_one('SELECT id FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$session['user_id'], $session['user_id']]);
+            $orgId = $orgRow ? $orgRow['id'] : $session['user_id'];
+            if ($event['organizer_id'] !== $orgId && $event['organizer_id'] !== $session['user_id']) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Forbidden: Not authorized for this wedding event.']);
+                exit;
+            }
+        } elseif (!$isCouple) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden: Insufficient privileges for event team.']);
+            exit;
+        }
+    }
+    return $session;
+}
+
 // -----------------------------------------------------------------------------
 // GET: List all staff & roles assigned to this event + couple credentials
 // -----------------------------------------------------------------------------
 if ($method === 'GET') {
     try {
+        $session = check_team_access($event);
+
         $staffRows = php_query(
             "SELECT es.id, es.role, es.created_at, 
                     u.id AS user_id, u.full_name, u.email, {$tempPassField}
@@ -147,6 +173,8 @@ if ($method === 'GET') {
 // -----------------------------------------------------------------------------
 if ($method === 'POST') {
     try {
+        $session = check_team_access($event);
+
         $raw = file_get_contents('php://input');
         $body = json_decode($raw, true) ?: $_POST;
 
@@ -167,7 +195,12 @@ if ($method === 'POST') {
             : 'agafari' . rand(1000, 9999);
 
         // Check if user exists
-        $user = php_query_one('SELECT id, email FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$email]);
+        $user = php_query_one('SELECT id, email, role FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$email]);
+        if ($user && in_array(strtoupper($user['role']), ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Security Error: Cannot assign an administrative account to event staff.']);
+            exit;
+        }
         if (!$user) {
             $newUserId = function_exists('generate_safe_id') ? generate_safe_id('usr-') : 'usr-' . substr(generate_uuid_v4(), 4);
             $hash = password_hash($tempPassword, PASSWORD_BCRYPT);
@@ -256,6 +289,8 @@ if ($method === 'POST') {
 // -----------------------------------------------------------------------------
 if ($method === 'PATCH') {
     try {
+        $session = check_team_access($event);
+
         $raw = file_get_contents('php://input');
         $body = json_decode($raw, true) ?: [];
 
@@ -270,10 +305,16 @@ if ($method === 'PATCH') {
             exit;
         }
 
-        $user = php_query_one('SELECT id, email FROM users WHERE id = ? LIMIT 1', [$userId]);
+        $user = php_query_one('SELECT id, email, role FROM users WHERE id = ? LIMIT 1', [$userId]);
         if (!$user) {
             http_response_code(404);
             echo json_encode(['error' => 'User not found.']);
+            exit;
+        }
+
+        if (in_array(strtoupper($user['role'] ?? ''), ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Security Error: Cannot modify credentials of an administrative account.']);
             exit;
         }
 
@@ -323,6 +364,8 @@ if ($method === 'PATCH') {
 // -----------------------------------------------------------------------------
 if ($method === 'DELETE') {
     try {
+        $session = check_team_access($event);
+
         $staffId = trim($_GET['staffId'] ?? '');
         $userId  = trim($_GET['userId'] ?? '');
 

@@ -49,6 +49,14 @@ if ($method !== 'POST') {
 $raw = file_get_contents('php://input');
 $body = json_decode($raw, true) ?: [];
 
+$session = require_auth();
+$allowedRoles = ['GATE_SCANNER', 'SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'EVENT_ORGANIZER', 'COUPLE', 'MODERATOR'];
+if (!in_array($session['role'] ?? '', $allowedRoles, true)) {
+    http_response_code(403);
+    echo json_encode(['result' => 'FORBIDDEN', 'message' => 'Forbidden — gate scanner privileges required.']);
+    exit;
+}
+
 $codeFromUrl = trim($_GET['code'] ?? '');
 $inviteCode = trim($body['inviteCode'] ?? $body['code'] ?? $codeFromUrl);
 $eventId = trim($body['eventId'] ?? '');
@@ -80,6 +88,26 @@ try {
             'message' => 'Invalid ticket. No matching invitation found for this event.',
         ]);
         exit;
+    }
+
+    // Tenant / Event access check for non-admin scanners
+    if (!in_array($session['role'] ?? '', ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'], true)) {
+        $userId = $session['user_id'] ?? '';
+        $evtAccess = php_query_one(
+            "SELECT id FROM events 
+              WHERE id = ? 
+                AND (organizer_id = ? 
+                     OR organizer_id = ? 
+                     OR couple_user_id = ? 
+                     OR EXISTS (SELECT 1 FROM event_team_members WHERE event_id = events.id AND user_id = ?)
+                     OR EXISTS (SELECT 1 FROM event_staff WHERE event_id = events.id AND user_id = ?))",
+            [$invitation['event_id'], $userId, 'org-' . $userId, $userId, $userId, $userId]
+        );
+        if (!$evtAccess) {
+            http_response_code(403);
+            echo json_encode(['result' => 'FORBIDDEN', 'message' => 'Forbidden — not authorized to scan tickets for this event.']);
+            exit;
+        }
     }
 
     $maxAllowed = (int)$invitation['max_guests'];

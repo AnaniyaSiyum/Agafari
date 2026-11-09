@@ -41,6 +41,9 @@ if ($method === 'OPTIONS') {
     exit;
 }
 
+// Require System Admin authentication
+$adminSession = require_role(['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN']);
+
 // ---------------------------------------------------------------------------
 // GET — List all registered users
 // ---------------------------------------------------------------------------

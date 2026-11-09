@@ -140,11 +140,32 @@ if ($method === 'GET') {
             'organizerName'       => $event['organizer_name'] ?? null,
             'adminApprovalStatus' => $event['admin_approval_status'] ?? 'APPROVED',
             'admin_approval_status' => $event['admin_approval_status'] ?? 'APPROVED',
-            'coupleCredentials'   => [
+        ];
+
+        // Only attach staff credentials to privileged sessions (Admin, owning Organizer, or Couple)
+        $authUser = get_authenticated_user();
+        $isPrivileged = false;
+        if ($authUser) {
+            $userRole = strtoupper($authUser['role'] ?? '');
+            if (in_array($userRole, ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'])) {
+                $isPrivileged = true;
+            } elseif ($authUser['user_id'] === ($event['couple_user_id'] ?? '')) {
+                $isPrivileged = true;
+            } elseif (in_array($userRole, ['EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER'])) {
+                $orgRow = php_query_one('SELECT id FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$authUser['user_id'], $authUser['user_id']]);
+                $orgId = $orgRow ? $orgRow['id'] : $authUser['user_id'];
+                if ($event['organizer_id'] === $orgId || $event['organizer_id'] === $authUser['user_id']) {
+                    $isPrivileged = true;
+                }
+            }
+        }
+
+        if ($isPrivileged) {
+            $formatted['coupleCredentials'] = [
                 'email'             => $event['couple_email'] ?? "couple@{$slug}.com",
                 'temporaryPassword' => $event['couple_temp_password'] ?? 'agafari2026',
-            ],
-            'credentials'         => [
+            ];
+            $formatted['credentials'] = [
                 'couple'    => [
                     'fullName'          => $event['couple_full_name'] ?? "{$event['bride_name']} & {$event['groom_name']}",
                     'email'             => $event['couple_email'] ?? "couple@{$slug}.com",
@@ -175,8 +196,10 @@ if ($method === 'GET') {
                     'temporaryPassword' => 'mod123',
                     'role'              => 'MODERATOR',
                 ],
-            ],
-            'loveStory'      => $customization['loveStory'] ?? [
+            ];
+        }
+
+        $formatted['loveStory'] = $customization['loveStory'] ?? [
                 'headline'      => 'Our Journey to Forever',
                 'firstMetDate'  => '2024-05-12',
                 'firstMetStory' => $event['bride_name'] . ' and ' . $event['groom_name'] . ' first crossed paths on a sunny afternoon.',
@@ -219,13 +242,13 @@ if ($method === 'GET') {
 } elseif ($method === 'PATCH' || $method === 'PUT') {
 
     // Auth guard — must be authenticated with an allowed role
-    $session = require_role(['COUPLE', 'ORGANIZER_OWNER', 'ORGANIZER', 'SYSTEM_ADMIN', 'ADMIN']);
+    $session = require_role(['COUPLE', 'BRIDE_GROOM', 'ORGANIZER_OWNER', 'ORGANIZER', 'EVENT_ORGANIZER', 'SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN']);
 
     $input = json_decode(file_get_contents('php://input'), true) ?? [];
 
     try {
         $event = php_query_one(
-            'SELECT id, couple_user_id, organizer_id, template_customization_json
+            'SELECT id, couple_user_id, organizer_id, couple_email, template_customization_json
                FROM events
               WHERE LOWER(slug) = LOWER(?)',
             [$slug]
@@ -241,6 +264,17 @@ if ($method === 'GET') {
         if (in_array($session['role'], ['COUPLE', 'BRIDE_GROOM']) && $event['couple_user_id'] !== $session['user_id']) {
             $sessUser = php_query_one('SELECT email FROM users WHERE id = ? LIMIT 1', [$session['user_id']]);
             if (!$sessUser || strtolower($sessUser['email']) !== strtolower($event['couple_email'] ?? '')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'You are not authorised to edit this event.']);
+                exit;
+            }
+        }
+
+        // Ownership check: Organizer may only edit events belonging to their agency
+        if (in_array($session['role'], ['ORGANIZER_OWNER', 'ORGANIZER', 'EVENT_ORGANIZER'])) {
+            $orgRow = php_query_one('SELECT id FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$session['user_id'], $session['user_id']]);
+            $orgId = $orgRow ? $orgRow['id'] : $session['user_id'];
+            if ($event['organizer_id'] !== $orgId && $event['organizer_id'] !== $session['user_id']) {
                 http_response_code(403);
                 echo json_encode(['error' => 'You are not authorised to edit this event.']);
                 exit;

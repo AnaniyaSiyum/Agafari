@@ -114,24 +114,11 @@ try {
         }
     }
 
-    // 2. Fallback System Admin session
-    if (str_starts_with($token, 'agafari_')) {
-        echo json_encode([
-            'authenticated' => true,
-            'user' => [
-                'id'        => 'usr-admin-1',
-                'email'     => 'admin@agafari.com',
-                'full_name' => 'System Administrator',
-                'role'      => 'SYSTEM_ADMIN',
-            ]
-        ]);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Auth service error: ' . $e->getMessage()]);
         exit;
     }
-} catch (Throwable $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Auth service error: ' . $e->getMessage()]);
-    exit;
-}
 
 http_response_code(401);
 echo json_encode(['authenticated' => false, 'error' => 'Invalid or expired session token']);

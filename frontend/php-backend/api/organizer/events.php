@@ -230,20 +230,33 @@ function formatOrganizerEvent(array $ev): array {
 // -----------------------------------------------------------------------------
 if ($method === 'GET') {
     try {
+        $session = require_auth();
+        $allowedRoles = ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER'];
+        if (!in_array($session['role'], $allowedRoles, true)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Insufficient permissions for organizer dashboard.']);
+            exit;
+        }
+
+        $isAdmin = in_array($session['role'], ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'], true);
         $rawId = trim($_GET['id'] ?? $_GET['organizerId'] ?? '');
         $nameParam = trim($_GET['name'] ?? $_GET['agencyName'] ?? '');
 
-        // If no ID in query params, inspect Bearer token
-        if (empty($rawId)) {
-            $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-            if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
-                $sess = php_query_one('SELECT user_id, role FROM php_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1', [$matches[1]]);
-                if ($sess) {
-                    if (in_array($sess['role'], ['EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER'])) {
-                        $rawId = $sess['user_id'];
-                    }
+        // Tenant isolation: Organizers can only ever view their own events
+        if (!$isAdmin) {
+            $myOrg = php_query_one('SELECT id FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$session['user_id'], $session['user_id']]);
+            $myOrgId = $myOrg ? $myOrg['id'] : $session['user_id'];
+
+            if (!empty($rawId)) {
+                $orgCandidate = resolve_organizer($rawId, $nameParam);
+                $candidateId = $orgCandidate ? $orgCandidate['id'] : $rawId;
+                if ($candidateId !== $myOrgId && $candidateId !== $session['user_id']) {
+                    http_response_code(403);
+                    echo json_encode(['error' => 'Forbidden: You are not authorized to view another organizer\'s events.']);
+                    exit;
                 }
             }
+            $rawId = $myOrgId;
         }
 
         $isSpecificOrg = (!empty($rawId) && strtolower($rawId) !== 'global' && strtolower($rawId) !== 'all') || !empty($nameParam);
@@ -374,6 +387,15 @@ if ($method === 'GET') {
 // -----------------------------------------------------------------------------
 if ($method === 'POST') {
     try {
+        $session = require_auth();
+        $allowedRoles = ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN', 'EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER'];
+        if (!in_array($session['role'], $allowedRoles, true)) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Insufficient permissions to create wedding events.']);
+            exit;
+        }
+        $isAdmin = in_array($session['role'], ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'], true);
+
         $raw = file_get_contents('php://input');
         $body = json_decode($raw, true) ?: $_POST;
 
@@ -388,6 +410,11 @@ if ($method === 'POST') {
         $title          = trim($body['title'] ?? '');
         $slugParam      = trim($body['slug'] ?? '');
         $rawOrgId       = trim($body['organizerId'] ?? $body['organizer_id'] ?? $_GET['id'] ?? '');
+
+        if (!$isAdmin) {
+            $myOrg = php_query_one('SELECT id FROM organizers WHERE owner_user_id = ? OR id = ? LIMIT 1', [$session['user_id'], $session['user_id']]);
+            $rawOrgId = $myOrg ? $myOrg['id'] : $session['user_id'];
+        }
 
         if (empty($brideName) || empty($groomName) || empty($venueName)) {
             http_response_code(400);
@@ -461,19 +488,24 @@ if ($method === 'POST') {
         $passwordHash = password_hash($tempPassword, PASSWORD_BCRYPT);
 
         // 5. Check or create couple user in users table
-        $existingUser = php_query_one('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$targetCoupleEmail]);
+        $existingUser = php_query_one('SELECT id, role FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$targetCoupleEmail]);
         if ($existingUser) {
+            if (in_array(strtoupper($existingUser['role']), ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Security Error: Cannot assign an administrative account as an event couple.']);
+                exit;
+            }
             $coupleUserId = $existingUser['id'];
             try {
                 if ($hasTempPass) {
                     php_execute(
-                        'UPDATE users SET role = ?, full_name = ?, password_hash = ?, temporary_password = ? WHERE id = ?',
-                        [$targetRole, $coupleFullName, $passwordHash, $tempPassword, $coupleUserId]
+                        'UPDATE users SET full_name = ?, password_hash = ?, temporary_password = ? WHERE id = ?',
+                        [$coupleFullName, $passwordHash, $tempPassword, $coupleUserId]
                     );
                 } else {
                     php_execute(
-                        'UPDATE users SET role = ?, full_name = ?, password_hash = ? WHERE id = ?',
-                        [$targetRole, $coupleFullName, $passwordHash, $coupleUserId]
+                        'UPDATE users SET full_name = ?, password_hash = ? WHERE id = ?',
+                        [$coupleFullName, $passwordHash, $coupleUserId]
                     );
                 }
             } catch (Throwable $e) {}

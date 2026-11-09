@@ -157,62 +157,21 @@ try {
         }
     }
 
-    // 4. Admin fallback verification if database connection is pending or table empty
-    $isAdminFallback = (
-        (strtolower($identifier) === 'admin@agafari.com' || strtolower($identifier) === 'admin') &&
-        ($password === 'admin123' || $password === 'agafari2026')
-    );
-
     $verified = false;
-    if (!$user && $isAdminFallback) {
-        $user = [
-            'id' => 'usr-admin-1',
-            'email' => 'admin@agafari.com',
-            'phone' => '+251911000000',
-            'full_name' => 'System Administrator',
-            'role' => 'SYSTEM_ADMIN',
-            'is_active' => 1
-        ];
-        $verified = true;
-    } elseif ($user) {
+    if ($user) {
         $hashToCheck = $user['password_hash'] ?? '';
         $tempPass    = (string)($user['temporary_password'] ?? '');
-        $userRole    = strtoupper($user['role'] ?? '');
 
-        // A. Bcrypt / PBKDF2 standard cryptographic verification
+        // A. Cryptographic verification (Bcrypt / PBKDF2)
         if (!empty($hashToCheck) && verify_password_php($password, $hashToCheck)) {
             $verified = true;
         }
-        // B. Temporary password direct equality check
+        // B. Assigned temporary password direct equality check
         elseif (!empty($tempPass) && hash_equals($tempPass, (string)$password)) {
             $verified = true;
         }
-        // C. Plain text password_hash match (if stored plain or unhashed)
-        elseif (!empty($hashToCheck) && hash_equals($hashToCheck, (string)$password)) {
-            $verified = true;
-        }
-        // D. Admin emergency override
-        elseif ($isAdminFallback && in_array($userRole, ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'])) {
-            $verified = true;
-        }
-        // E. Standard role temporary password fallbacks
-        elseif (in_array($userRole, ['COUPLE', 'BRIDE_GROOM']) && in_array($password, ['couple123', 'agafari2026', 'pass123', 'admin123'])) {
-            $verified = true;
-        }
-        elseif (in_array($userRole, ['EVENT_ORGANIZER', 'ORGANIZER_OWNER', 'ORGANIZER']) && in_array($password, ['org123', 'agafari2026', 'agafari123', 'admin123'])) {
-            $verified = true;
-        }
-        elseif (in_array($userRole, ['GATE_SCANNER', 'SCANNER']) && in_array($password, ['scan123', 'agafari2026'])) {
-            $verified = true;
-        }
-        elseif (in_array($userRole, ['LIVE_STREAMER', 'STREAMER']) && in_array($password, ['stream123', 'agafari2026'])) {
-            $verified = true;
-        }
-        elseif (in_array($userRole, ['MODERATOR', 'MEDIA_MODERATOR', 'CONTENT_MODERATOR']) && in_array($password, ['mod123', 'agafari2026'])) {
-            $verified = true;
-        }
 
-        // Automatic security upgrade: re-hash password to strong bcrypt if verified via plain/temp
+        // Automatic security upgrade: re-hash password to strong bcrypt if verified via temporary password
         if ($verified && !empty($user['id']) && !empty($password) && !str_starts_with($hashToCheck, '$2y$')) {
             try {
                 $newHash = password_hash($password, PASSWORD_BCRYPT);

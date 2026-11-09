@@ -41,6 +41,9 @@ if ($method === 'OPTIONS') {
     exit;
 }
 
+// Require System Admin authentication
+$adminSession = require_role(['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN']);
+
 // ---------------------------------------------------------------------------
 // Helper: Format event for frontend Admin Dashboard expectations
 // ---------------------------------------------------------------------------
@@ -222,20 +225,25 @@ if ($method === 'POST') {
     } catch (Throwable $ignored) {}
 
     // Check or create couple user
-    $existingUser = php_query_one('SELECT id FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$targetCoupleEmail]);
+    $existingUser = php_query_one('SELECT id, role FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1', [$targetCoupleEmail]);
     if ($existingUser) {
+        if (in_array(strtoupper($existingUser['role']), ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Security Error: Cannot assign an administrative account as a wedding couple.']);
+            exit;
+        }
         $coupleUserId = $existingUser['id'];
         try {
             $hash = password_hash($tempPassword, PASSWORD_BCRYPT);
             if ($hasTempPass) {
                 php_execute(
-                    'UPDATE users SET role = ?, full_name = ?, password_hash = ?, temporary_password = ? WHERE id = ?',
-                    [$targetRole, $coupleFullName, $hash, $tempPassword, $coupleUserId]
+                    'UPDATE users SET full_name = ?, password_hash = ?, temporary_password = ? WHERE id = ?',
+                    [$coupleFullName, $hash, $tempPassword, $coupleUserId]
                 );
             } else {
                 php_execute(
-                    'UPDATE users SET role = ?, full_name = ?, password_hash = ? WHERE id = ?',
-                    [$targetRole, $coupleFullName, $hash, $coupleUserId]
+                    'UPDATE users SET full_name = ?, password_hash = ? WHERE id = ?',
+                    [$coupleFullName, $hash, $coupleUserId]
                 );
             }
         } catch (Throwable $e) {}

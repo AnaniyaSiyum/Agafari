@@ -48,7 +48,7 @@ if (empty($slug)) {
     exit;
 }
 
-$event = php_query_one("SELECT id, slug, title FROM events WHERE LOWER(slug) = LOWER(?)", [$slug]);
+$event = php_query_one("SELECT id, slug, title, couple_user_id, organizer_id FROM events WHERE LOWER(slug) = LOWER(?) OR id = ? LIMIT 1", [$slug, $slug]);
 if (!$event) {
     http_response_code(404);
     echo json_encode(['error' => 'Event not found.']);
@@ -56,10 +56,86 @@ if (!$event) {
 }
 $eventId = $event['id'];
 
+/**
+ * Verify if the authenticated session has access to manage this event's invitations.
+ */
+function check_event_invitation_access(array $event, array $session): bool {
+    $role = $session['role'] ?? '';
+    if (in_array($role, ['SYSTEM_ADMIN', 'SUPER_ADMIN', 'ADMIN'], true)) {
+        return true;
+    }
+    $userId = $session['user_id'] ?? '';
+    if (!empty($event['organizer_id']) && ($event['organizer_id'] === $userId || $event['organizer_id'] === 'org-' . $userId)) {
+        return true;
+    }
+    if (!empty($event['couple_user_id']) && $event['couple_user_id'] === $userId) {
+        return true;
+    }
+    $team = php_query_one(
+        "SELECT 1 FROM event_team_members WHERE event_id = ? AND user_id = ? LIMIT 1",
+        [$event['id'], $userId]
+    );
+    return !empty($team);
+}
+
 // ---------------------------------------------------------------------------
 // GET — Retrieve guest invitations
 // ---------------------------------------------------------------------------
 if ($method === 'GET') {
+    $code = trim($_GET['code'] ?? $_GET['inviteCode'] ?? '');
+
+    // Public lookup for guest invitation links & QR passes
+    if (!empty($code)) {
+        try {
+            $inv = php_query_one(
+                "SELECT * FROM invitations WHERE (event_id = ? OR event_id = ?) AND LOWER(invite_code) = LOWER(?) LIMIT 1",
+                [$eventId, $slug, $code]
+            );
+
+            if (!$inv) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Invitation not found for this code.']);
+                exit;
+            }
+
+            $invitation = [
+                'id'            => $inv['id'],
+                'eventId'       => $inv['event_id'],
+                'inviteCode'    => $inv['invite_code'],
+                'invite_code'   => $inv['invite_code'],
+                'guestName'     => $inv['guest_name'],
+                'guest_name'    => $inv['guest_name'],
+                'guestPhone'    => $inv['guest_phone'],
+                'maxGuests'     => (int)$inv['max_guests'],
+                'max_guests'    => (int)$inv['max_guests'],
+                'tableNumber'   => $inv['table_number'],
+                'rsvpStatus'    => $inv['rsvp_status'],
+                'rsvp_status'   => $inv['rsvp_status'],
+                'attendingCount'=> (int)($inv['attending_headcount'] ?? 0),
+                'isScanned'     => (bool)$inv['is_scanned'],
+                'is_scanned'    => (bool)$inv['is_scanned'],
+                'scannedCount'  => (int)$inv['scanned_count'],
+                'qrCodeUrl'     => $inv['qr_code_url'],
+                'createdAt'     => $inv['created_at'],
+            ];
+
+            echo json_encode(['success' => true, 'invitation' => $invitation]);
+            exit;
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to load invitation.']);
+            exit;
+        }
+    }
+
+    // Bulk guest list lookup: require authenticated user & event access
+    $session = require_auth();
+    if (!check_event_invitation_access($event, $session)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: not authorized to access guest list for this event.']);
+        exit;
+    }
+
     try {
         $rows = php_query(
             "SELECT * FROM invitations WHERE event_id = ? ORDER BY created_at DESC",
@@ -102,6 +178,13 @@ if ($method === 'GET') {
 // POST — Create guest invitation / ticket
 // ---------------------------------------------------------------------------
 if ($method === 'POST') {
+    $session = require_auth();
+    if (!check_event_invitation_access($event, $session)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: not authorized to create invitations for this event.']);
+        exit;
+    }
+
     $raw = file_get_contents('php://input');
     $body = json_decode($raw, true) ?: [];
 
@@ -153,6 +236,13 @@ if ($method === 'POST') {
 // DELETE — Delete guest invitation
 // ---------------------------------------------------------------------------
 if ($method === 'DELETE') {
+    $session = require_auth();
+    if (!check_event_invitation_access($event, $session)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: not authorized to delete invitations for this event.']);
+        exit;
+    }
+
     $id = trim($_GET['id'] ?? '');
     if (empty($id)) {
         $raw = file_get_contents('php://input');

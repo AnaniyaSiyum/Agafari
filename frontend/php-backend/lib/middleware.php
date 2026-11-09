@@ -39,13 +39,32 @@ function get_allowed_origin(): string {
 }
 
 /**
- * Emit strict CORS headers. Supports agafari.com, subdomains, and mirrors the request origin.
+ * Validate origin against trusted domains
+ */
+function is_allowed_origin(string $origin): bool {
+    if (empty($origin)) return false;
+    $parsed = parse_url($origin);
+    $host = strtolower($parsed['host'] ?? '');
+    $port = $parsed['port'] ?? null;
+
+    if ($host === 'agafari.com' || str_ends_with($host, '.agafari.com')) {
+        return true;
+    }
+    if (($host === 'localhost' || $host === '127.0.0.1') && ($port === 3000 || $port === 3001 || $port === null)) {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Emit strict CORS headers. Only trusted origins receive Access-Control-Allow-Credentials: true.
  */
 function send_cors_headers(): void {
     $requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
 
-    if (!empty($requestOrigin)) {
+    if (!empty($requestOrigin) && is_allowed_origin($requestOrigin)) {
         header("Access-Control-Allow-Origin: {$requestOrigin}");
+        header('Access-Control-Allow-Credentials: true');
         header('Vary: Origin');
     } else {
         header("Access-Control-Allow-Origin: https://agafari.com");
@@ -53,7 +72,6 @@ function send_cors_headers(): void {
 
     header('Access-Control-Allow-Methods: GET, POST, PATCH, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
-    header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Max-Age: 86400');
 
     // Security response headers
@@ -115,30 +133,30 @@ function check_login_rate_limit(string $ip): bool {
 // ---------------------------------------------------------------------------
 
 /**
- * Validate the Bearer token from the Authorization header against the
- * php_sessions table. Exits with HTTP 401 if absent, invalid, or expired.
- *
- * @return array{user_id: string, role: string, expires_at: string}
+ * Extract auth token from Authorization header (Bearer) or agafari_token cookie.
  */
-function require_auth(): array {
+function get_auth_token(): ?string {
     $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-
-    if (!str_starts_with($authHeader, 'Bearer ')) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Authentication required.']);
-        exit;
+    if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $matches)) {
+        return trim($matches[1]);
     }
+    if (!empty($_COOKIE['agafari_token'])) {
+        return trim($_COOKIE['agafari_token']);
+    }
+    return null;
+}
 
-    $token = trim(substr($authHeader, 7));
-
+/**
+ * Return current session array or null if unauthenticated / expired.
+ */
+function get_authenticated_user(): ?array {
+    $token = get_auth_token();
     if (empty($token)) {
-        http_response_code(401);
-        echo json_encode(['error' => 'Authentication required.']);
-        exit;
+        return null;
     }
 
     try {
-        $session = php_query_one(
+        return php_query_one(
             'SELECT user_id, role, expires_at
                FROM php_sessions
               WHERE token      = ?
@@ -147,14 +165,21 @@ function require_auth(): array {
             [$token]
         );
     } catch (Throwable $e) {
-        http_response_code(503);
-        echo json_encode(['error' => 'Authentication service temporarily unavailable.']);
-        exit;
+        return null;
     }
+}
+
+/**
+ * Validate the token against php_sessions table. Exits with HTTP 401 if absent or expired.
+ *
+ * @return array{user_id: string, role: string, expires_at: string}
+ */
+function require_auth(): array {
+    $session = get_authenticated_user();
 
     if (!$session) {
         http_response_code(401);
-        echo json_encode(['error' => 'Session expired or invalid. Please log in again.']);
+        echo json_encode(['error' => 'Authentication required. Please log in again.']);
         exit;
     }
 

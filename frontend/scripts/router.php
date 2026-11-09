@@ -7,12 +7,32 @@
 $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $docRoot = __DIR__;
 
+// Security Guard: Block direct access to sensitive config files, database scripts, and hidden paths
+if (
+    preg_match('#^/(config|db|\.git)/#i', $uri) ||
+    preg_match('#\.(ini|env|sql|log|sh|bak|cfg|conf)$#i', $uri) ||
+    preg_match('#/(db_config|db)\.php$#i', $uri)
+) {
+    http_response_code(403);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo "403 Forbidden: Access denied.";
+    exit;
+}
+
 // 1. Serve physical static files directly (CSS, JS, images, audio, video, etc.)
 $filePath = $docRoot . $uri;
 if ($uri !== '/' && file_exists($filePath) && !is_dir($filePath)) {
-    // If it's a php file directly requested, let PHP execute it
+    // If it's a php file directly requested, only permit if inside api/
     if (str_ends_with($filePath, '.php')) {
-        require $filePath;
+        $realPath = realpath($filePath);
+        $realApi = realpath($docRoot . '/api');
+        if ($realPath && $realApi && str_starts_with($realPath, $realApi)) {
+            require $filePath;
+            exit;
+        }
+        http_response_code(403);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo "403 Forbidden: Direct script execution not allowed.";
         exit;
     }
     return false; // Built-in web server serves the static asset with native MIME type
@@ -20,10 +40,18 @@ if ($uri !== '/' && file_exists($filePath) && !is_dir($filePath)) {
 
 // 2. Route API endpoints matching .htaccess rules
 if (str_starts_with($uri, '/api/')) {
-    // CORS headers for local testing
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    // Safe CORS handling
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    if (preg_match('#^https?://(localhost|127\.0\.0\.1)(:\d+)?$#', $origin) || preg_match('#^https?://([a-z0-9-]+\.)?agafari\.com$#', $origin)) {
+        header("Access-Control-Allow-Origin: {$origin}");
+        header('Access-Control-Allow-Credentials: true');
+    } else {
+        header('Access-Control-Allow-Origin: https://agafari.com');
+    }
+    header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
     if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
         http_response_code(200);
         exit;
