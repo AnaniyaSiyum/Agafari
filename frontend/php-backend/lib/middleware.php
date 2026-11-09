@@ -99,6 +99,11 @@ function send_cors_headers(): void {
  * Returns false => too many attempts; caller should respond with HTTP 429.
  */
 function check_login_rate_limit(string $ip): bool {
+    // Whitelist local loopback development environment to avoid developer lockouts
+    if (in_array($ip, ['127.0.0.1', '::1', 'localhost', '0.0.0.0'], true)) {
+        return true;
+    }
+
     try {
         $pdo = getPdoConnection();
 
@@ -128,6 +133,18 @@ function check_login_rate_limit(string $ip): bool {
         // Fail open: never block legitimate users due to a DB error
         return true;
     }
+}
+
+/**
+ * Reset rate limit counter for an IP address upon successful authentication
+ */
+function reset_login_rate_limit(string $ip): void {
+    try {
+        $pdo = getPdoConnection();
+        if ($pdo) {
+            $pdo->prepare('DELETE FROM php_rate_limits WHERE ip_address = ?')->execute([$ip]);
+        }
+    } catch (Throwable $e) {}
 }
 
 // ---------------------------------------------------------------------------

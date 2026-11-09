@@ -200,6 +200,9 @@ try {
         exit;
     }
 
+    // Reset rate limits for IP on successful credentials verification
+    reset_login_rate_limit($clientIp);
+
     // Account active check
     if (isset($user['is_active']) && !$user['is_active']) {
         http_response_code(403);
