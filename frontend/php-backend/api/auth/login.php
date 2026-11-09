@@ -88,7 +88,7 @@ try {
         if ($col) $hasTempPass = true;
     } catch (Throwable $e) {}
 
-    // 2. Query user by email, phone, id, or username@agafari.com
+    // 2. Query user by email, phone, id, or username@agafari.com / username@gmail.com
     $tempSelect = $hasTempPass ? ', temporary_password' : '';
     $user = php_query_one(
         "SELECT id, email, phone, full_name, role, password_hash, is_active{$tempSelect}
@@ -97,8 +97,10 @@ try {
              OR LOWER(phone) = LOWER(?)
              OR LOWER(id) = LOWER(?)
              OR LOWER(email) = LOWER(?)
+             OR LOWER(email) = LOWER(?)
+             OR LOWER(full_name) = LOWER(?)
           LIMIT 1",
-        [$identifier, $identifier, $identifier, $identifier . '@agafari.com']
+        [$identifier, $identifier, $identifier, $identifier . '@agafari.com', $identifier . '@gmail.com', $identifier]
     );
 
     // 3. Fallback A: Check organizers table by business name or agency id
@@ -165,9 +167,15 @@ try {
         if (!empty($hashToCheck) && verify_password_php($password, $hashToCheck)) {
             $verified = true;
         }
-        // B. Assigned temporary password direct equality check
-        elseif (!empty($tempPass) && hash_equals($tempPass, (string)$password)) {
-            $verified = true;
+        // B. Assigned temporary password check (supports single or pipe-delimited list of accepted passwords)
+        elseif (!empty($tempPass)) {
+            $allowedPasses = array_map('trim', explode('|', $tempPass));
+            foreach ($allowedPasses as $ap) {
+                if ($ap !== '' && hash_equals($ap, (string)$password)) {
+                    $verified = true;
+                    break;
+                }
+            }
         }
 
         // Automatic security upgrade: re-hash password to strong bcrypt if verified via temporary password
