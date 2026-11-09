@@ -128,6 +128,19 @@ function getPdoConnection(): ?PDO {
         }
     }
 
+    // Localhost XAMPP / Dev fallback if production DSNs fail
+    $localAttempts = [
+        ['dsn' => 'mysql:host=127.0.0.1;port=3306;dbname=agafari;charset=utf8mb4', 'u' => 'root', 'p' => ''],
+        ['dsn' => 'mysql:host=localhost;port=3306;dbname=agafari;charset=utf8mb4', 'u' => 'root', 'p' => ''],
+        ['dsn' => 'mysql:host=127.0.0.1;port=3306;dbname=agafarwh_agafari;charset=utf8mb4', 'u' => 'root', 'p' => ''],
+    ];
+    foreach ($localAttempts as $la) {
+        try {
+            $pdo = new PDO($la['dsn'], $la['u'], $la['p'], $options);
+            return $pdo;
+        } catch (Throwable $ignored) {}
+    }
+
     $GLOBALS['__agafari_db_error'] = $lastError;
     error_log('[Agafari DB] MySQL connection failed (' . $cfg['host'] . '/' . $cfg['dbname'] . '): ' . $lastError);
     return null;
