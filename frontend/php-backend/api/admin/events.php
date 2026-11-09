@@ -477,7 +477,37 @@ if ($method === 'DELETE') {
     }
 
     try {
-        php_execute("DELETE FROM events WHERE id = ?", [$eventId]);
+        $eventRow = php_query_one("SELECT id, slug FROM events WHERE id = ? OR slug = ? LIMIT 1", [$eventId, $eventId]);
+        if (!$eventRow) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Event not found.']);
+            exit;
+        }
+        $actualEventId = $eventRow['id'];
+
+        php_with_transaction(function() use ($actualEventId) {
+            $tablesWithEventId = [
+                'quota_groups',
+                'event_staff',
+                'invitations',
+                'rsvps',
+                'wishes',
+                'media_assets',
+                'live_streams',
+                'mezmur_songs',
+                'event_locations',
+                'gate_scan_logs'
+            ];
+            foreach ($tablesWithEventId as $tbl) {
+                try {
+                    php_execute("DELETE FROM `{$tbl}` WHERE event_id = ?", [$actualEventId]);
+                } catch (Throwable $ignored) {
+                    // Table might not exist or columns might vary
+                }
+            }
+            php_execute("DELETE FROM events WHERE id = ?", [$actualEventId]);
+        });
+
         echo json_encode(['success' => true, 'message' => 'Event deleted successfully.']);
         exit;
     } catch (Throwable $e) {
