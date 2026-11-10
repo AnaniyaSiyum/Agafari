@@ -78,6 +78,10 @@ if (str_starts_with($uri, '/api/')) {
         require $docRoot . '/api/admin/users.php';
         exit;
     }
+    if (preg_match('#^/api/admin/clean-slate/?$#', $uri)) {
+        require $docRoot . '/api/admin/clean-slate.php';
+        exit;
+    }
     if (preg_match('#^/api/organizer/events/?$#', $uri)) {
         require $docRoot . '/api/organizer/events.php';
         exit;
