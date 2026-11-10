@@ -139,16 +139,8 @@ function resolve_organizer(?string $rawId, ?string $rawName = null): ?array {
         ];
     }
 
-    // 3. Fallback tenant for specified agency ID/name so it NEVER leaks platform-wide events
-    $fallbackName = !empty($rawName) ? $rawName : (!empty($stripped) && !preg_match('/^(org-|usr-)?[0-9a-f]{6,}$/i', $stripped) ? ucwords(str_replace(['-', '_'], ' ', $stripped)) : 'Event Agency');
-    return [
-        'id'            => $rawId,
-        'owner_user_id' => $stripped,
-        'business_name' => $fallbackName,
-        'email'         => "{$stripped}@agafari.com",
-        'full_name'     => $fallbackName,
-        'contact_phone' => '',
-    ];
+    // 3. Organizer does not exist in the database
+    return null;
 }
 
 // -----------------------------------------------------------------------------
@@ -261,6 +253,15 @@ if ($method === 'GET') {
 
         $isSpecificOrg = (!empty($rawId) && strtolower($rawId) !== 'global' && strtolower($rawId) !== 'all') || !empty($nameParam);
         $org = resolve_organizer($rawId, $nameParam);
+
+        if ($isSpecificOrg && !$org) {
+            http_response_code(404);
+            echo json_encode([
+                'success' => false,
+                'error'   => "Organizer account with ID \"{$rawId}\" was not found."
+            ]);
+            exit;
+        }
 
         // Fetch events with safe schema checking
         $hasTempPass = false;

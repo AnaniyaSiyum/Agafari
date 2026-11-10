@@ -72,20 +72,7 @@ async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?:
         [rawInput, rawUserId, normalizedKey]
       );
 
-      if (!ownerUser) {
-        const fallbackUserId = `usr-${rawUserId}`;
-        const autoAgencyName = cleanAgencyName(undefined, undefined, rawInput);
-        await query(
-          `INSERT INTO users (id, email, password_hash, full_name, role)
-           VALUES ($1, $2, $3, $4, 'EVENT_ORGANIZER')
-           ON DUPLICATE KEY UPDATE id=id`,
-          [fallbackUserId, rawInput.includes('@') ? rawInput : `organizer-${rawUserId}@agafari.com`, hashPassword('org2026'), autoAgencyName]
-        );
-        ownerUser = await queryOne<{ id: string; full_name: string; email: string }>(
-          `SELECT id, full_name, email FROM users WHERE id = $1`,
-          [fallbackUserId]
-        );
-      }
+      // If ownerUser does not exist in DB, do not insert a fake user
 
       if (ownerUser) {
         const autoAgencyName = cleanAgencyName(ownerUser.full_name, ownerUser.email, ownerUser.id);
@@ -150,18 +137,8 @@ async function resolveOrCreateOrganizerInDb(targetOrgId: string | null, userId?:
     };
   }
 
-  // If no user exists, derive a unique clean agency name using rawInput
-  const autoAgencyName = cleanAgencyName(undefined, undefined, rawInput);
-  return {
-    dbOrganizerId: null,
-    cleanKey,
-    rawUserId,
-    organizerInfo: {
-      agencyName: autoAgencyName,
-      fullName: autoAgencyName,
-      email: rawInput.includes('@') ? rawInput : `organizer@${rawUserId.slice(0, 8)}.com`,
-    }
-  };
+  // Organizer does not exist
+  return null;
 }
 
 function formatEvent(e: any) {
@@ -303,6 +280,12 @@ export async function GET(req: NextRequest) {
     
     // Resolve organizer details using unified helper
     const orgData = await resolveOrCreateOrganizerInDb(effectiveTargetOrgId, userId);
+    if (!orgData) {
+      return NextResponse.json(
+        { error: `Organizer account with ID "${effectiveTargetOrgId || targetOrgId}" was not found.` },
+        { status: 404 }
+      );
+    }
     const { dbOrganizerId, cleanKey, rawUserId, organizerInfo } = orgData;
 
     // Build target keys for matching

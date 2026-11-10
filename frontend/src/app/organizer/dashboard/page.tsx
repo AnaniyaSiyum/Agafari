@@ -249,6 +249,10 @@ function OrganizerDashboardContent() {
           setEvents(loadedEvents);
           if (eventsData.organizerInfo) {
             setOrganizerInfo(eventsData.organizerInfo);
+          } else if (orgId) {
+            setErrorMsg(`Organizer account with ID "${orgId}" was not found.`);
+            setLoading(false);
+            return;
           } else if (userObj) {
             setOrganizerInfo({
               agencyName: userObj.companyName || userObj.fullName || 'Event Production Agency',
