@@ -170,7 +170,7 @@ if ($method === 'PATCH') {
     $raw = file_get_contents('php://input');
     $body = json_decode($raw, true) ?: [];
 
-    $userId = trim($body['userId'] ?? $body['id'] ?? '');
+    $userId = trim($body['userId'] ?? $body['id'] ?? $_GET['id'] ?? $_GET['userId'] ?? '');
     if (empty($userId)) {
         http_response_code(400);
         echo json_encode(['error' => 'Missing userId.']);
@@ -192,11 +192,12 @@ if ($method === 'PATCH') {
         $updates[] = "is_active = ?";
         $params[] = $body['isActive'] ? 1 : 0;
     }
-    if (!empty($body['password'])) {
+    $newPass = trim($body['newPassword'] ?? $body['password'] ?? '');
+    if (!empty($newPass)) {
         $updates[] = "password_hash = ?";
-        $params[] = password_hash(trim($body['password']), PASSWORD_BCRYPT);
+        $params[] = password_hash($newPass, PASSWORD_BCRYPT);
         $updates[] = "temporary_password = ?";
-        $params[] = trim($body['password']);
+        $params[] = $newPass;
     }
 
     if (empty($updates)) {
@@ -210,7 +211,13 @@ if ($method === 'PATCH') {
 
     try {
         php_execute($sql, $params);
-        echo json_encode(['success' => true, 'message' => 'User updated successfully.']);
+        $updatedUser = php_query_one("SELECT id, email, full_name, role, is_active, temporary_password FROM users WHERE id = ?", [$userId]);
+        echo json_encode([
+            'success'           => true,
+            'message'           => 'User updated successfully.',
+            'user'              => $updatedUser,
+            'temporaryPassword' => $newPass ?: ($updatedUser['temporary_password'] ?? null),
+        ]);
         exit;
     } catch (Throwable $e) {
         http_response_code(500);

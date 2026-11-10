@@ -898,13 +898,29 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
     setSubmittingEdit(true);
 
     try {
-      const res = await fetch(`/api/system-admin/users/${selectedEditUser.id}/credentials`, {
+      let res = await fetch(`/api/system-admin/users/${selectedEditUser.id}/credentials`, {
         method: 'PATCH',
         headers: getAdminAuthHeaders(),
         body: JSON.stringify({
-          newPassword: editNewPassword.trim()
+          userId: selectedEditUser.id,
+          id: selectedEditUser.id,
+          newPassword: editNewPassword.trim(),
+          password: editNewPassword.trim(),
         })
       });
+
+      if (!res.ok) {
+        res = await fetch('/api/admin/users', {
+          method: 'PATCH',
+          headers: getAdminAuthHeaders(),
+          body: JSON.stringify({
+            userId: selectedEditUser.id,
+            id: selectedEditUser.id,
+            newPassword: editNewPassword.trim(),
+            password: editNewPassword.trim(),
+          })
+        });
+      }
 
       const data = await res.json();
       if (res.ok && (data.success || data.user)) {

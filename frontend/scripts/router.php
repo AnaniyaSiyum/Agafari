@@ -78,6 +78,26 @@ if (str_starts_with($uri, '/api/')) {
         require $docRoot . '/api/admin/users.php';
         exit;
     }
+    if (preg_match('#^/api/system-admin/users/([^/]+)/credentials/?$#', $uri, $m)) {
+        $_GET['id'] = $m[1];
+        $_GET['userId'] = $m[1];
+        require $docRoot . '/api/admin/users.php';
+        exit;
+    }
+    if (preg_match('#^/api/admin/users/([^/]+)/password/?$#', $uri, $m)) {
+        $_GET['id'] = $m[1];
+        $_GET['userId'] = $m[1];
+        require $docRoot . '/api/admin/users.php';
+        exit;
+    }
+    if (preg_match('#^/api/system-admin/users/?$#', $uri)) {
+        require $docRoot . '/api/admin/users.php';
+        exit;
+    }
+    if (preg_match('#^/api/system-admin/self-credentials/?$#', $uri)) {
+        require $docRoot . '/api/admin/users.php';
+        exit;
+    }
     if (preg_match('#^/api/admin/clean-slate/?$#', $uri)) {
         require $docRoot . '/api/admin/clean-slate.php';
         exit;
