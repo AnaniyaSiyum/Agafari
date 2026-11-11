@@ -1075,7 +1075,7 @@ export default function HomePage() {
               <div className="h-60 bg-zinc-200 relative overflow-hidden">
                 <img
                   src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?q=80&w=800&auto=format&fit=crop"
-                  alt="Tigist & Henok Wedding"
+                  alt="Saba & Henok Wedding"
                   className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
@@ -1084,7 +1084,7 @@ export default function HomePage() {
                 </div>
                 <div className="absolute bottom-4 left-4 flex items-center gap-2">
                   <div className="w-8 h-8 rounded-full bg-metallic text-sage-dark font-serif font-bold text-xs flex items-center justify-center shadow-md">
-                    T&H
+                    S&H
                   </div>
                   <span className="text-white text-xs font-semibold drop-shadow-md">
                     {t('landing.portfolioSection.card3Type')}
