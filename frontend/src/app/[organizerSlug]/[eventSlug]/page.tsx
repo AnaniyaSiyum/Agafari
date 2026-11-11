@@ -851,7 +851,14 @@ export default function DedicatedEventControlPage({
     );
   }
 
-  const isApproved = event?.adminApprovalStatus === 'APPROVED' || (event as any)?.admin_approval_status === 'APPROVED';
+  const currentUserRole = typeof window !== 'undefined' ? (() => {
+    try {
+      const raw = localStorage.getItem('agafari_user');
+      return raw ? JSON.parse(raw)?.role : '';
+    } catch (e) { return ''; }
+  })() : '';
+  const isSystemAdmin = currentUserRole === 'SYSTEM_ADMIN';
+  const isApproved = isSystemAdmin || event?.adminApprovalStatus === 'APPROVED' || (event as any)?.admin_approval_status === 'APPROVED';
 
   if (!isApproved) {
     return (

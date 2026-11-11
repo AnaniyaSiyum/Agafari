@@ -839,6 +839,14 @@ function OrganizerDashboardContent() {
                           </button>
                           <Link
                             href={`/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}`}
+                            className="px-3.5 py-1.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Crown className="w-3.5 h-3.5 text-black" />
+                            <span>Master Wedding Control Center</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                          <Link
+                            href={`/${organizerUrlSlug || 'admin'}/${selectedEvent.slug}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-3 py-1.5 rounded-xl bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs font-bold transition-all flex items-center gap-1.5 border border-stone-600"

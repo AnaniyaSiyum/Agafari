@@ -2000,21 +2000,13 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                                 <span>Couple Portal</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </Link>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setInspectingWedding(evt);
-                                  setSelectedEvent(evt);
-                                  const url = new URL(window.location.href);
-                                  url.searchParams.set('wedding', evt.slug);
-                                  window.history.pushState({}, '', url.toString());
-                                  window.scrollTo({ top: 0, behavior: 'smooth' });
-                                }}
+                              <Link
+                                href={dedicatedUrl}
                                 className="px-4 py-2 rounded-xl bg-black hover:bg-gray-800 text-gold-400 text-xs font-bold flex items-center gap-1.5 shadow-sm border border-gold-500/30 cursor-pointer"
                               >
                                 <span>Open Dedicated Dashboard</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
-                              </button>
+                              </Link>
                             </div>
                           </div>
                         </div>
@@ -2110,17 +2102,15 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                   {filteredEvents.map((evt) => {
                     const isSelected = selectedEvent?.id === evt.id;
                     const isArchive = evt.status === 'COMPLETED' || evt.status === 'ARCHIVED';
+                    const rawOrgId = (evt as any).organizerId || (evt as any).organizer_id || `org-${evt.slug}`;
+                    const cleanOrgId = String(rawOrgId).startsWith('org-') ? String(rawOrgId) : `org-${String(rawOrgId)}`;
+                    const dedicatedControlUrl = `/${cleanOrgId}/${evt.slug}`;
 
                     return (
                       <div
                         key={evt.id}
                         onClick={() => {
-                          setSelectedEvent(evt);
-                          setInspectingWedding(evt);
-                          const url = new URL(window.location.href);
-                          url.searchParams.set('wedding', evt.slug);
-                          window.history.pushState({}, '', url.toString());
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                          router.push(dedicatedControlUrl);
                         }}
                         className={`
                           rounded-3xl p-5 border cursor-pointer transition-all flex flex-col justify-between relative overflow-hidden bg-white
@@ -2189,19 +2179,23 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                         </div>
 
                         <div className="pt-2 border-t border-gray-100 flex items-center justify-between text-xs font-bold">
-                          <span className="text-gray-900">
-                            {isSelected ? '✓ Open Dedicated Control Center' : 'Click to Open Dedicated Control Center'}
-                          </span>
-                          <div className="flex items-center gap-2">
+                          <Link
+                            href={dedicatedControlUrl}
+                            onClick={(e) => e.stopPropagation()}
+                            className="px-3.5 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shadow-sm flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <span>Open Dedicated Dashboard</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                          <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                             <button
                               onClick={(e) => handleDeleteEvent(e, evt.id, evt.title)}
-                              className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
+                              className="px-2.5 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-bold transition-all flex items-center gap-1 cursor-pointer"
                               title="Delete Wedding Event (Asks twice)"
                             >
-                              <Trash2 className="w-3 h-3 text-rose-600" />
+                              <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                               <span>Delete</span>
                             </button>
-                            <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'rotate-90 text-gold-500' : 'text-gray-400'}`} />
                           </div>
                         </div>
                       </div>
@@ -2763,6 +2757,20 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                     const specificOrgId = org.organizerId || (org.id.startsWith('org-') ? org.id : `org-${org.id}`);
                     const companyName = getOrganizerCompanyName(org);
                     const specificOrgUrl = `/organizer/dashboard?id=${encodeURIComponent(specificOrgId)}&name=${encodeURIComponent(companyName)}`;
+                    
+                    const orgEvts = events.filter((e) => {
+                      const eOrg = String((e as any).organizerId || (e as any).organizer_id || '').toLowerCase().replace(/^org-/, '');
+                      const targetOrg = String(org.organizerId || org.id || '').toLowerCase().replace(/^org-/, '');
+                      const targetPrefix = String(org.email || '').split('@')[0].toLowerCase();
+                      const eOrgName = String((e as any).organizerName || '').toLowerCase();
+                      return (eOrg && (eOrg === targetOrg || targetOrg.includes(eOrg) || eOrg.includes(targetOrg))) ||
+                             (targetPrefix && (eOrgName.includes(targetPrefix) || eOrg.includes(targetPrefix)));
+                    });
+                    const firstOrgEvt = orgEvts.length > 0 ? orgEvts[0] : null;
+                    const orgEvtRawOrgId = firstOrgEvt ? ((firstOrgEvt as any).organizerId || (firstOrgEvt as any).organizer_id || `org-${firstOrgEvt.slug}`) : specificOrgId;
+                    const orgEvtCleanOrgId = String(orgEvtRawOrgId).startsWith('org-') ? String(orgEvtRawOrgId) : `org-${String(orgEvtRawOrgId)}`;
+                    const dedicatedWeddingUrl = firstOrgEvt ? `/${orgEvtCleanOrgId}/${firstOrgEvt.slug}` : specificOrgUrl;
+
                     return (
                       <div
                         key={org.id}
@@ -2821,7 +2829,7 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                         </div>
 
                         {/* Actions */}
-                        <div className="pt-2 border-t border-amber-200/50 flex items-center justify-between gap-2">
+                        <div className="pt-2 border-t border-amber-200/50 flex flex-wrap items-center justify-between gap-2">
                           <button
                             onClick={() => handleOpenEditModal(org)}
                             className="px-3 py-1.5 rounded-xl bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 text-[11px] font-bold cursor-pointer flex items-center gap-1"
@@ -2829,13 +2837,26 @@ Direct Link: ${window.location.origin}${dedicatedUrl}/live-streamer
                             <Edit className="w-3 h-3 text-gold-600" />
                             <span>Edit</span>
                           </button>
-                          <Link
-                            href={specificOrgUrl}
-                            className="px-3 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer"
-                          >
-                            <span>Open Organizer Dashboard</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </Link>
+                          <div className="flex items-center gap-1.5">
+                            {firstOrgEvt && (
+                              <Link
+                                href={dedicatedWeddingUrl}
+                                className="px-3 py-1.5 rounded-xl bg-gold-500 hover:bg-gold-400 text-black text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer"
+                                title="Open Dedicated Wedding Master Control"
+                              >
+                                <Crown className="w-3 h-3 text-black" />
+                                <span>Wedding Control</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </Link>
+                            )}
+                            <Link
+                              href={specificOrgUrl}
+                              className="px-3 py-1.5 rounded-xl bg-black hover:bg-gray-800 text-gold-400 border border-gold-500/40 text-[11px] font-bold shadow-sm flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>Open Organizer Dashboard</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          </div>
                         </div>
                       </div>
                     );

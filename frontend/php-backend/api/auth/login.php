@@ -103,9 +103,10 @@ try {
         [$identifier, $identifier, $identifier, $identifier . '@agafari.com', $identifier . '@gmail.com', $identifier]
     );
 
-    // Strict requirement: System Admin username must strictly be "admin@agafari.com"
+    // Strict requirement: System Admin username must strictly be "admin@agafari.com" (or shorthand "admin")
     if ($user && in_array(strtoupper($user['role'] ?? ''), ['SYSTEM_ADMIN', 'ADMIN', 'SUPER_ADMIN'])) {
-        if (strtolower($identifier) !== 'admin@agafari.com') {
+        $cleanId = strtolower($identifier);
+        if ($cleanId !== 'admin@agafari.com' && $cleanId !== 'admin') {
             $user = null;
         }
     }
