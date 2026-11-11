@@ -21,8 +21,8 @@ jobs:
 
       - name: Build Next.js Static Export
         run: |
-          npm install
-          npm run build
+          npm ci --prefix frontend
+          npm run build --prefix frontend
 
       - name: Upload Frontend to DirectAdmin
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
