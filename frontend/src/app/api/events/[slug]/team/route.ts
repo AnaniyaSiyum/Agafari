@@ -13,11 +13,12 @@ async function resolveEventOrRespond(slug: string) {
 }
 
 // GET: list everyone staffing this event
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
@@ -48,11 +49,12 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 }
 
 // POST: assign staff with MySQL compatibility
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
@@ -151,11 +153,12 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 }
 
 // PATCH: update staff or couple credentials (email, fullName, password)
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
@@ -184,7 +187,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
 
     if (!targetUserId) {
       // If still not found, create a new user for this role
-      const cleanEmail = (email || `${(role || 'staff').toLowerCase()}@${params.slug}.com`).toLowerCase().trim();
+      const cleanEmail = (email || `${(role || 'staff').toLowerCase()}@${routeParams.slug}.com`).toLowerCase().trim();
       const newPass = password && String(password).trim().length >= 4 ? String(password).trim() : `agafari${Math.floor(1000 + Math.random() * 9000)}`;
       const newUserId = `usr-${(role || 'staff').toLowerCase()}-${Date.now()}`;
 
@@ -236,11 +239,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
 }
 
 // DELETE: remove a staff assignment (?assignmentId=)
-export async function DELETE(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
