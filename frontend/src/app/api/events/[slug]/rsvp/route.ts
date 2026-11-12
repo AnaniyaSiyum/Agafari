@@ -13,13 +13,14 @@ const rsvpService = new RsvpService(
   new MySqlInvitationRepository()
 );
 
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   try {
     const { inviteCode, attendanceStatus, attendingCount, songRecommendation, dietaryNotes, guestName, guestPhone } =
       await req.json();
 
     const clientIp = getClientIp(req);
-    const rateLimitKey = `rsvp:${params.slug}:${inviteCode || clientIp}`;
+    const rateLimitKey = `rsvp:${routeParams.slug}:${inviteCode || clientIp}`;
     const rateLimitRes = await verifyRateLimit(rateLimitKey, { max: 5, windowSeconds: 600 });
     if (!rateLimitRes.success) {
       return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many RSVP submission attempts. Please wait before retrying.', 5, 0);
@@ -31,7 +32,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
 
     const result = await rsvpService.submitRsvp({
-      slug: params.slug,
+      slug: routeParams.slug,
       inviteCode,
       attendanceStatus,
       attendingCount: attendingCount ? Number(attendingCount) : undefined,
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
     return NextResponse.json(result);
   } catch (error: any) {
-    captureException(error, { route: '/api/events/[slug]/rsvp', eventSlug: params.slug });
+    captureException(error, { route: '/api/events/[slug]/rsvp', eventSlug: routeParams.slug });
     if (error instanceof RsvpLockedError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }
