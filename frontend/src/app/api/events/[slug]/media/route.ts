@@ -7,7 +7,8 @@ import { query, queryOne } from '@/lib/db';
 import { mockStore } from '@/infrastructure/dev/mockData';
 import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const { searchParams } = new URL(req.url);
   const category = searchParams.get('category'); // WISHES | BTS | LIVE
   const guestIdentifier = searchParams.get('guestId'); // device/session id, for "did I like this"
@@ -15,15 +16,15 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   try {
     let event: { id: string } | null = null;
     try {
-      event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+      event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [routeParams.slug]);
     } catch (e) {}
 
     if (!event) {
       const mockEvt = mockStore.events.find(
         (e: any) =>
-          e.slug?.toLowerCase() === params.slug.toLowerCase() ||
-          e.id === params.slug ||
-          e.id === `evt-${params.slug}`
+          e.slug?.toLowerCase() === routeParams.slug.toLowerCase() ||
+          e.id === routeParams.slug ||
+          e.id === `evt-${routeParams.slug}`
       );
       if (mockEvt) {
         event = { id: mockEvt.id };
@@ -73,7 +74,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
       }));
     } else {
       items = mockStore.mediaAssets
-        .filter((m: any) => m.eventId === event?.id || m.eventId === params.slug || m.eventId === `evt-${params.slug}`)
+        .filter((m: any) => m.eventId === event?.id || m.eventId === routeParams.slug || m.eventId === `evt-${routeParams.slug}`)
         .map((m: any) => ({
           id: m.id,
           uploaderName: m.uploaderName || 'Guest',
@@ -97,10 +98,11 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 }
 
 // POST: guest or media moderator uploads a wish/BTS clip
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   try {
     const clientIp = getClientIp(req);
-    const rateLimitRes = checkRateLimit(`media_upload:${params.slug}:${clientIp}`, { max: 10, windowSeconds: 60 });
+    const rateLimitRes = checkRateLimit(`media_upload:${routeParams.slug}:${clientIp}`, { max: 10, windowSeconds: 60 });
     if (!rateLimitRes.allowed) {
       return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many uploads. Please wait before uploading more media.', 10, rateLimitRes.remaining);
     }
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'uploaderName, mediaType, and cdnUrl are required.' }, { status: 400 });
     }
 
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [routeParams.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const user = getAuthUser(req);
