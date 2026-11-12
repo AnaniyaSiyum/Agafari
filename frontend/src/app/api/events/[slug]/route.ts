@@ -88,7 +88,7 @@ function formatEvent(e: any) {
 // GET: fetch dynamic event details for specific wedding slug
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const routeParams = await params;
-  const { slug } = params;
+  const { slug } = routeParams;
 
   try {
     const event = await queryOne(
