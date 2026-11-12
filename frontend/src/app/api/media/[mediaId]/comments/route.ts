@@ -8,10 +8,11 @@ import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateL
 // Only returns comments for posts that are actually APPROVED and visible, so
 // a rejected/pending item's comments (if any slipped in before moderation)
 // can't be scraped by guessing its id.
-export async function GET(_req: NextRequest, { params }: { params: { mediaId: string } }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ mediaId: string }> }) {
+  const routeParams = await params;
   const media = await queryOne<{ id: string; status: string }>(
     'SELECT id, status FROM media_assets WHERE id = $1',
-    [params.mediaId]
+    [routeParams.mediaId]
   );
   if (!media || media.status !== 'APPROVED') {
     return NextResponse.json({ error: 'Post not found.' }, { status: 404 });
@@ -19,7 +20,7 @@ export async function GET(_req: NextRequest, { params }: { params: { mediaId: st
 
   const comments = await query(
     'SELECT id, sender_name, comment, created_at FROM media_comments WHERE media_id = $1 ORDER BY created_at ASC',
-    [params.mediaId]
+    [routeParams.mediaId]
   );
   return NextResponse.json({ comments });
 }
@@ -27,7 +28,8 @@ export async function GET(_req: NextRequest, { params }: { params: { mediaId: st
 // POST { senderName, comment } — spec: like/comment applies to individual
 // wish/BTS videos, explicitly NOT to live-stream items (enforce that here,
 // not just hidden in the UI, so the button being hidden isn't the only guard).
-export async function POST(req: NextRequest, { params }: { params: { mediaId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ mediaId: string }> }) {
+  const routeParams = await params;
   try {
     const clientIp = getClientIp(req);
     const rateLimitRes = checkRateLimit(`comment:${clientIp}`, { max: 10, windowSeconds: 300 });
@@ -45,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { mediaId: st
 
     const media = await queryOne<{ id: string; status: string; category: string }>(
       'SELECT id, status, category FROM media_assets WHERE id = $1',
-      [params.mediaId]
+      [routeParams.mediaId]
     );
     if (!media || media.status !== 'APPROVED') {
       return NextResponse.json({ error: 'Post not found.' }, { status: 404 });
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest, { params }: { params: { mediaId: st
     const commentId = `comment_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     await query(
       'INSERT INTO media_comments (id, media_id, sender_name, comment) VALUES ($1,$2,$3,$4)',
-      [commentId, params.mediaId, senderName.trim(), comment.trim()]
+      [commentId, routeParams.mediaId, senderName.trim(), comment.trim()]
     );
     const created = await queryOne('SELECT * FROM media_comments WHERE id = $1', [commentId]);
     return NextResponse.json({ success: true, comment: created }, { status: 201 });
