@@ -19,7 +19,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build Next.js Static Export
+      - name: Install Frontend Dependencies & Build
+        working-directory: ./frontend
         run: |
           npm install
           npm run build
@@ -30,7 +31,7 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./out/
+          local-dir: ./frontend/out/
           server-dir: ./domains/agafarii.com/public_html/
 
       - name: Upload PHP Backend to DirectAdmin
