@@ -42,11 +42,12 @@ async function resolveEventOrRespond(slug: string): Promise<{ event: { id: strin
 }
 
 // GET: list invitations for this event or resolve public invitation by code
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }): Promise<NextResponse> {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }): Promise<NextResponse> {
+  const routeParams = await params;
   const { searchParams } = new URL(req.url);
   const codeParam = searchParams.get('code');
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   // Public lookup for guest invitation links & QR passes (no auth token required)
@@ -65,7 +66,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
                 is_scanned, scanned_count, scanned_at, qr_code_url, created_at
          FROM invitations
          WHERE (event_id = $1 OR event_id = $3) AND LOWER(invite_code) = LOWER($2)`,
-        [resolved.event.id, codeParam.trim(), params.slug]
+        [resolved.event.id, codeParam.trim(), routeParams.slug]
       );
     } catch (e) {}
 
@@ -128,7 +129,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     action: 'BULK_GUEST_LIST_ACCESSED',
     req,
     outcome: 'SUCCESS',
-    details: { eventSlug: params.slug, eventId: resolved.event.id },
+    details: { eventSlug: routeParams.slug, eventId: resolved.event.id },
   });
 
   let rawRows: any[] = [];
@@ -140,7 +141,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
        FROM invitations
        WHERE event_id = $1 OR event_id = $2
        ORDER BY created_at DESC`,
-      [resolved.event.id, params.slug]
+      [resolved.event.id, routeParams.slug]
     );
   } catch (e) {}
 
@@ -148,8 +149,8 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     const filteredMock = mockStore.invitations.filter(
       (inv: any) =>
         inv.eventId === resolved.event.id ||
-        inv.eventId === params.slug ||
-        inv.eventId === `evt-${params.slug}`
+        inv.eventId === routeParams.slug ||
+        inv.eventId === `evt-${routeParams.slug}`
     );
     return NextResponse.json({ invitations: filteredMock });
   }
@@ -183,15 +184,16 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 }
 
 // POST: create one invitation (single guest/family unit).
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }): Promise<NextResponse> {
-  const resolved = await resolveEventOrRespond(params.slug);
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }): Promise<NextResponse> {
+  const routeParams = await params;
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const user = getAuthUser(req);
   if (user) {
     const access = await checkEventAccess(user, resolved.event.id);
     if (!access.allowed && user.role !== 'SYSTEM_ADMIN') {
-      console.warn(`Invitation creation proceeding with preview access for event ${params.slug}`);
+      console.warn(`Invitation creation proceeding with preview access for event ${routeParams.slug}`);
     }
   }
 
@@ -213,14 +215,14 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     try {
       const eventQuotaRow = await queryOne<{ expected_guests?: number }>(
         'SELECT expected_guests FROM events WHERE id = $1 OR slug = $2',
-        [resolved.event.id, params.slug]
+        [resolved.event.id, routeParams.slug]
       );
       if (eventQuotaRow && eventQuotaRow.expected_guests) {
         allowedQuota = Number(eventQuotaRow.expected_guests);
       }
       const sumRow = await queryOne<{ total_guests?: number }>(
         'SELECT COALESCE(SUM(max_guests), 0) AS total_guests FROM invitations WHERE event_id = $1 OR event_id = $2',
-        [resolved.event.id, params.slug]
+        [resolved.event.id, routeParams.slug]
       );
       if (sumRow && sumRow.total_guests !== undefined) {
         currentAllocatedSum = Number(sumRow.total_guests);
@@ -243,7 +245,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     // Use domain Ticket class — single source of truth for QR generation
     const inviteCode = Ticket.generateInviteCode();
     const baseUrl = process.env.PUBLIC_APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3002';
-    const qrCodeUrl = `${baseUrl}/event/${params.slug}?code=${inviteCode}`;
+    const qrCodeUrl = `${baseUrl}/event/${routeParams.slug}?code=${inviteCode}`;
     const inviteId = `inv_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;
 
     const newInvitationPayload: any = {
@@ -296,8 +298,9 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
 // PATCH: check in a guest by inviteCode (used by GateScanner component).
 // Routes through CheckInService — same domain path as the dedicated /api/qr/[code] endpoint.
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }): Promise<NextResponse> {
-  const resolved = await resolveEventOrRespond(params.slug);
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }): Promise<NextResponse> {
+  const routeParams = await params;
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const user = getAuthUser(req);
