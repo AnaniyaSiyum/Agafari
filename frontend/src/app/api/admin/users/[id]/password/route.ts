@@ -7,8 +7,9 @@ import { checkRateLimit, buildRateLimitResponse } from '@/lib/rateLimit';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const routeParams = await params;
   const auth = await requireMembership(req, ['SYSTEM_ADMIN']);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -20,7 +21,7 @@ export async function POST(
     return buildRateLimitResponse(rateCheck.retryAfterSeconds, 'Too many password reset requests. Please slow down.', 10, 0);
   }
 
-  const userId = params.id;
+  const userId = routeParams.id;
   if (!userId) {
     return NextResponse.json({ error: 'User ID is required.' }, { status: 400 });
   }
