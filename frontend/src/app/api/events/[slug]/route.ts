@@ -86,8 +86,9 @@ function formatEvent(e: any) {
 }
 
 // GET: fetch dynamic event details for specific wedding slug
-export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
-  const { slug } = params;
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
+  const { slug } = routeParams;
 
   try {
     const event = await queryOne(
@@ -279,12 +280,14 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
 }
 
 // PUT / PATCH: update event details from Organizer Control Page
-export async function PUT(req: NextRequest, { params }: { params: { slug: string } }) {
-  return handleUpdate(req, params.slug);
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
+  return handleUpdate(req, routeParams.slug);
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
-  return handleUpdate(req, params.slug);
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
+  return handleUpdate(req, routeParams.slug);
 }
 
 async function handleUpdate(req: NextRequest, slug: string) {

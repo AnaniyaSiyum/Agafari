@@ -8,7 +8,8 @@ import { DomainError, ForbiddenError, NotFoundError } from '@/domain/errors/Doma
 
 const templateService = new TemplateService(new MySqlEventRepository());
 
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -16,7 +17,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
     const { templateId, customization, lock } = await req.json();
 
     const updated = await templateService.updateTemplate({
-      slug: params.slug,
+      slug: routeParams.slug,
       templateId,
       customization,
       lock,

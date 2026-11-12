@@ -12,21 +12,22 @@ import { mockStore } from '@/infrastructure/dev/mockData';
 // (Text wishes default to APPROVED per schema — auto-publish is the intended
 // behavior here, unlike video posts which always start PENDING. Anything that
 // slips through gets taken down after the fact via /api/organizer/wishes.)
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const { searchParams } = new URL(req.url);
   const requestedStatus = searchParams.get('status');
 
   let event: { id: string } | null = null;
   try {
-    event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [routeParams.slug]);
   } catch (e) {}
 
   if (!event) {
     const mockEvt = mockStore.events.find(
       (e: any) =>
-        e.slug?.toLowerCase() === params.slug.toLowerCase() ||
-        e.id === params.slug ||
-        e.id === `evt-${params.slug}`
+        e.slug?.toLowerCase() === routeParams.slug.toLowerCase() ||
+        e.id === routeParams.slug ||
+        e.id === `evt-${routeParams.slug}`
     );
     if (mockEvt) {
       event = { id: mockEvt.id };
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
   if (!wishes || wishes.length === 0) {
     wishes = mockStore.wishes
-      .filter((w: any) => w.eventId === event?.id || w.eventId === params.slug || w.eventId === `evt-${params.slug}`)
+      .filter((w: any) => w.eventId === event?.id || w.eventId === routeParams.slug || w.eventId === `evt-${routeParams.slug}`)
       .map((w: any) => ({
         id: w.id,
         sender_name: w.senderName,
@@ -73,9 +74,10 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 
 // POST: a guest leaves a wish/blessing for the couple. No auth required — guests
 // aren't logged-in users on this platform, same as RSVP and media uploads.
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const clientIp = getClientIp(req);
-  const rateLimitRes = await verifyRateLimit(`wishes:${params.slug}:${clientIp}`, { max: 3, windowSeconds: 300 });
+  const rateLimitRes = await verifyRateLimit(`wishes:${routeParams.slug}:${clientIp}`, { max: 3, windowSeconds: 300 });
   if (!rateLimitRes.success) {
     return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many wishes submitted. Please wait before submitting another blessing.', 3, 0);
   }
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'message is too long (max 2000 characters).' }, { status: 400 });
     }
 
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [routeParams.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const wishId = 'w_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);

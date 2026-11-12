@@ -7,12 +7,13 @@ import { checkEventAccess } from '@/lib/eventScope';
 import { checkRateLimit, getClientIp, buildRateLimitResponse } from '@/lib/rateLimit';
 
 // GET: Fetch all Mezmur & Music recommendations for this event
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const { searchParams } = new URL(req.url);
   const statusFilter = searchParams.get('status'); // PENDING | APPROVED | REJECTED | ALL
 
   try {
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [routeParams.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const user = getAuthUser(req);
@@ -65,9 +66,10 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 }
 
 // POST: Guest submits a Mezmur or Music recommendation
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const clientIp = getClientIp(req);
-  const rateLimitRes = checkRateLimit(`music:${params.slug}:${clientIp}`, { max: 5, windowSeconds: 300 });
+  const rateLimitRes = checkRateLimit(`music:${routeParams.slug}:${clientIp}`, { max: 5, windowSeconds: 300 });
   if (!rateLimitRes.success) {
     return buildRateLimitResponse(rateLimitRes.retryAfterSeconds, 'Too many music recommendations submitted. Please wait before submitting another song.', 5, 0);
   }
@@ -82,7 +84,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
       return NextResponse.json({ error: 'Song or Mezmur title is required.' }, { status: 400 });
     }
 
-    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [params.slug]);
+    const event = await queryOne<{ id: string }>('SELECT id FROM events WHERE LOWER(slug) = LOWER($1)', [routeParams.slug]);
     if (!event) return NextResponse.json({ error: 'Event not found.' }, { status: 404 });
 
     const mediaId = `mez_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`;

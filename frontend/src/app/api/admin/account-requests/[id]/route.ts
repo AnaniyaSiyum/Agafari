@@ -6,14 +6,15 @@ import { query, queryOne } from '@/lib/db';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const routeParams = await params;
   const auth = await requireMembership(req, ['SYSTEM_ADMIN']);
   if (!auth.authorized) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const requestId = params.id;
+  const requestId = routeParams.id;
   const adminId = auth.user.id;
 
   const request = await queryOne<any>('SELECT * FROM account_requests WHERE id = $1', [requestId]);
