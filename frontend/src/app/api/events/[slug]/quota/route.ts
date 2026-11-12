@@ -12,11 +12,12 @@ async function resolveEventOrRespond(slug: string) {
 }
 
 // GET: list quota allocations on this event
-export async function GET(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
@@ -48,11 +49,12 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
 }
 
 // POST: create a new quota allocation with MySQL compatibility
-export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
@@ -138,11 +140,12 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 }
 
 // PATCH: update a quota allocation
-export async function PATCH(req: NextRequest, { params }: { params: { slug: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+  const routeParams = await params;
   const user = getAuthUser(req);
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const resolved = await resolveEventOrRespond(params.slug);
+  const resolved = await resolveEventOrRespond(routeParams.slug);
   if ('error' in resolved) return resolved.error;
 
   const access = await checkEventAccess(user, resolved.event.id);
