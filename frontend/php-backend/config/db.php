@@ -58,9 +58,9 @@ function getDbConfig(): array {
                 $defaults = [
                     'host' => 'localhost',
                     'port' => '3306',
-                    'dbname' => 'agafarwh_agafari',
-                    'user' => 'agafarwh_agafari',
-                    'pass' => 'y4VAHrGPFyppTrpVsbWX',
+                    'dbname' => getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: '',
+                    'user' => getenv('MYSQL_USER') ?: getenv('DB_USER') ?: '',
+                    'pass' => getenv('MYSQL_PASSWORD') ?: getenv('DB_PASSWORD') ?: '',
                     'charset' => 'utf8mb4'
                 ];
                 return array_merge($defaults, $custom);
@@ -72,7 +72,7 @@ function getDbConfig(): array {
     $port = getenv('MYSQL_PORT') ?: getenv('DB_PORT') ?: '3306';
     $dbname = getenv('MYSQL_DATABASE') ?: getenv('DB_NAME') ?: getenv('DB_DATABASE') ?: 'agafarwh_agafari';
     $user = getenv('MYSQL_USER') ?: getenv('DB_USER') ?: getenv('DB_USERNAME') ?: 'agafarwh_agafari';
-    $pass = getenv('MYSQL_PASSWORD') ?: getenv('DB_PASSWORD') ?: 'y4VAHrGPFyppTrpVsbWX';
+    $pass = getenv('MYSQL_PASSWORD') ?: getenv('DB_PASSWORD') ?: '';
 
     return compact('host', 'port', 'dbname', 'user', 'pass');
 }

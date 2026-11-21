@@ -21,6 +21,10 @@ jobs:
 
       - name: Install Frontend Dependencies & Build
         working-directory: ./frontend
+        env:
+          # Build-only values match CI. The static export ships no Next.js server runtime.
+          TICKET_SIGNING_SECRET: ci_build_ticket_signing_secret_key_32bytes
+          JWT_SECRET: ci_build_jwt_session_signing_secret_key_32bytes
         run: |
           npm ci
           npm run build
@@ -29,7 +33,14 @@ jobs:
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
           server: ${{ secrets.FTP_SERVER }}
+          protocol: ftps
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.env
+            **/.env.*
           local-dir: ./frontend/out/
           server-dir: ./domains/agafarii.com/public_html/
